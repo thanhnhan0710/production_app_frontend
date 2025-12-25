@@ -1,0 +1,72 @@
+name: production_app_frontend
+description: Web App quản lý nội bộ (Enterprise ERP).
+publish_to: 'none' # App nội bộ, không public lên pub.dev
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0' # Sử dụng Dart 3 trở lên để có Records, Pattern Matching
+
+dependencies:
+  # [MỚI] Thêm dòng này để sửa lỗi import flutter_web_plugins
+  flutter_web_plugins:
+    sdk: flutter
+  flutter:
+    sdk: flutter
+  
+  # --- 1. UI & Localization (Giao diện & Đa ngôn ngữ) ---
+  flutter_localizations: # Bắt buộc cho App đa ngôn ngữ
+    sdk: flutter
+  intl: ^0.20.2 # Hỗ trợ format ngày tháng, tiền tệ, số liệu theo vùng miền
+  google_fonts: ^6.1.0 # Dùng font chữ đẹp mà không cần tải file về assets thủ công
+  flutter_svg: ^2.0.9 # Hiển thị icon vector sắc nét trên mọi màn hình (thay vì png)
+
+  # --- 2. State Management (Quản lý trạng thái) ---
+  flutter_bloc: ^8.1.3 # Tiêu chuẩn vàng cho Enterprise App. Tách biệt Logic và UI.
+  equatable: ^2.0.5 # Giúp so sánh các Object/State dễ dàng (dùng kèm Bloc)
+
+  # --- 3. Networking (Kết nối API FastAPI) ---
+  dio: ^5.4.0 # Mạnh hơn http mặc định. Hỗ trợ Interceptors (tự đính Token), Timeout, Cancel request.
+  
+  # --- 4. Navigation (Điều hướng trang web) ---
+  go_router: ^13.0.0 # Bắt buộc cho Web. Hỗ trợ URL path (/login, /products/1), deep link, redirect.
+
+  # --- 5. Dependency Injection (Quản lý sự phụ thuộc) ---
+  get_it: ^7.6.6 # Service Locator (Kho chứa các class Repository, API Service)
+  injectable: ^2.3.2 # Tự động sinh code kết nối các class, không cần viết tay việc khởi tạo.
+
+  # --- 6. Data Modeling & Storage (Dữ liệu) ---
+  # Với 50 bảng, bạn CẦN 2 thư viện dưới để không phải map JSON bằng tay
+  json_annotation: ^4.8.1 
+  freezed_annotation: ^2.4.1 # Giúp tạo Immutable Object, copyWith, Union types (cực xịn để handle lỗi)
+  
+  shared_preferences: ^2.2.2 # Lưu cài đặt nhẹ (như Ngôn ngữ đang chọn: 'vi' hay 'en')
+  flutter_secure_storage: ^9.0.0 # Lưu Token đăng nhập an toàn hơn (Trên web nó mã hóa vào LocalStorage)
+
+  # --- 7. Utilities (Tiện ích) ---
+  logger: ^2.0.2 # In log đẹp, có màu sắc, dễ debug hơn print() thường
+  uuid: ^4.2.1 # Tạo ID ngẫu nhiên nếu cần
+  http: ^1.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  flutter_lints: ^3.0.1 # Bộ quy tắc code chuẩn của Google/Flutter team
+
+  # --- Code Generators (Máy tự sinh code) ---
+  # Đây là "đội ngũ công nhân" giúp bạn viết code cho 50 bảng dữ liệu
+  build_runner: ^2.4.8 # Trình chạy các lệnh sinh code
+  json_serializable: ^6.7.1 # Tự viết hàm fromJson/toJson
+  freezed: ^2.4.6 # Tự viết class data, hàm equals, toString...
+  injectable_generator: ^2.4.1 # Tự viết code DI cho get_it
+
+flutter:
+  uses-material-design: true
+  
+  # Cấu hình Assets
+  assets:
+    - assets/images/
+    - assets/icons/
+
+  # Cấu hình đa ngôn ngữ tự động (nếu dùng cách generate chuẩn của Flutter)
+  generate: true

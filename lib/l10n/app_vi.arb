@@ -1,0 +1,28 @@
+{
+    "loginTitle": "Đăng nhập",
+    "username": "Tên đăng nhập",
+    "password": "Mật khẩu",
+    "btnLogin": "ĐĂNG NHẬP",
+    "errorRequired": "Thông tin bắt buộc",
+    "welcome": "Xin chào {name}",
+    "companyName": "CÔNG TY TNHH OPPERMANN VIỆT NAM",
+    "erpSystemName": "Hệ thống Quản trị Nguồn lực Doanh nghiệp",
+    "loginSystemHeader": "Đăng nhập Hệ thống",
+    "loginSubtitle": "Vui lòng đăng nhập để truy cập ERP",
+    "copyright": "© 2026 Oppermann Việt Nam",
+
+    "dashboard": "Tổng quan",
+    "production": "Sản xuất",
+    "inventory": "Kho vận",
+    "sales": "Bán hàng",
+    "hr": "Nhân sự",
+    "reports": "Báo cáo",
+    "settings": "Cài đặt",
+    "logout": "Đăng xuất",
+    "totalOrders": "Tổng đơn hàng",
+    "activePlans": "Kế hoạch đang chạy",
+    "lowStock": "Sắp hết hàng",
+    "revenue": "Doanh thu",
+    "recentActivities": "Hoạt động gần đây",
+    "viewAll": "Xem tất cả"
+}
