@@ -14,6 +14,7 @@ analyzer:
     unused_local_variable: ignore
     unused_import: ignore
     unused_field: ignore
+    avoid_print: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:

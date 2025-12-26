@@ -21,10 +21,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get btnLogin => 'ĐĂNG NHẬP';
 
   @override
-  String get errorRequired => 'Thông tin bắt buộc';
-
-  @override
-  String welcome(Object name) {
+  String welcome(String name) {
     return 'Xin chào $name';
   }
 
@@ -42,6 +39,19 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get copyright => '© 2026 Oppermann Việt Nam';
+
+  @override
+  String get errorRequired => 'Vui lòng không để trống';
+
+  @override
+  String get errorLoginFailed =>
+      'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản.';
+
+  @override
+  String get errorNetwork => 'Lỗi kết nối. Vui lòng kiểm tra mạng hoặc Server.';
+
+  @override
+  String get errorGeneric => 'Đã xảy ra lỗi hệ thống.';
 
   @override
   String get dashboard => 'Tổng quan';

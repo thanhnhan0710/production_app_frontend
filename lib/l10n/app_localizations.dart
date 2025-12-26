@@ -122,17 +122,11 @@ abstract class AppLocalizations {
   /// **'LOGIN'**
   String get btnLogin;
 
-  /// No description provided for @errorRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Required field'**
-  String get errorRequired;
-
   /// No description provided for @welcome.
   ///
   /// In en, this message translates to:
   /// **'Welcome {name}'**
-  String welcome(Object name);
+  String welcome(String name);
 
   /// No description provided for @companyName.
   ///
@@ -163,6 +157,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'© 2026 Oppermann Vietnam'**
   String get copyright;
+
+  /// No description provided for @errorRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
+  String get errorRequired;
+
+  /// No description provided for @errorLoginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Login failed. Please check your credentials.'**
+  String get errorLoginFailed;
+
+  /// No description provided for @errorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error. Please check your connection.'**
+  String get errorNetwork;
+
+  /// No description provided for @errorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'A system error occurred.'**
+  String get errorGeneric;
 
   /// No description provided for @dashboard.
   ///

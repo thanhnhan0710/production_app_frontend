@@ -21,10 +21,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get btnLogin => 'LOGIN';
 
   @override
-  String get errorRequired => 'Required field';
-
-  @override
-  String welcome(Object name) {
+  String welcome(String name) {
     return 'Welcome $name';
   }
 
@@ -42,6 +39,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get copyright => '© 2026 Oppermann Vietnam';
+
+  @override
+  String get errorRequired => 'This field is required';
+
+  @override
+  String get errorLoginFailed => 'Login failed. Please check your credentials.';
+
+  @override
+  String get errorNetwork => 'Network error. Please check your connection.';
+
+  @override
+  String get errorGeneric => 'A system error occurred.';
 
   @override
   String get dashboard => 'Dashboard';

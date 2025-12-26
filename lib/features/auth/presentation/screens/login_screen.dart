@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:production_app_frontend/l10n/app_localizations.dart';
+
 
 import '../../../../core/widgets/responsive_layout.dart';
 import '../../../../core/bloc/language_cubit.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../data/auth_exception.dart';
 import '../bloc/auth_cubit.dart';
+// Import AuthException
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,6 +24,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final Color _primaryColor = const Color(0xFF003366);
 
+  // Hàm tiện ích để dịch mã lỗi AuthErrorCode
+  String _mapErrorCodeToMessage(AuthErrorCode code, AppLocalizations l10n) {
+    switch (code) {
+      case AuthErrorCode.loginFailed:
+        return l10n.errorLoginFailed;
+      case AuthErrorCode.networkError:
+        return l10n.errorNetwork;
+      case AuthErrorCode.tokenMissing:
+      case AuthErrorCode.userFetchFailed:
+        return l10n.errorRequired;
+      case AuthErrorCode.systemError:
+        return l10n.erpSystemName;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -30,8 +48,13 @@ class _LoginScreenState extends State<LoginScreen> {
         if (state is AuthAuthenticated) {
           context.go('/dashboard');
         } else if (state is AuthError) {
+          // Lấy thông báo lỗi đã được dịch
+          final errorMessage = _mapErrorCodeToMessage(state.code, l10n);
+
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+            SnackBar(
+                content: Text(errorMessage), 
+                backgroundColor: Colors.red),
           );
         }
       },
@@ -63,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Icon(Icons.verified_user, size: 60, color: _primaryColor),
               const SizedBox(height: 20),
               Text(
-                "Production App",
+                "Production App", // Giữ nguyên tên app
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontSize: 24,

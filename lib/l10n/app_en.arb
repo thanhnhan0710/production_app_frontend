@@ -1,28 +1,37 @@
 {
-    "loginTitle": "Login",
-    "username": "Username",
-    "password": "Password",
-    "btnLogin": "LOGIN",
-    "errorRequired": "Required field",
-    "welcome": "Welcome {name}",
-    "companyName": "OPPERMANN VIETNAM CO., LTD.",
-    "erpSystemName": "Enterprise Resource Planning System",
-    "loginSystemHeader": "Login System",
-    "loginSubtitle": "Sign in to continue to ERP System",
-    "copyright": "© 2026 Oppermann Vietnam",
-
-    "dashboard": "Dashboard",
-    "production": "Production",
-    "inventory": "Inventory",
-    "sales": "Sales",
-    "hr": "Human Resources",
-    "reports": "Reports",
-    "settings": "Settings",
-    "logout": "Logout",
-    "totalOrders": "Total Orders",
-    "activePlans": "Active Plans",
-    "lowStock": "Low Stock Items",
-    "revenue": "Revenue",
-    "recentActivities": "Recent Activities",
-    "viewAll": "View All"
+  "loginTitle": "Login",
+  "username": "Username",
+  "password": "Password",
+  "btnLogin": "LOGIN",
+  "welcome": "Welcome {name}",
+  "@welcome": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "companyName": "OPPERMANN VIETNAM CO., LTD.",
+  "erpSystemName": "Enterprise Resource Planning System",
+  "loginSystemHeader": "Login System",
+  "loginSubtitle": "Sign in to continue to ERP System",
+  "copyright": "© 2026 Oppermann Vietnam",
+  "errorRequired": "This field is required",
+  "errorLoginFailed": "Login failed. Please check your credentials.",
+  "errorNetwork": "Network error. Please check your connection.",
+  "errorGeneric": "A system error occurred.",
+  "dashboard": "Dashboard",
+  "production": "Production",
+  "inventory": "Inventory",
+  "sales": "Sales",
+  "hr": "Human Resources",
+  "reports": "Reports",
+  "settings": "Settings",
+  "logout": "Logout",
+  "totalOrders": "Total Orders",
+  "activePlans": "Active Plans",
+  "lowStock": "Low Stock Items",
+  "revenue": "Revenue",
+  "recentActivities": "Recent Activities",
+  "viewAll": "View All"
 }

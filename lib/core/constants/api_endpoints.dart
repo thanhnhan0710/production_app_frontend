@@ -1,9 +1,8 @@
 class ApiEndpoints {
-  // Đường dẫn gốc (Thay bằng IP máy tính của bạn nếu chạy máy ảo: 10.0.2.2)
-  static const String baseUrl = 'https://localhost:8000/v1';
+  // Với Web App chạy local, dùng localhost là đúng.
+  // QUAN TRỌNG: Phải là http (không có s)
+  static const String baseUrl = 'http://localhost:8000/api/v1'; 
   
-  // Các đường dẫn con
-  static const String authLogin = '$baseUrl/auth/login';
-  static const String employees = '$baseUrl/employees';
-  static const String departments = '$baseUrl/departments';
+  static const String authLogin = '$baseUrl/login/access-token';
+  static const String usersMe = '$baseUrl/users/me'; // API lấy thông tin user
 }
