@@ -40,7 +40,7 @@ class EmployeeRepository {
       }
       return [];
     } catch (e) {
-      throw Exception("Failed to search employees: $e");
+      throw Exception("Employees not found: $e");
     }
   }
 

@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'package:production_app_frontend/features/inventory/supplier/screens/supplier_screen.dart';
+import 'package:production_app_frontend/features/inventory/supplier/presentation/screens/supplier_screen.dart';
 
 import 'core/bloc/language_cubit.dart';
 import 'features/auth/data/auth_repository.dart';

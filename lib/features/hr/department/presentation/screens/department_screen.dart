@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../../core/widgets/responsive_layout.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../domain/department_model.dart';
@@ -29,7 +30,7 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF5F7FA), // Nền xám nhạt chuyên nghiệp
       body: BlocBuilder<DepartmentCubit, DepartmentState>(
         builder: (context, state) {
           int totalDepts = 0;
@@ -38,10 +39,12 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
           }
 
           return Column(
+            // [QUAN TRỌNG] Stretch để nội dung bung hết chiều ngang
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // --- HEADER SECTION ---
               Container(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   boxShadow: [
@@ -58,26 +61,39 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
                           children: [
-                            Text(
-                              l10n.departmentTitle,
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: _primaryColor,
-                                letterSpacing: -0.5,
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: _primaryColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
                               ),
+                              child: Icon(Icons.domain, color: _primaryColor, size: 28),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "Human Resources Management",
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey.shade500,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            const SizedBox(width: 16),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.departmentTitle,
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: _primaryColor,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Human Resources Structure",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade500,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -91,7 +107,7 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                               foregroundColor: Colors.white,
                               elevation: 2,
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               textStyle: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
                             ),
                           ),
@@ -103,9 +119,9 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                     Row(
                       children: [
                         if (isDesktop) ...[
-                          _buildStatBadge(Icons.domain, "Total", "$totalDepts", Colors.blue),
+                          _buildStatBadge(Icons.grid_view_rounded, "Total Departments", "$totalDepts", Colors.blue),
                           const SizedBox(width: 16),
-                          _buildStatBadge(Icons.check_circle, "Active", "$totalDepts", Colors.green),
+                          _buildStatBadge(Icons.check_circle_outline, "Status", "Active", Colors.green),
                           const Spacer(),
                         ],
                         
@@ -113,11 +129,12 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                         Expanded(
                           flex: isDesktop ? 0 : 1,
                           child: Container(
-                            width: isDesktop ? 300 : double.infinity,
+                            width: isDesktop ? 350 : double.infinity,
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.shade200),
+                              border: Border.all(color: Colors.grey.shade300),
+                              boxShadow: [BoxShadow(color: Colors.grey.shade100, blurRadius: 4, offset: const Offset(0, 2))],
                             ),
                             child: TextField(
                               controller: _searchController,
@@ -125,10 +142,9 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                               decoration: InputDecoration(
                                 hintText: l10n.searchDept,
                                 hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                                prefixIcon: Icon(Icons.search, color: Colors.grey.shade500),
-                                // Nút tìm kiếm thủ công
+                                prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
                                 suffixIcon: IconButton(
-                                  icon: const Icon(Icons.arrow_forward, color: Colors.blue),
+                                  icon: const Icon(Icons.arrow_forward_rounded, color: Colors.blue),
                                   onPressed: () {
                                     context.read<DepartmentCubit>().searchDepartments(_searchController.text);
                                   },
@@ -136,7 +152,6 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                               ),
-                              // Sự kiện Enter
                               onSubmitted: (value) {
                                 context.read<DepartmentCubit>().searchDepartments(value);
                               },
@@ -187,27 +202,279 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
     );
   }
 
+  // --- DESKTOP TABLE VIEW (FULL WIDTH + NO ID) ---
+  Widget _buildDesktopTable(BuildContext context, List<Department> departments, AppLocalizations l10n) {
+    return SingleChildScrollView(
+      child: Container(
+        width: double.infinity,
+        child: Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.grey.shade200),
+          ),
+          clipBehavior: Clip.antiAlias,
+          // [FIX] Dùng LayoutBuilder để bảng luôn full chiều rộng container
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                  child: DataTable(
+                    headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
+                    headingRowHeight: 56,
+                    dataRowMinHeight: 64,
+                    dataRowMaxHeight: 64,
+                    horizontalMargin: 32,
+                    columnSpacing: 40,
+                    columns: [
+                      // [FIX] Bỏ cột ID
+                      DataColumn(label: Text(l10n.deptName.toUpperCase(), style: _headerStyle)),
+                      DataColumn(label: Text(l10n.deptDesc.toUpperCase(), style: _headerStyle)),
+                      DataColumn(label: Text("MEMBERS", style: _headerStyle)), // Cột mới hiển thị nút xem nhân viên
+                      DataColumn(label: Text(l10n.actions.toUpperCase(), style: _headerStyle)),
+                    ],
+                    rows: departments.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final dept = entry.value;
+                      final color = MaterialStateProperty.all(
+                        index % 2 == 0 ? Colors.white : const Color(0xFFF9FAFB).withOpacity(0.5),
+                      );
+
+                      return DataRow(
+                        color: color,
+                        cells: [
+                          // Tên bộ phận + Avatar chữ cái đầu
+                          DataCell(
+                            Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: _getRandomColor(dept.name).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    dept.name.substring(0, 1).toUpperCase(),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: _getRandomColor(dept.name),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Text(dept.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 14)),
+                              ],
+                            )
+                          ),
+                          
+                          // Mô tả
+                          DataCell(
+                            Text(
+                              dept.description,
+                              style: TextStyle(color: Colors.grey.shade600, height: 1.4),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+
+                          // [MỚI] Nút xem nhân viên
+                          DataCell(
+                            _buildActionButton(
+                              Icons.people_alt_outlined, 
+                              Colors.teal, 
+                              "View Employees",
+                              () {
+                                // Điều hướng sang trang nhân viên với tham số lọc
+                                context.go('/employees?departmentId=${dept.id}'); 
+                              }
+                            ),
+                          ),
+
+                          // Hành động
+                          DataCell(Row(
+                            children: [
+                              _buildActionButton(Icons.edit_outlined, Colors.blue, "Edit", () => _showEditDialog(context, dept, l10n)),
+                              const SizedBox(width: 12),
+                              _buildActionButton(Icons.delete_outline, Colors.red, "Delete", () => _confirmDelete(context, dept, l10n)),
+                            ],
+                          )),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  TextStyle get _headerStyle => TextStyle(
+    color: Colors.grey.shade600, 
+    fontWeight: FontWeight.bold, 
+    fontSize: 12, 
+    letterSpacing: 0.8
+  );
+
+  Widget _buildActionButton(IconData icon, Color color, String tooltip, VoidCallback onTap) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withOpacity(0.2)),
+          ),
+          child: Icon(icon, size: 18, color: color),
+        ),
+      ),
+    );
+  }
+
+  // --- MOBILE LIST VIEW ---
+  Widget _buildMobileListView(BuildContext context, List<Department> departments, AppLocalizations l10n) {
+    return ListView.separated(
+      itemCount: departments.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final dept = departments[index];
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            border: Border.all(color: Colors.grey.shade100),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _showEditDialog(context, dept, l10n),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: _getRandomColor(dept.name).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            dept.name.substring(0, 1).toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: _getRandomColor(dept.name),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(dept.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+                              const SizedBox(height: 4),
+                              Text(
+                                dept.description,
+                                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuButton(
+                          icon: Icon(Icons.more_vert, color: Colors.grey.shade400),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          onSelected: (value) {
+                            // Cập nhật điều hướng mobile có kèm ID
+                            if (value == 'employees') context.go('/employees?departmentId=${dept.id}');
+                            if (value == 'edit') _showEditDialog(context, dept, l10n);
+                            if (value == 'delete') _confirmDelete(context, dept, l10n);
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'employees',
+                              child: Row(children: [Icon(Icons.people_alt_outlined, size: 18, color: Colors.teal), SizedBox(width: 12), Text("View Employees")]),
+                            ),
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Row(children: [Icon(Icons.edit, size: 18, color: Colors.blue.shade400), const SizedBox(width: 12), Text(l10n.editDept)]),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red.shade400), const SizedBox(width: 12), Text(l10n.deleteDept)]),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Helper: Random màu đẹp
+  Color _getRandomColor(String seed) {
+    final colors = [
+      Colors.blue.shade700,
+      Colors.orange.shade700,
+      Colors.teal.shade700,
+      Colors.purple.shade700,
+      Colors.indigo.shade700,
+      Colors.pink.shade700,
+    ];
+    return colors[seed.hashCode.abs() % colors.length];
+  }
+
   // --- WIDGETS CON ---
 
   Widget _buildStatBadge(IconData icon, String label, String value, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withOpacity(0.15)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 8),
-          Text(label, style: TextStyle(color: color.withOpacity(0.8), fontSize: 12, fontWeight: FontWeight.w600)),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)),
-            child: Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.w600)),
+              Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+            ],
           )
         ],
       ),
@@ -219,9 +486,13 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.folder_open, size: 64, color: Colors.grey.shade300),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
+            child: Icon(Icons.folder_off_outlined, size: 48, color: Colors.grey.shade400),
+          ),
           const SizedBox(height: 16),
-          Text("No departments found", style: TextStyle(fontSize: 16, color: Colors.grey.shade500)),
+          Text("No departments found", style: TextStyle(fontSize: 16, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -235,184 +506,19 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
           Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
           const SizedBox(height: 16),
           Text(message, style: const TextStyle(color: Colors.red)),
-          const SizedBox(height: 8),
-          OutlinedButton(
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
             onPressed: () => context.read<DepartmentCubit>().loadDepartments(),
-            child: const Text("Retry"),
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text("Reload"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black87,
+              elevation: 1,
+            )
           )
         ],
       ),
-    );
-  }
-
-  // --- DESKTOP TABLE VIEW ---
-  Widget _buildDesktopTable(BuildContext context, List<Department> departments, AppLocalizations l10n) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        width: double.infinity,
-        color: Colors.white,
-        child: Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.grey.shade100),
-          child: DataTable(
-            headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
-            headingRowHeight: 52,
-            dataRowMinHeight: 60,
-            dataRowMaxHeight: 60,
-            horizontalMargin: 24,
-            columnSpacing: 24,
-            columns: [
-              DataColumn(label: Text("ID", style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold, fontSize: 13))),
-              DataColumn(label: Text(l10n.deptName.toUpperCase(), style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold, fontSize: 13))),
-              DataColumn(label: Text(l10n.deptDesc.toUpperCase(), style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold, fontSize: 13))),
-              DataColumn(label: Text(l10n.actions.toUpperCase(), style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold, fontSize: 13))),
-            ],
-            rows: departments.asMap().entries.map((entry) {
-              final index = entry.key;
-              final dept = entry.value;
-              final color = MaterialStateProperty.all(
-                index % 2 == 0 ? Colors.white : const Color(0xFFF9FAFB).withOpacity(0.5),
-              );
-
-              return DataRow(
-                color: color,
-                cells: [
-                  DataCell(
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(4)),
-                      child: Text("#${dept.id}", style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontFamily: 'Monospace')),
-                    ),
-                  ),
-                  DataCell(
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 14,
-                          backgroundColor: _primaryColor.withOpacity(0.1),
-                          child: Text(dept.name.substring(0, 1).toUpperCase(), style: TextStyle(fontSize: 12, color: _primaryColor, fontWeight: FontWeight.bold)),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(dept.name, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
-                      ],
-                    )
-                  ),
-                  DataCell(
-                    Text(dept.description, style: TextStyle(color: Colors.grey.shade600), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  ),
-                  DataCell(Row(
-                    children: [
-                      _buildActionButton(Icons.edit_outlined, Colors.blue, () => _showEditDialog(context, dept, l10n)),
-                      const SizedBox(width: 8),
-                      _buildActionButton(Icons.delete_outline, Colors.red, () => _confirmDelete(context, dept, l10n)),
-                    ],
-                  )),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButton(IconData icon, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, size: 16, color: color),
-      ),
-    );
-  }
-
-  // --- MOBILE LIST VIEW ---
-  Widget _buildMobileListView(BuildContext context, List<Department> departments, AppLocalizations l10n) {
-    return ListView.separated(
-      itemCount: departments.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final dept = departments[index];
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-            border: Border.all(color: Colors.grey.shade100),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => _showEditDialog(context, dept, l10n),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: _accentColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(dept.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
-                        const SizedBox(height: 4),
-                        Text(
-                          dept.description,
-                          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  PopupMenuButton(
-                    icon: Icon(Icons.more_vert, color: Colors.grey.shade400),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    onSelected: (value) {
-                      if (value == 'edit') _showEditDialog(context, dept, l10n);
-                      if (value == 'delete') _confirmDelete(context, dept, l10n);
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: Row(children: [Icon(Icons.edit, size: 18, color: Colors.blue.shade400), const SizedBox(width: 12), Text(l10n.editDept)]),
-                      ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red.shade400), const SizedBox(width: 12), Text(l10n.deleteDept)]),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -444,20 +550,22 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                   controller: nameController,
                   decoration: InputDecoration(
                     labelText: l10n.deptName,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     filled: true,
                     fillColor: Colors.grey.shade50,
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
                   ),
                   validator: (v) => v!.isEmpty ? "Required" : null,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 TextFormField(
                   controller: descController,
                   decoration: InputDecoration(
                     labelText: l10n.deptDesc,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     filled: true,
                     fillColor: Colors.grey.shade50,
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
                   ),
                   maxLines: 3,
                 ),
@@ -497,7 +605,7 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
               backgroundColor: _primaryColor,
               foregroundColor: Colors.white,
               elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: Text(l10n.save),
@@ -514,12 +622,12 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
-            const SizedBox(width: 8),
+            Icon(Icons.warning_amber_rounded, color: Colors.red.shade700),
+            const SizedBox(width: 10),
             Text(l10n.deleteDept),
           ],
         ),
-        content: Text(l10n.confirmDelete(dept.name)),
+        content: Text(l10n.confirmDelete(dept.name), style: TextStyle(color: Colors.grey.shade800)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
           ElevatedButton(
@@ -532,7 +640,7 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                 backgroundColor: Colors.redAccent,
               ));
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white, elevation: 0),
             child: Text(l10n.deleteDept),
           ),
         ],

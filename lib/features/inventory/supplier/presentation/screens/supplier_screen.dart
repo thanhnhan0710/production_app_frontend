@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:production_app_frontend/l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/widgets/responsive_layout.dart';
-import '../domain/supplier_model.dart';
-import '../presentation/bloc/supplier_cubit.dart';
+import '../../../../../l10n/app_localizations.dart';
+import '../../domain/supplier_model.dart';
+import '../bloc/supplier_cubit.dart';
 
 class SupplierScreen extends StatefulWidget {
   const SupplierScreen({super.key});
@@ -16,26 +16,26 @@ class SupplierScreen extends StatefulWidget {
 class _SupplierScreenState extends State<SupplierScreen> {
   final _searchController = TextEditingController();
   final Color _primaryColor = const Color(0xFF003366);
-  final Color _accentColor = const Color(0xFFE65100); // Màu Cam đậm cho Supplier
+  final Color _accentColor = const Color(0xFFE65100);
   final Color _bgLight = const Color(0xFFF5F7FA);
 
   @override
   void initState() {
     super.initState();
-    // Load dữ liệu ngay khi vào màn hình
     context.read<SupplierCubit>().loadSuppliers();
   }
 
-  // Hàm gọi điện/email an toàn
   Future<void> _launchAction(String scheme, String path) async {
     if (path.isEmpty) return;
     final Uri launchUri = Uri(scheme: scheme, path: path);
     try {
       await launchUrl(launchUri);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Không thể mở liên kết: $path")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Không thể mở liên kết: $path")),
+        );
+      }
     }
   }
 
@@ -49,6 +49,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
       body: BlocBuilder<SupplierCubit, SupplierState>(
         builder: (context, state) {
           return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // --- HEADER SECTION ---
               Container(
@@ -56,7 +57,6 @@ class _SupplierScreenState extends State<SupplierScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 child: Column(
                   children: [
-                    // Title Row
                     Row(
                       children: [
                         Container(
@@ -100,7 +100,6 @@ class _SupplierScreenState extends State<SupplierScreen> {
                     ),
                     const SizedBox(height: 24),
                     
-                    // [FIX SEARCH] Search Bar
                     Row(
                       children: [
                         Expanded(
@@ -112,13 +111,11 @@ class _SupplierScreenState extends State<SupplierScreen> {
                             ),
                             child: TextField(
                               controller: _searchController,
-                              // [FIX] Thêm action search cho bàn phím
                               textInputAction: TextInputAction.search,
                               decoration: InputDecoration(
                                 hintText: l10n.searchSupplier,
                                 hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
                                 prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
-                                // [FIX] Thêm nút bấm tìm kiếm thủ công
                                 suffixIcon: IconButton(
                                   icon: const Icon(Icons.arrow_forward, color: Colors.blue),
                                   onPressed: () {
@@ -128,7 +125,6 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(vertical: 14),
                               ),
-                              // [FIX] Sự kiện Enter
                               onSubmitted: (value) {
                                 context.read<SupplierCubit>().searchSuppliers(value);
                               },
@@ -152,24 +148,28 @@ class _SupplierScreenState extends State<SupplierScreen> {
               ),
               Container(height: 1, color: Colors.grey.shade200),
 
-              // --- MAIN CONTENT ---
+              // --- CONTENT ---
               Expanded(
                 child: Builder(
                   builder: (context) {
-                    if (state is SupplierLoading) {
-                      return Center(child: CircularProgressIndicator(color: _primaryColor));
-                    } 
+                    if (state is SupplierLoading) return Center(child: CircularProgressIndicator(color: _primaryColor));
                     if (state is SupplierError) {
-                      return Center(child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error_outline, color: Colors.red, size: 40),
-                          const SizedBox(height: 10),
-                          Text(state.message, style: const TextStyle(color: Colors.red)),
-                          TextButton(onPressed: () => context.read<SupplierCubit>().loadSuppliers(), child: const Text("Thử lại"))
-                        ],
-                      ));
-                    } 
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                            const SizedBox(height: 16),
+                            Text("Error: ${state.message}", style: const TextStyle(color: Colors.red)),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => context.read<SupplierCubit>().loadSuppliers(),
+                              child: const Text("Retry"),
+                            )
+                          ],
+                        ),
+                      );
+                    }
                     if (state is SupplierLoaded) {
                       if (state.suppliers.isEmpty) {
                         return Center(
@@ -197,7 +197,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
       ),
       floatingActionButton: !isDesktop
           ? FloatingActionButton(
-              backgroundColor: _accentColor,
+              backgroundColor: _primaryColor,
               onPressed: () => _showEditDialog(context, null, l10n),
               child: const Icon(Icons.add, color: Colors.white),
             )
@@ -205,68 +205,84 @@ class _SupplierScreenState extends State<SupplierScreen> {
     );
   }
 
-  // --- DESKTOP TABLE ---
+  // --- DESKTOP TABLE (FULL WIDTH & FIXED HEIGHT ERROR) ---
   Widget _buildDesktopGrid(BuildContext context, List<Supplier> suppliers, AppLocalizations l10n) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
-        child: DataTable(
-          headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
-          horizontalMargin: 24,
-          columnSpacing: 30,
-          dataRowMinHeight: 72,
-          dataRowMaxHeight: 72,
-          columns: [
-            DataColumn(label: Text(l10n.supplierName.toUpperCase(), style: _headerStyle)),
-            DataColumn(label: Text(l10n.contact.toUpperCase(), style: _headerStyle)), // Fallback text nếu null
-            DataColumn(label: Text(l10n.address.toUpperCase(), style: _headerStyle)),
-            DataColumn(label: Text(l10n.note.toUpperCase(), style: _headerStyle)),
-            DataColumn(label: Text(l10n.actions.toUpperCase(), style: _headerStyle)),
-          ],
-          rows: suppliers.map((item) {
-            return DataRow(
-              cells: [
-                // Name & Avatar
-                DataCell(Row(
-                  children: [
-                    _buildAvatar(item.name),
-                    const SizedBox(width: 16),
-                    Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 14)),
-                  ],
-                )),
-                // Contact Info
-                DataCell(Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if(item.email.isNotEmpty) 
-                      InkWell(
-                        onTap: () => _launchAction('mailto', item.email),
-                        child: Row(children: [const Icon(Icons.email, size: 14, color: Colors.blue), const SizedBox(width: 6), Text(item.email, style: TextStyle(fontSize: 12, color: Colors.grey.shade700))]),
-                      ),
-                    if(item.phone.isNotEmpty) 
-                      InkWell(
-                        onTap: () => _launchAction('tel', item.phone),
-                        child: Row(children: [const Icon(Icons.phone, size: 14, color: Colors.green), const SizedBox(width: 6), Text(item.phone, style: TextStyle(fontSize: 12, color: Colors.grey.shade700))]),
-                      ),
-                  ],
-                )),
-                // Address
-                DataCell(Text(item.address, overflow: TextOverflow.ellipsis)),
-                // Note
-                DataCell(Text(item.note, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey.shade500))),
-                // Actions
-                DataCell(Row(
-                  children: [
-                    IconButton(icon: const Icon(Icons.edit_note, color: Colors.grey), onPressed: () => _showEditDialog(context, item, l10n)),
-                    IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent), onPressed: () => _confirmDelete(context, item, l10n)),
-                  ],
-                )),
-              ],
-            );
-          }).toList(),
+      child: SizedBox(
+        width: double.infinity, 
+        child: Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: constraints.maxWidth), 
+                  child: DataTable(
+                    headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
+                    horizontalMargin: 24,
+                    columnSpacing: 30,
+                    
+                    // [FIX LỖI] Đặt Max Height >= Min Height để tránh lỗi Not Normalized
+                    dataRowMinHeight: 60,
+                    dataRowMaxHeight: 60, 
+                    
+                    columns: [
+                      DataColumn(label: Text(l10n.supplierName.toUpperCase(), style: _headerStyle)),
+                      DataColumn(label: Text(l10n.contact.toUpperCase(), style: _headerStyle)),
+                      DataColumn(label: Text(l10n.address.toUpperCase(), style: _headerStyle)),
+                      DataColumn(label: Text(l10n.note.toUpperCase(), style: _headerStyle)),
+                      DataColumn(label: Text(l10n.actions.toUpperCase(), style: _headerStyle)),
+                    ],
+                    rows: suppliers.map((item) {
+                      return DataRow(
+                        cells: [
+                          DataCell(Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor: Colors.orange.shade50,
+                                child: Text(item.name.isNotEmpty ? item.name[0].toUpperCase() : '?', style: TextStyle(color: Colors.orange.shade800, fontWeight: FontWeight.bold, fontSize: 14)),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            ],
+                          )),
+                          DataCell(Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if(item.email.isNotEmpty) 
+                                InkWell(
+                                  onTap: () => _launchAction('mailto', item.email),
+                                  child: Row(children: [const Icon(Icons.email, size: 14, color: Colors.blue), const SizedBox(width: 6), Text(item.email, style: TextStyle(fontSize: 12, color: Colors.grey.shade700))]),
+                                ),
+                              if(item.phone.isNotEmpty) 
+                                InkWell(
+                                  onTap: () => _launchAction('tel', item.phone),
+                                  child: Row(children: [const Icon(Icons.phone, size: 14, color: Colors.green), const SizedBox(width: 6), Text(item.phone, style: TextStyle(fontSize: 12, color: Colors.grey.shade700))]),
+                                ),
+                            ],
+                          )),
+                          DataCell(Text(item.address, overflow: TextOverflow.ellipsis)),
+                          DataCell(Text(item.note, overflow: TextOverflow.ellipsis)),
+                          DataCell(Row(
+                            children: [
+                              IconButton(icon: const Icon(Icons.edit_note, color: Colors.grey), onPressed: () => _showEditDialog(context, item, l10n)),
+                              IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent), onPressed: () => _confirmDelete(context, item, l10n)),
+                            ],
+                          )),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -279,108 +295,51 @@ class _SupplierScreenState extends State<SupplierScreen> {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: suppliers.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final item = suppliers[index];
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade100),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
           ),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            leading: CircleAvatar(
+              backgroundColor: Colors.orange.shade50,
+              child: Icon(Icons.store, color: Colors.orange.shade800),
+            ),
+            title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                if(item.address.isNotEmpty) Row(children: [Icon(Icons.location_on, size: 14, color: Colors.grey.shade400), const SizedBox(width: 4), Expanded(child: Text(item.address, style: TextStyle(color: Colors.grey.shade600, fontSize: 13), overflow: TextOverflow.ellipsis))]),
+                const SizedBox(height: 4),
+                Row(
                   children: [
-                    _buildAvatar(item.name),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(item.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
-                          const SizedBox(height: 4),
-                          if(item.address.isNotEmpty)
-                            Row(children: [
-                              Icon(Icons.location_on, size: 14, color: Colors.grey.shade400),
-                              const SizedBox(width: 4),
-                              Expanded(child: Text(item.address, style: TextStyle(color: Colors.grey.shade600, fontSize: 13), overflow: TextOverflow.ellipsis))
-                            ]),
-                        ],
-                      ),
-                    ),
-                    PopupMenuButton(
-                      icon: Icon(Icons.more_vert, color: Colors.grey.shade400),
-                      onSelected: (val) {
-                        if (val == 'edit') _showEditDialog(context, item, l10n);
-                        if (val == 'delete') _confirmDelete(context, item, l10n);
-                      },
-                      itemBuilder: (ctx) => [
-                        PopupMenuItem(value: 'edit', child: Row(children: [const Icon(Icons.edit, size: 18), const SizedBox(width: 8), Text(l10n.editSupplier)])),
-                        PopupMenuItem(value: 'delete', child: Row(children: [const Icon(Icons.delete, size: 18, color: Colors.red), const SizedBox(width: 8), Text(l10n.deleteSupplier)])),
-                      ],
-                    ),
+                    if(item.phone.isNotEmpty) InkWell(onTap: () => _launchAction('tel', item.phone), child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(4)), child: Row(children: [const Icon(Icons.phone, size: 12, color: Colors.green), const SizedBox(width: 4), Text(item.phone, style: const TextStyle(fontSize: 12, color: Colors.green))]))),
+                    const SizedBox(width: 8),
+                    if(item.email.isNotEmpty) InkWell(onTap: () => _launchAction('mailto', item.email), child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)), child: const Row(children: [Icon(Icons.email, size: 12, color: Colors.blue), SizedBox(width: 4), Text("Email", style: TextStyle(fontSize: 12, color: Colors.blue))]))),
                   ],
-                ),
-              ),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Divider(height: 1, color: Colors.grey.shade100)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => _launchAction('mailto', item.email),
-                        child: Row(children: [
-                          Icon(Icons.email, size: 14, color: Colors.grey.shade400),
-                          const SizedBox(width: 6),
-                          Expanded(child: Text(item.email.isNotEmpty ? item.email : "N/A", style: TextStyle(fontSize: 12, color: Colors.grey.shade600), overflow: TextOverflow.ellipsis)),
-                        ]),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => _launchAction('tel', item.phone),
-                        child: Row(children: [
-                          Icon(Icons.phone, size: 14, color: Colors.grey.shade400),
-                          const SizedBox(width: 6),
-                          Expanded(child: Text(item.phone.isNotEmpty ? item.phone : "N/A", style: TextStyle(fontSize: 12, color: Colors.grey.shade600), overflow: TextOverflow.ellipsis)),
-                        ]),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            ],
+                )
+              ],
+            ),
+            trailing: PopupMenuButton(
+              onSelected: (val) {
+                if (val == 'edit') _showEditDialog(context, item, l10n);
+                if (val == 'delete') _confirmDelete(context, item, l10n);
+              },
+              itemBuilder: (ctx) => [
+                PopupMenuItem(value: 'edit', child: Row(children: [const Icon(Icons.edit, size: 18), const SizedBox(width: 8), Text(l10n.editSupplier)])),
+                PopupMenuItem(value: 'delete', child: Row(children: [const Icon(Icons.delete, size: 18, color: Colors.red), const SizedBox(width: 8), Text(l10n.deleteSupplier)])),
+              ],
+            ),
           ),
         );
       },
-    );
-  }
-
-  // --- AVATAR LOGIC (Lấy chữ cái đầu tên công ty) ---
-  Widget _buildAvatar(String name) {
-    String initial = "?";
-    if (name.isNotEmpty) {
-      initial = name[0].toUpperCase();
-    }
-    // Random màu nhẹ nhàng cho doanh nghiệp
-    final colors = [
-      Colors.orange.shade800,
-      Colors.blue.shade800,
-      Colors.teal.shade800,
-      Colors.indigo.shade800,
-    ];
-    final color = colors[name.hashCode.abs() % colors.length];
-
-    return CircleAvatar(
-      radius: 20,
-      backgroundColor: color.withOpacity(0.1),
-      child: Text(initial, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
     );
   }
 

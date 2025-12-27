@@ -24,7 +24,7 @@ class DepartmentRepository {
   Future<List<Department>> searchDepartments(String keyword) async {
     try {
       final response = await _dio.get(
-        '/api/v1/department/search', // Endpoint theo yêu cầu
+        '/api/v1/departments/search', // Endpoint theo yêu cầu
         queryParameters: {
           'keyword': keyword,
         },
