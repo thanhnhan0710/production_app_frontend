@@ -94,4 +94,118 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get viewAll => 'Xem tất cả';
+
+  @override
+  String get departmentTitle => 'Bộ phận';
+
+  @override
+  String get deptName => 'Tên bộ phận';
+
+  @override
+  String get deptDesc => 'Mô tả';
+
+  @override
+  String get searchDept => 'Tìm kiếm bộ phận...';
+
+  @override
+  String get addDept => 'Thêm bộ phận';
+
+  @override
+  String get editDept => 'Sửa bộ phận';
+
+  @override
+  String get deleteDept => 'Xóa bộ phận';
+
+  @override
+  String confirmDelete(Object name) {
+    return 'Bạn có chắc muốn xóa bộ phận $name không?';
+  }
+
+  @override
+  String get employeeTitle => 'Nhân viên';
+
+  @override
+  String get fullName => 'Họ và tên';
+
+  @override
+  String get email => 'Email';
+
+  @override
+  String get phone => 'Số điện thoại';
+
+  @override
+  String get address => 'Địa chỉ';
+
+  @override
+  String get position => 'Chức vụ';
+
+  @override
+  String get department => 'Phòng ban';
+
+  @override
+  String get note => 'Ghi chú';
+
+  @override
+  String get searchEmployee => 'Tìm nhân viên...';
+
+  @override
+  String get addEmployee => 'Thêm nhân viên';
+
+  @override
+  String get editEmployee => 'Sửa nhân viên';
+
+  @override
+  String get deleteEmployee => 'Xóa nhân viên';
+
+  @override
+  String confirmDeleteEmployee(Object name) {
+    return 'Xóa nhân viên $name?';
+  }
+
+  @override
+  String get selectDept => 'Chọn phòng ban';
+
+  @override
+  String get supplierTitle => 'Nhà cung cấp';
+
+  @override
+  String get supplierName => 'Tên nhà cung cấp';
+
+  @override
+  String get searchSupplier => 'Tìm nhà cung cấp...';
+
+  @override
+  String get addSupplier => 'Thêm nhà cung cấp';
+
+  @override
+  String get editSupplier => 'Sửa nhà cung cấp';
+
+  @override
+  String get deleteSupplier => 'Xóa nhà cung cấp';
+
+  @override
+  String confirmDeleteSupplier(Object name) {
+    return 'Bạn có chắc muốn xóa $name không?';
+  }
+
+  @override
+  String get contact => 'Liên hệ';
+
+  @override
+  String get save => 'Lưu';
+
+  @override
+  String get cancel => 'Hủy';
+
+  @override
+  String get actions => 'Hành động';
+
+  @override
+  String get successAdded => 'Thêm thành công';
+
+  @override
+  String get successUpdated => 'Cập nhật thành công';
+
+  @override
+  String get successDeleted => 'Xóa thành công';
 }

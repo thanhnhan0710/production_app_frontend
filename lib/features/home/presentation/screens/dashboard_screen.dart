@@ -23,12 +23,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final l10n = AppLocalizations.of(context)!;
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
+    // [MENU ITEMS - Sử dụng trong trường hợp cần duyệt list phẳng, nhưng ở dưới ta build thủ công để có Group]
+    // Giữ lại để tham khảo nếu cần
     final List<Map<String, dynamic>> menuItems = [
       {'icon': Icons.dashboard, 'title': l10n.dashboard, 'route': '/dashboard'},
       {'icon': Icons.precision_manufacturing, 'title': l10n.production, 'route': '/production'},
       {'icon': Icons.inventory_2, 'title': l10n.inventory, 'route': '/inventory'},
       {'icon': Icons.shopping_cart, 'title': l10n.sales, 'route': '/sales'},
-      {'icon': Icons.people, 'title': l10n.hr, 'route': '/users'},
+      {'icon': Icons.people, 'title': l10n.hr, 'route': '/departments'},
       {'icon': Icons.bar_chart, 'title': l10n.reports, 'route': '/reports'},
       {'icon': Icons.settings, 'title': l10n.settings, 'route': '/settings'},
     ];
@@ -87,12 +89,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         const SizedBox(height: 24),
                         
-                        // 1. KPI Cards (Đã sửa lỗi vĩnh viễn)
                         _buildStatCards(l10n),
                         
                         const SizedBox(height: 32),
                         
-                        // 2. Charts & Tables
                         if (isDesktop)
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,11 +122,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // --- [ĐÃ SỬA] STAT CARDS: LINH HOẠT HƠN ---
+  // --- WIDGETS CON ---
+
   Widget _buildStatCards(AppLocalizations l10n) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // MOBILE: Dùng Column, không ép chiều cao Card
         if (constraints.maxWidth < 650) {
           return Column(
             children: [
@@ -140,8 +140,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           );
         }
-        
-        // DESKTOP: Dùng GridView, GridView sẽ ép chiều cao theo tỷ lệ nhưng thường Desktop đủ rộng để không lỗi
         int crossAxisCount = constraints.maxWidth < 1100 ? 2 : 4;
         return GridView.count(
           crossAxisCount: crossAxisCount,
@@ -161,7 +159,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // --- [ĐÃ SỬA] INFO CARD: KHÔNG DÙNG SPACER ---
   Widget _buildInfoCard(String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -172,7 +169,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        // [QUAN TRỌNG] Min: Co giãn theo nội dung, không bung hết cỡ -> Tránh overflow
         mainAxisSize: MainAxisSize.min, 
         children: [
           Row(
@@ -193,14 +189,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ],
           ),
-          
-          // Dùng khoảng cách cứng thay vì Spacer để an toàn tuyệt đối
           const SizedBox(height: 16),
-          
           Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)),
-          
           const SizedBox(height: 16),
-          
           const Row(
             children: [
               Icon(Icons.arrow_upward, color: Colors.green, size: 14),
@@ -215,20 +206,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // --- SIDEBAR & MENU (ĐÃ SỬA LỖI TRÀN HEADER TRÊN DESKTOP) ---
+  // [SIDEBAR ĐÃ CẬP NHẬT]
   Widget _buildSidebar(BuildContext context, AppLocalizations l10n, List<Map<String, dynamic>> menuItems, {required bool isMobile}) {
     return Container(
       color: _primaryColor,
       child: Column(
         children: [
+          // HEADER
           Container(
-            // [FIX] Tăng chiều cao lên 120 cho cả Desktop để đủ chỗ chứa chữ
             height: 120, 
-            
-            // Padding top 40 là để tránh tai thỏ trên điện thoại, 
-            // nhưng trên desktop cũng giữ nguyên cho đẹp và thống nhất
             padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
-            
             color: Colors.black12,
             child: const Row(
               children: [
@@ -238,23 +225,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
-                    // [FIX] Thêm MainAxisSize.min để cột co lại vừa đủ nội dung
                     mainAxisSize: MainAxisSize.min, 
                     children: [
-                      Text(
-                        "OPPERMANN",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 4), // Khoảng cách nhỏ giữa 2 dòng
-                      Text(
-                        "ERP System",
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      Text("OPPERMANN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18), overflow: TextOverflow.ellipsis),
+                      SizedBox(height: 4), 
+                      Text("ERP System", style: TextStyle(color: Colors.white70, fontSize: 12), overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 )
@@ -262,29 +237,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           
-          // Phần danh sách menu bên dưới giữ nguyên
+          // MENU LIST
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              itemCount: menuItems.length,
-              separatorBuilder: (ctx, i) => const Divider(color: Colors.white10, height: 1),
-              itemBuilder: (context, index) {
-                final item = menuItems[index];
-                final isSelected = index == 0;
-                return ListTile(
-                  leading: Icon(item['icon'], color: isSelected ? Colors.white : Colors.white70),
-                  title: Text(item['title'],
-                      style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.white70,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                  tileColor: isSelected ? Colors.white.withOpacity(0.1) : null,
-                  onTap: () {
-                    if (isMobile) Navigator.pop(context);
-                  },
-                );
-              },
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildMenuItem(context, Icons.dashboard, l10n.dashboard, '/dashboard', isMobile),
+                  _buildMenuItem(context, Icons.precision_manufacturing, l10n.production, '/production', isMobile),
+                  
+                  // --- INVENTORY GROUP (KHO + NHÀ CUNG CẤP) ---
+                  Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      leading: const Icon(Icons.inventory_2, color: Colors.white70),
+                      title: Text(l10n.inventory, style: const TextStyle(color: Colors.white70)),
+                      iconColor: Colors.white,
+                      collapsedIconColor: Colors.white70,
+                      childrenPadding: const EdgeInsets.only(left: 20),
+                      children: [
+                        _buildMenuItem(context, Icons.list_alt, "Items", '/inventory', isMobile),
+                        _buildMenuItem(context, Icons.store, l10n.supplierTitle, '/suppliers', isMobile),
+                      ],
+                    ),
+                  ),
+                  
+                  // --- HR GROUP ---
+                  Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      leading: const Icon(Icons.people, color: Colors.white70),
+                      title: Text(l10n.hr, style: const TextStyle(color: Colors.white70)),
+                      iconColor: Colors.white,
+                      collapsedIconColor: Colors.white70,
+                      childrenPadding: const EdgeInsets.only(left: 20),
+                      children: [
+                        _buildMenuItem(context, Icons.domain, l10n.departmentTitle, '/departments', isMobile),
+                        _buildMenuItem(context, Icons.badge, l10n.employeeTitle, '/employees', isMobile),
+                      ],
+                    ),
+                  ),
+
+                  _buildMenuItem(context, Icons.shopping_cart, l10n.sales, '/sales', isMobile),
+                  _buildMenuItem(context, Icons.bar_chart, l10n.reports, '/reports', isMobile),
+                  _buildMenuItem(context, Icons.settings, l10n.settings, '/settings', isMobile),
+                ],
+              ),
             ),
           ),
+          
+          // LOGOUT
           Padding(
             padding: const EdgeInsets.all(20),
             child: ElevatedButton.icon(
@@ -303,7 +304,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // --- DESKTOP TOP BAR ---
+  // Helper để vẽ từng item
+  Widget _buildMenuItem(BuildContext context, IconData icon, String title, String route, bool isMobile) {
+    // Logic check active
+    final String location = GoRouterState.of(context).uri.path;
+    final bool isActive = location == route; 
+    
+    return ListTile(
+      leading: Icon(icon, color: isActive ? Colors.white : Colors.white70, size: 20),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isActive ? Colors.white : Colors.white70,
+          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          fontSize: 14,
+        ),
+      ),
+      tileColor: isActive ? Colors.white.withOpacity(0.1) : null,
+      dense: true, // Menu nhỏ gọn
+      onTap: () {
+        context.go(route);
+        if (isMobile) Navigator.pop(context);
+      },
+    );
+  }
+
   Widget _buildDesktopTopBar(BuildContext context, AppLocalizations l10n) {
     return Container(
       height: 70,
@@ -365,7 +390,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // --- CHARTS & LISTS ---
   Widget _buildProductionChart(AppLocalizations l10n) {
     return Container(
       height: 400,

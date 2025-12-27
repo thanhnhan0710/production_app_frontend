@@ -265,6 +265,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View All'**
   String get viewAll;
+
+  /// No description provided for @departmentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Departments'**
+  String get departmentTitle;
+
+  /// No description provided for @deptName.
+  ///
+  /// In en, this message translates to:
+  /// **'Department Name'**
+  String get deptName;
+
+  /// No description provided for @deptDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get deptDesc;
+
+  /// No description provided for @searchDept.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Department...'**
+  String get searchDept;
+
+  /// No description provided for @addDept.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Department'**
+  String get addDept;
+
+  /// No description provided for @editDept.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Department'**
+  String get editDept;
+
+  /// No description provided for @deleteDept.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Department'**
+  String get deleteDept;
+
+  /// No description provided for @confirmDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete {name}?'**
+  String confirmDelete(Object name);
+
+  /// No description provided for @employeeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Employees'**
+  String get employeeTitle;
+
+  /// No description provided for @fullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Name'**
+  String get fullName;
+
+  /// No description provided for @email.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get email;
+
+  /// No description provided for @phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get phone;
+
+  /// No description provided for @address.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get address;
+
+  /// No description provided for @position.
+  ///
+  /// In en, this message translates to:
+  /// **'Position'**
+  String get position;
+
+  /// No description provided for @department.
+  ///
+  /// In en, this message translates to:
+  /// **'Department'**
+  String get department;
+
+  /// No description provided for @note.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get note;
+
+  /// No description provided for @searchEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Search employee...'**
+  String get searchEmployee;
+
+  /// No description provided for @addEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Employee'**
+  String get addEmployee;
+
+  /// No description provided for @editEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Employee'**
+  String get editEmployee;
+
+  /// No description provided for @deleteEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Employee'**
+  String get deleteEmployee;
+
+  /// No description provided for @confirmDeleteEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete employee {name}?'**
+  String confirmDeleteEmployee(Object name);
+
+  /// No description provided for @selectDept.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Department'**
+  String get selectDept;
+
+  /// No description provided for @supplierTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get supplierTitle;
+
+  /// No description provided for @supplierName.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier Name'**
+  String get supplierName;
+
+  /// No description provided for @searchSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Search supplier...'**
+  String get searchSupplier;
+
+  /// No description provided for @addSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Supplier'**
+  String get addSupplier;
+
+  /// No description provided for @editSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Supplier'**
+  String get editSupplier;
+
+  /// No description provided for @deleteSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Supplier'**
+  String get deleteSupplier;
+
+  /// No description provided for @confirmDeleteSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete {name}?'**
+  String confirmDeleteSupplier(Object name);
+
+  /// No description provided for @contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get contact;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get actions;
+
+  /// No description provided for @successAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added successfully'**
+  String get successAdded;
+
+  /// No description provided for @successUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated successfully'**
+  String get successUpdated;
+
+  /// No description provided for @successDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted successfully'**
+  String get successDeleted;
 }
 
 class _AppLocalizationsDelegate

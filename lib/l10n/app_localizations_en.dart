@@ -93,4 +93,118 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewAll => 'View All';
+
+  @override
+  String get departmentTitle => 'Departments';
+
+  @override
+  String get deptName => 'Department Name';
+
+  @override
+  String get deptDesc => 'Description';
+
+  @override
+  String get searchDept => 'Search Department...';
+
+  @override
+  String get addDept => 'Add Department';
+
+  @override
+  String get editDept => 'Edit Department';
+
+  @override
+  String get deleteDept => 'Delete Department';
+
+  @override
+  String confirmDelete(Object name) {
+    return 'Are you sure you want to delete $name?';
+  }
+
+  @override
+  String get employeeTitle => 'Employees';
+
+  @override
+  String get fullName => 'Full Name';
+
+  @override
+  String get email => 'Email';
+
+  @override
+  String get phone => 'Phone';
+
+  @override
+  String get address => 'Address';
+
+  @override
+  String get position => 'Position';
+
+  @override
+  String get department => 'Department';
+
+  @override
+  String get note => 'Note';
+
+  @override
+  String get searchEmployee => 'Search employee...';
+
+  @override
+  String get addEmployee => 'Add Employee';
+
+  @override
+  String get editEmployee => 'Edit Employee';
+
+  @override
+  String get deleteEmployee => 'Delete Employee';
+
+  @override
+  String confirmDeleteEmployee(Object name) {
+    return 'Delete employee $name?';
+  }
+
+  @override
+  String get selectDept => 'Select Department';
+
+  @override
+  String get supplierTitle => 'Suppliers';
+
+  @override
+  String get supplierName => 'Supplier Name';
+
+  @override
+  String get searchSupplier => 'Search supplier...';
+
+  @override
+  String get addSupplier => 'Add Supplier';
+
+  @override
+  String get editSupplier => 'Edit Supplier';
+
+  @override
+  String get deleteSupplier => 'Delete Supplier';
+
+  @override
+  String confirmDeleteSupplier(Object name) {
+    return 'Are you sure you want to delete $name?';
+  }
+
+  @override
+  String get contact => 'Contact';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get actions => 'Actions';
+
+  @override
+  String get successAdded => 'Added successfully';
+
+  @override
+  String get successUpdated => 'Updated successfully';
+
+  @override
+  String get successDeleted => 'Deleted successfully';
 }
