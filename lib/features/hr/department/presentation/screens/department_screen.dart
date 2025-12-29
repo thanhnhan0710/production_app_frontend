@@ -119,9 +119,11 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                     Row(
                       children: [
                         if (isDesktop) ...[
-                          _buildStatBadge(Icons.grid_view_rounded, "Total Departments", "$totalDepts", Colors.blue),
+                          // [FIX] Sử dụng l10n
+                          _buildStatBadge(Icons.grid_view_rounded, l10n.totalDepartments, "$totalDepts", Colors.blue),
                           const SizedBox(width: 16),
-                          _buildStatBadge(Icons.check_circle_outline, "Status", "Active", Colors.green),
+                          // [FIX] Sử dụng l10n
+                          _buildStatBadge(Icons.check_circle_outline, l10n.status, l10n.active, Colors.green),
                           const Spacer(),
                         ],
                         
@@ -205,6 +207,7 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
   // --- DESKTOP TABLE VIEW (FULL WIDTH + NO ID) ---
   Widget _buildDesktopTable(BuildContext context, List<Department> departments, AppLocalizations l10n) {
     return SingleChildScrollView(
+      // ignore: sized_box_for_whitespace
       child: Container(
         width: double.infinity,
         child: Card(
@@ -214,7 +217,6 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
             side: BorderSide(color: Colors.grey.shade200),
           ),
           clipBehavior: Clip.antiAlias,
-          // [FIX] Dùng LayoutBuilder để bảng luôn full chiều rộng container
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
@@ -229,10 +231,10 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                     horizontalMargin: 32,
                     columnSpacing: 40,
                     columns: [
-                      // [FIX] Bỏ cột ID
                       DataColumn(label: Text(l10n.deptName.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.deptDesc.toUpperCase(), style: _headerStyle)),
-                      DataColumn(label: Text("MEMBERS", style: _headerStyle)), // Cột mới hiển thị nút xem nhân viên
+                      // [FIX] Sử dụng l10n cho tiêu đề cột
+                      DataColumn(label: Text(l10n.members.toUpperCase(), style: _headerStyle)), 
                       DataColumn(label: Text(l10n.actions.toUpperCase(), style: _headerStyle)),
                     ],
                     rows: departments.asMap().entries.map((entry) {
@@ -245,7 +247,6 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                       return DataRow(
                         color: color,
                         cells: [
-                          // Tên bộ phận + Avatar chữ cái đầu
                           DataCell(
                             Row(
                               children: [
@@ -270,8 +271,6 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                               ],
                             )
                           ),
-                          
-                          // Mô tả
                           DataCell(
                             Text(
                               dept.description,
@@ -280,21 +279,16 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-
-                          // [MỚI] Nút xem nhân viên
                           DataCell(
                             _buildActionButton(
                               Icons.people_alt_outlined, 
                               Colors.teal, 
                               "View Employees",
                               () {
-                                // Điều hướng sang trang nhân viên với tham số lọc
-                                context.go('/employees?departmentId=${dept.id}'); 
+                                context.go('/employees/department/${dept.id}');
                               }
                             ),
                           ),
-
-                          // Hành động
                           DataCell(Row(
                             children: [
                               _buildActionButton(Icons.edit_outlined, Colors.blue, "Edit", () => _showEditDialog(context, dept, l10n)),
@@ -409,7 +403,6 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                           icon: Icon(Icons.more_vert, color: Colors.grey.shade400),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           onSelected: (value) {
-                            // Cập nhật điều hướng mobile có kèm ID
                             if (value == 'employees') context.go('/employees?departmentId=${dept.id}');
                             if (value == 'edit') _showEditDialog(context, dept, l10n);
                             if (value == 'delete') _confirmDelete(context, dept, l10n);
@@ -441,7 +434,6 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
     );
   }
 
-  // Helper: Random màu đẹp
   Color _getRandomColor(String seed) {
     final colors = [
       Colors.blue.shade700,
@@ -453,8 +445,6 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
     ];
     return colors[seed.hashCode.abs() % colors.length];
   }
-
-  // --- WIDGETS CON ---
 
   Widget _buildStatBadge(IconData icon, String label, String value, Color color) {
     return Container(
@@ -522,7 +512,6 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
     );
   }
 
-  // --- DIALOG ---
   void _showEditDialog(BuildContext context, Department? department, AppLocalizations l10n) {
     final nameController = TextEditingController(text: department?.name ?? '');
     final descController = TextEditingController(text: department?.description ?? '');

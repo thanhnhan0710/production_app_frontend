@@ -69,6 +69,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
       body: BlocBuilder<EmployeeCubit, EmployeeState>(
         builder: (context, state) {
           return Column(
+            // [FIX 1] Stretch để nội dung bung hết chiều ngang
+            crossAxisAlignment: CrossAxisAlignment.stretch, 
             children: [
               // --- HEADER SECTION ---
               Container(
@@ -138,7 +140,6 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                                 prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                                // Nút tìm kiếm thủ công
                                 suffixIcon: IconButton(
                                   icon: const Icon(Icons.arrow_forward, color: Colors.blue),
                                   onPressed: () {
@@ -146,9 +147,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                                   },
                                 ),
                               ),
-                              onSubmitted: (value) {
-                                context.read<EmployeeCubit>().searchEmployees(value);
-                              },
+                              onSubmitted: (value) => context.read<EmployeeCubit>().searchEmployees(value),
                             ),
                           ),
                         ),
@@ -212,61 +211,78 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  // --- DESKTOP GRID ---
+  // --- DESKTOP GRID (FIXED FULL WIDTH) ---
   Widget _buildDesktopGrid(BuildContext context, List<Employee> employees, AppLocalizations l10n) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
-        child: DataTable(
-          headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
-          horizontalMargin: 24,
-          columnSpacing: 30,
-          dataRowMinHeight: 72,
-          dataRowMaxHeight: 72,
-          columns: [
-            DataColumn(label: Text(l10n.fullName.toUpperCase(), style: _headerStyle)),
-            DataColumn(label: Text(l10n.department.toUpperCase(), style: _headerStyle)),
-            DataColumn(label: Text(l10n.position.toUpperCase(), style: _headerStyle)),
-            DataColumn(label: Text(l10n.contact.toUpperCase(), style: _headerStyle)),
-            DataColumn(label: Text(l10n.actions.toUpperCase(), style: _headerStyle)),
-          ],
-          rows: employees.map((emp) {
-            return DataRow(
-              cells: [
-                DataCell(Row(
-                  children: [
-                    _buildAvatar(emp.avatarUrl, emp.fullName, 20),
-                    const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(emp.fullName, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 14)),
-                        Text(emp.email, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                      ],
-                    ),
-                  ],
-                )),
-                DataCell(_DepartmentBadge(deptId: emp.departmentId, isChip: true)),
-                DataCell(Text(emp.position, style: const TextStyle(fontWeight: FontWeight.w500))),
-                DataCell(Row(
-                  children: [
-                    _buildIconBtn(Icons.email_outlined, Colors.blue, () => _sendEmail(emp.email)),
-                    const SizedBox(width: 8),
-                    _buildIconBtn(Icons.phone_outlined, Colors.green, () => _makePhoneCall(emp.phone)),
-                  ],
-                )),
-                DataCell(Row(
-                  children: [
-                    IconButton(icon: const Icon(Icons.edit_note, color: Colors.grey), onPressed: () => _showEditDialog(context, emp, l10n)),
-                    IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent), onPressed: () => _confirmDelete(context, emp, l10n)),
-                  ],
-                )),
-              ],
-            );
-          }).toList(),
+      // [FIX 2] Container width infinity để Card bung hết cỡ
+      // ignore: sized_box_for_whitespace
+      child: Container(
+        width: double.infinity,
+        child: Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+          clipBehavior: Clip.antiAlias, // Cắt góc cho đẹp
+          child: LayoutBuilder( // [FIX 3] LayoutBuilder để lấy chiều rộng màn hình
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  // [FIX 4] Ép bảng rộng tối thiểu bằng chiều rộng container
+                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                  child: DataTable(
+                    headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
+                    horizontalMargin: 24,
+                    columnSpacing: 30,
+                    dataRowMinHeight: 72,
+                    dataRowMaxHeight: 72,
+                    columns: [
+                      DataColumn(label: Text(l10n.fullName.toUpperCase(), style: _headerStyle)),
+                      DataColumn(label: Text(l10n.department.toUpperCase(), style: _headerStyle)),
+                      DataColumn(label: Text(l10n.position.toUpperCase(), style: _headerStyle)),
+                      DataColumn(label: Text(l10n.contact.toUpperCase(), style: _headerStyle)),
+                      DataColumn(label: Text(l10n.actions.toUpperCase(), style: _headerStyle)),
+                    ],
+                    rows: employees.map((emp) {
+                      return DataRow(
+                        cells: [
+                          DataCell(Row(
+                            children: [
+                              _buildAvatar(emp.avatarUrl, emp.fullName, 20),
+                              const SizedBox(width: 16),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(emp.fullName, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 14)),
+                                  Text(emp.email, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                                ],
+                              ),
+                            ],
+                          )),
+                          DataCell(_DepartmentBadge(deptId: emp.departmentId, isChip: true)),
+                          DataCell(Text(emp.position, style: const TextStyle(fontWeight: FontWeight.w500))),
+                          DataCell(Row(
+                            children: [
+                              _buildIconBtn(Icons.email_outlined, Colors.blue, () => _sendEmail(emp.email)),
+                              const SizedBox(width: 8),
+                              _buildIconBtn(Icons.phone_outlined, Colors.green, () => _makePhoneCall(emp.phone)),
+                            ],
+                          )),
+                          DataCell(Row(
+                            children: [
+                              IconButton(icon: const Icon(Icons.edit_note, color: Colors.grey), onPressed: () => _showEditDialog(context, emp, l10n)),
+                              IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent), onPressed: () => _confirmDelete(context, emp, l10n)),
+                            ],
+                          )),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -328,19 +344,9 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => _sendEmail(emp.email),
-                        child: _buildContactRow(Icons.email, emp.email),
-                      ),
-                    ),
+                    Expanded(child: InkWell(onTap: () => _sendEmail(emp.email), child: _buildContactRow(Icons.email, emp.email))),
                     const SizedBox(width: 12),
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => _makePhoneCall(emp.phone),
-                        child: _buildContactRow(Icons.phone, emp.phone),
-                      ),
-                    ),
+                    Expanded(child: InkWell(onTap: () => _makePhoneCall(emp.phone), child: _buildContactRow(Icons.phone, emp.phone))),
                   ],
                 ),
               )
@@ -402,7 +408,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  // --- DIALOG ---
+  // --- DIALOG THÊM / SỬA ---
   void _showEditDialog(BuildContext context, Employee? emp, AppLocalizations l10n) {
     final fullNameCtrl = TextEditingController(text: emp?.fullName ?? '');
     final emailCtrl = TextEditingController(text: emp?.email ?? '');
@@ -579,6 +585,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
   }
 }
 
+// Badge Phòng ban
 class _DepartmentBadge extends StatelessWidget {
   final int deptId;
   final bool isChip; 

@@ -22,7 +22,7 @@ class EmployeeRepository {
     }
   }
 
-  // [UPDATED] Search employees with specific endpoint
+  // Search employees
   Future<List<Employee>> searchEmployees(String keyword) async {
     try {
       final response = await _dio.get(
@@ -41,6 +41,22 @@ class EmployeeRepository {
       return [];
     } catch (e) {
       throw Exception("Employees not found: $e");
+    }
+  }
+
+  // [UPDATED] Lấy nhân viên theo ID phòng ban
+  // Endpoint: /api/v1/employees/department/{id}
+  Future<List<Employee>> getEmployeesByDepartmentId(int departmentId) async {
+    try {
+      final response = await _dio.get('/api/v1/employees/department/$departmentId');
+      if (response.data is List) {
+        return (response.data as List)
+            .map((e) => Employee.fromJson(e))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      throw Exception("Failed to load employees for department $departmentId: $e");
     }
   }
 

@@ -23,17 +23,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final l10n = AppLocalizations.of(context)!;
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
-    // [MENU ITEMS - Sử dụng trong trường hợp cần duyệt list phẳng, nhưng ở dưới ta build thủ công để có Group]
-    // Giữ lại để tham khảo nếu cần
-    final List<Map<String, dynamic>> menuItems = [
-      {'icon': Icons.dashboard, 'title': l10n.dashboard, 'route': '/dashboard'},
-      {'icon': Icons.precision_manufacturing, 'title': l10n.production, 'route': '/production'},
-      {'icon': Icons.inventory_2, 'title': l10n.inventory, 'route': '/inventory'},
-      {'icon': Icons.shopping_cart, 'title': l10n.sales, 'route': '/sales'},
-      {'icon': Icons.people, 'title': l10n.hr, 'route': '/departments'},
-      {'icon': Icons.bar_chart, 'title': l10n.reports, 'route': '/reports'},
-      {'icon': Icons.settings, 'title': l10n.settings, 'route': '/settings'},
-    ];
+    // Lấy đường dẫn hiện tại để highlight menu
+    String currentPath = '/dashboard';
+    try {
+      currentPath = GoRouterState.of(context).uri.path;
+    } catch (e) {
+      // Fallback
+    }
 
     return Scaffold(
       key: _scaffoldKey,
@@ -61,14 +57,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
       drawer: isDesktop
           ? null
-          : Drawer(child: _buildSidebar(context, l10n, menuItems, isMobile: true)),
+          : Drawer(child: _buildSidebar(context, l10n, isMobile: true, currentPath: currentPath)),
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (isDesktop)
             SizedBox(
               width: 280,
-              child: _buildSidebar(context, l10n, menuItems, isMobile: false),
+              child: _buildSidebar(context, l10n, isMobile: false, currentPath: currentPath),
             ),
           Expanded(
             child: Column(
@@ -122,8 +118,230 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // --- WIDGETS CON ---
+  // --- SIDEBAR & MENU ---
+  Widget _buildSidebar(BuildContext context, AppLocalizations l10n, {required bool isMobile, required String currentPath}) {
+    return Container(
+      color: _primaryColor,
+      child: Column(
+        children: [
+          // HEADER
+          Container(
+            height: 120, 
+            padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
+            color: Colors.black12,
+            child: const Row(
+              children: [
+                Icon(Icons.apartment, color: Colors.white, size: 40),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min, 
+                    children: [
+                      Text("OPPERMANN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18), overflow: TextOverflow.ellipsis),
+                      SizedBox(height: 4), 
+                      Text("ERP System", style: TextStyle(color: Colors.white70, fontSize: 12), overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          ),
+          
+          // MENU LIST
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildMenuItem(context, Icons.dashboard, l10n.dashboard, '/dashboard', isMobile, currentPath),
+                  _buildMenuItem(context, Icons.precision_manufacturing, l10n.production, '/production', isMobile, currentPath),
+                  
+                  // --- INVENTORY GROUP (Kho + Vật liệu + Sợi + Lô Sợi + Nhà cung cấp) ---
+                  Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      initiallyExpanded: currentPath.startsWith('/inventory') || 
+                                       currentPath.startsWith('/materials') ||
+                                       currentPath.startsWith('/yarns') || 
+                                       currentPath.startsWith('/yarn-lots') ||
+                                       currentPath.startsWith('/suppliers')||
+                                       currentPath.startsWith('/units'),
+                      leading: const Icon(Icons.inventory_2, color: Colors.white70),
+                      title: Text(l10n.inventory, style: const TextStyle(color: Colors.white70)),
+                      iconColor: Colors.white,
+                      collapsedIconColor: Colors.white70,
+                      childrenPadding: const EdgeInsets.only(left: 20),
+                      children: [
+                        _buildSubMenuItem(context, "Items", '/inventory', isMobile, currentPath),
+                        // [MỚI] Nguyên vật liệu
+                        _buildSubMenuItem(context, l10n.materialTitle, '/materials', isMobile, currentPath),
+                        // Sợi
+                        _buildSubMenuItem(context, l10n.yarnTitle, '/yarns', isMobile, currentPath),
+                        // Lô Sợi
+                        _buildSubMenuItem(context, l10n.yarnLotTitle, '/yarn-lots', isMobile, currentPath),
+                        // Nhà cung cấp
+                        _buildSubMenuItem(context, l10n.supplierTitle, '/suppliers', isMobile, currentPath),
+                        _buildSubMenuItem(context, l10n.unitTitle, '/units', isMobile, currentPath),
+                      ],
+                    ),
+                  ),
+                  
+                  // --- HR GROUP (Bộ phận + Nhân viên) ---
+                  Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      initiallyExpanded: currentPath.startsWith('/departments') || currentPath.startsWith('/employees'),
+                      leading: const Icon(Icons.people, color: Colors.white70),
+                      title: Text(l10n.hr, style: const TextStyle(color: Colors.white70)),
+                      iconColor: Colors.white,
+                      collapsedIconColor: Colors.white70,
+                      childrenPadding: const EdgeInsets.only(left: 20),
+                      children: [
+                        _buildSubMenuItem(context, l10n.departmentTitle, '/departments', isMobile, currentPath),
+                        _buildSubMenuItem(context, l10n.employeeTitle, '/employees', isMobile, currentPath),
+                      ],
+                    ),
+                  ),
 
+                  _buildMenuItem(context, Icons.shopping_cart, l10n.sales, '/sales', isMobile, currentPath),
+                  _buildMenuItem(context, Icons.bar_chart, l10n.reports, '/reports', isMobile, currentPath),
+                  _buildMenuItem(context, Icons.settings, l10n.settings, '/settings', isMobile, currentPath),
+                ],
+              ),
+            ),
+          ),
+          
+          // LOGOUT
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: ElevatedButton.icon(
+              onPressed: () => context.read<AuthCubit>().logout(),
+              icon: const Icon(Icons.logout, size: 18),
+              label: Text(l10n.logout),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent.shade700,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 45),
+              ),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  // Item cấp 1
+  Widget _buildMenuItem(BuildContext context, IconData icon, String title, String route, bool isMobile, String currentPath) {
+    final bool isActive = currentPath == route;
+    
+    return ListTile(
+      leading: Icon(icon, color: isActive ? Colors.white : Colors.white70, size: 20),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isActive ? Colors.white : Colors.white70,
+          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          fontSize: 14,
+        ),
+      ),
+      tileColor: isActive ? Colors.white.withOpacity(0.1) : null,
+      dense: true,
+      onTap: () {
+        context.go(route);
+        if (isMobile) Navigator.pop(context);
+      },
+    );
+  }
+
+  // Item cấp 2 (Sub-menu)
+  Widget _buildSubMenuItem(BuildContext context, String title, String route, bool isMobile, String currentPath) {
+    final bool isActive = currentPath.startsWith(route) && (route != '/' || currentPath == '/');
+
+    return Container(
+      color: Colors.black12,
+      child: ListTile(
+        contentPadding: const EdgeInsets.only(left: 54, right: 16),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isActive ? Colors.white : Colors.white70,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            fontSize: 13,
+          ),
+        ),
+        dense: true,
+        onTap: () {
+          context.go(route);
+          if (isMobile) Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
+  // --- TOP BAR ---
+  Widget _buildDesktopTopBar(BuildContext context, AppLocalizations l10n) {
+    return Container(
+      height: 70,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 400),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+              child: const TextField(
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: "Search...",
+                  icon: Icon(Icons.search, color: Colors.grey),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 20),
+          _buildLanguageIcon(context),
+          const SizedBox(width: 20),
+          Row(
+            children: [
+              CircleAvatar(backgroundColor: _primaryColor.withOpacity(0.1), child: Text("AD", style: TextStyle(color: _primaryColor))),
+              const SizedBox(width: 10),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Admin", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text("Manager", style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                ],
+              )
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLanguageIcon(BuildContext context) {
+    final currentLocale = context.watch<LanguageCubit>().state;
+    return InkWell(
+      onTap: () {
+        final newCode = currentLocale.languageCode == 'vi' ? 'en' : 'vi';
+        context.read<LanguageCubit>().changeLanguage(newCode);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.grey.shade100),
+        child: Text(currentLocale.languageCode == 'vi' ? "🇻🇳" : "🇺🇸", style: const TextStyle(fontSize: 20)),
+      ),
+    );
+  }
+
+  // --- STATS & CHARTS ---
   Widget _buildStatCards(AppLocalizations l10n) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -202,190 +420,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           )
         ],
-      ),
-    );
-  }
-
-  // [SIDEBAR ĐÃ CẬP NHẬT]
-  Widget _buildSidebar(BuildContext context, AppLocalizations l10n, List<Map<String, dynamic>> menuItems, {required bool isMobile}) {
-    return Container(
-      color: _primaryColor,
-      child: Column(
-        children: [
-          // HEADER
-          Container(
-            height: 120, 
-            padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
-            color: Colors.black12,
-            child: const Row(
-              children: [
-                Icon(Icons.apartment, color: Colors.white, size: 40),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min, 
-                    children: [
-                      Text("OPPERMANN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18), overflow: TextOverflow.ellipsis),
-                      SizedBox(height: 4), 
-                      Text("ERP System", style: TextStyle(color: Colors.white70, fontSize: 12), overflow: TextOverflow.ellipsis),
-                    ],
-                  ),
-                )
-              ],
-            ),
-          ),
-          
-          // MENU LIST
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildMenuItem(context, Icons.dashboard, l10n.dashboard, '/dashboard', isMobile),
-                  _buildMenuItem(context, Icons.precision_manufacturing, l10n.production, '/production', isMobile),
-                  
-                  // --- INVENTORY GROUP (KHO + NHÀ CUNG CẤP) ---
-                  Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      leading: const Icon(Icons.inventory_2, color: Colors.white70),
-                      title: Text(l10n.inventory, style: const TextStyle(color: Colors.white70)),
-                      iconColor: Colors.white,
-                      collapsedIconColor: Colors.white70,
-                      childrenPadding: const EdgeInsets.only(left: 20),
-                      children: [
-                        _buildMenuItem(context, Icons.list_alt, "Items", '/inventory', isMobile),
-                        _buildMenuItem(context, Icons.store, l10n.supplierTitle, '/suppliers', isMobile),
-                      ],
-                    ),
-                  ),
-                  
-                  // --- HR GROUP ---
-                  Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      leading: const Icon(Icons.people, color: Colors.white70),
-                      title: Text(l10n.hr, style: const TextStyle(color: Colors.white70)),
-                      iconColor: Colors.white,
-                      collapsedIconColor: Colors.white70,
-                      childrenPadding: const EdgeInsets.only(left: 20),
-                      children: [
-                        _buildMenuItem(context, Icons.domain, l10n.departmentTitle, '/departments', isMobile),
-                        _buildMenuItem(context, Icons.badge, l10n.employeeTitle, '/employees', isMobile),
-                      ],
-                    ),
-                  ),
-
-                  _buildMenuItem(context, Icons.shopping_cart, l10n.sales, '/sales', isMobile),
-                  _buildMenuItem(context, Icons.bar_chart, l10n.reports, '/reports', isMobile),
-                  _buildMenuItem(context, Icons.settings, l10n.settings, '/settings', isMobile),
-                ],
-              ),
-            ),
-          ),
-          
-          // LOGOUT
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: ElevatedButton.icon(
-              onPressed: () => context.read<AuthCubit>().logout(),
-              icon: const Icon(Icons.logout, size: 18),
-              label: Text(l10n.logout),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent.shade700,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 45),
-              ),
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  // Helper để vẽ từng item
-  Widget _buildMenuItem(BuildContext context, IconData icon, String title, String route, bool isMobile) {
-    // Logic check active
-    final String location = GoRouterState.of(context).uri.path;
-    final bool isActive = location == route; 
-    
-    return ListTile(
-      leading: Icon(icon, color: isActive ? Colors.white : Colors.white70, size: 20),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isActive ? Colors.white : Colors.white70,
-          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          fontSize: 14,
-        ),
-      ),
-      tileColor: isActive ? Colors.white.withOpacity(0.1) : null,
-      dense: true, // Menu nhỏ gọn
-      onTap: () {
-        context.go(route);
-        if (isMobile) Navigator.pop(context);
-      },
-    );
-  }
-
-  Widget _buildDesktopTopBar(BuildContext context, AppLocalizations l10n) {
-    return Container(
-      height: 70,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 400),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
-              child: const TextField(
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  hintText: "Search...",
-                  icon: Icon(Icons.search, color: Colors.grey),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 20),
-          _buildLanguageIcon(context),
-          const SizedBox(width: 20),
-          Row(
-            children: [
-              CircleAvatar(backgroundColor: _primaryColor.withOpacity(0.1), child: Text("AD", style: TextStyle(color: _primaryColor))),
-              const SizedBox(width: 10),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Admin", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text("Manager", style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                ],
-              )
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLanguageIcon(BuildContext context) {
-    final currentLocale = context.watch<LanguageCubit>().state;
-    return InkWell(
-      onTap: () {
-        final newCode = currentLocale.languageCode == 'vi' ? 'en' : 'vi';
-        context.read<LanguageCubit>().changeLanguage(newCode);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.grey.shade100),
-        child: Text(currentLocale.languageCode == 'vi' ? "🇻🇳" : "🇺🇸", style: const TextStyle(fontSize: 20)),
       ),
     );
   }

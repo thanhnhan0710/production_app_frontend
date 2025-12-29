@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-
 import '../../../../core/widgets/responsive_layout.dart';
 import '../../../../core/bloc/language_cubit.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/auth_exception.dart';
 import '../bloc/auth_cubit.dart';
-// Import AuthException
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -35,7 +33,17 @@ class _LoginScreenState extends State<LoginScreen> {
       case AuthErrorCode.userFetchFailed:
         return l10n.errorRequired;
       case AuthErrorCode.systemError:
-        return l10n.erpSystemName;
+        return l10n.erpSystemName; // Fallback hoặc key lỗi hệ thống
+    }
+  }
+
+  // Hàm xử lý login chung để gọi từ Button hoặc Enter
+  void _performLogin() {
+    if (_formKey.currentState!.validate()) {
+      context.read<AuthCubit>().login(
+            _usernameController.text,
+            _passwordController.text,
+          );
     }
   }
 
@@ -48,13 +56,11 @@ class _LoginScreenState extends State<LoginScreen> {
         if (state is AuthAuthenticated) {
           context.go('/dashboard');
         } else if (state is AuthError) {
-          // Lấy thông báo lỗi đã được dịch
           final errorMessage = _mapErrorCodeToMessage(state.code, l10n);
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(errorMessage), 
-                backgroundColor: Colors.red),
+                content: Text(errorMessage), backgroundColor: Colors.red),
           );
         }
       },
@@ -71,9 +77,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildMobileLayout(BuildContext context, AppLocalizations l10n) {
     return Container(
       color: Colors.white,
-      height: double.infinity, // Full màn hình
+      height: double.infinity,
       child: SafeArea(
-        // SingleChildScrollView giúp tránh lỗi sọc vàng khi xoay ngang đt hoặc bàn phím bật lên
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20),
           child: Column(
@@ -86,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Icon(Icons.verified_user, size: 60, color: _primaryColor),
               const SizedBox(height: 20),
               Text(
-                "Production App", // Giữ nguyên tên app
+                "Production App",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontSize: 24,
@@ -102,11 +107,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // --- GIAO DIỆN DESKTOP (Đã fix lỗi tràn) ---
+  // --- GIAO DIỆN DESKTOP ---
   Widget _buildDesktopLayout(BuildContext context, AppLocalizations l10n) {
     return Row(
       children: [
-        // TRÁI: Ảnh nền
         Expanded(
           flex: 6,
           child: Container(
@@ -146,18 +150,15 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
-
-        // PHẢI: Form Login
         Expanded(
           flex: 4,
           child: Container(
             color: Colors.white,
-            // [FIX] Center + SingleChildScrollView để nội dung luôn ở giữa và cuộn được nếu màn hình thấp
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(40),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min, // Chỉ chiếm chiều cao cần thiết
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Align(
                       alignment: Alignment.centerRight,
@@ -181,14 +182,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: const TextStyle(color: Colors.grey),
                     ),
                     const SizedBox(height: 40),
-
-                    // [FIX] ConstrainedBox thay vì SizedBox cứng
-                    // maxWidth: 400 nghĩa là: nếu màn hình > 400 thì rộng 400, nếu nhỏ hơn thì co lại
                     Container(
                       constraints: const BoxConstraints(maxWidth: 400),
                       child: _buildLoginForm(context, l10n),
                     ),
-                    
                     const SizedBox(height: 40),
                     Text(l10n.copyright,
                         textAlign: TextAlign.center,
@@ -258,7 +255,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // --- FORM INPUT ---
+  // --- FORM INPUT (ĐÃ CẬP NHẬT) ---
   Widget _buildLoginForm(BuildContext context, AppLocalizations l10n) {
     return Form(
       key: _formKey,
@@ -269,6 +266,8 @@ class _LoginScreenState extends State<LoginScreen> {
           TextFormField(
             controller: _usernameController,
             style: const TextStyle(fontSize: 16),
+            // [MỚI] Nhấn Enter ở ô user thì nhảy xuống ô pass
+            textInputAction: TextInputAction.next,
             decoration: InputDecoration(
               labelText: l10n.username,
               labelStyle: TextStyle(color: Colors.grey.shade600),
@@ -287,6 +286,9 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: _passwordController,
             obscureText: true,
             style: const TextStyle(fontSize: 16),
+            // [MỚI] Nhấn Enter ở ô pass thì thực hiện login
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _performLogin(), 
             decoration: InputDecoration(
               labelText: l10n.password,
               labelStyle: TextStyle(color: Colors.grey.shade600),
@@ -310,12 +312,7 @@ class _LoginScreenState extends State<LoginScreen> {
               return SizedBox(
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      context.read<AuthCubit>().login(
-                          _usernameController.text, _passwordController.text);
-                    }
-                  },
+                  onPressed: _performLogin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primaryColor,
                     foregroundColor: Colors.white,

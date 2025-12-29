@@ -165,6 +165,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectDept => 'Select Department';
 
   @override
+  String get totalDepartments => 'Total Departments';
+
+  @override
+  String get status => 'Status';
+
+  @override
+  String get active => 'Active';
+
+  @override
+  String get members => 'Members';
+
+  @override
   String get supplierTitle => 'Suppliers';
 
   @override
@@ -207,4 +219,165 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get successDeleted => 'Deleted successfully';
+
+  @override
+  String get yarnTitle => 'Yarn Inventory';
+
+  @override
+  String get yarnName => 'Yarn';
+
+  @override
+  String get itemCode => 'Item Code';
+
+  @override
+  String get yarnType => 'Type';
+
+  @override
+  String get color => 'Color';
+
+  @override
+  String get origin => 'Origin';
+
+  @override
+  String get supplier => 'Supplier';
+
+  @override
+  String get searchYarn => 'Search yarn (name, code)...';
+
+  @override
+  String get addYarn => 'Add Yarn';
+
+  @override
+  String get editYarn => 'Edit Yarn';
+
+  @override
+  String get deleteYarn => 'Delete Yarn';
+
+  @override
+  String confirmDeleteYarn(Object name) {
+    return 'Delete yarn $name?';
+  }
+
+  @override
+  String get selectSupplier => 'Select Supplier';
+
+  @override
+  String get noYarnFound => 'No yarn items found';
+
+  @override
+  String get yarnLotTitle => 'Yarn Lots';
+
+  @override
+  String get lotCode => 'Lot Code';
+
+  @override
+  String get importDate => 'Import Date';
+
+  @override
+  String get totalKg => 'Total (kg)';
+
+  @override
+  String get rollCount => 'Rolls';
+
+  @override
+  String get warehouseLoc => 'Location';
+
+  @override
+  String get containerCode => 'Container';
+
+  @override
+  String get driver => 'Driver';
+
+  @override
+  String get receiver => 'Receiver';
+
+  @override
+  String get searchYarnLot => 'Search lot code...';
+
+  @override
+  String get addYarnLot => 'Add Yarn Lot';
+
+  @override
+  String get editYarnLot => 'Edit Yarn Lot';
+
+  @override
+  String get deleteYarnLot => 'Delete Yarn Lot';
+
+  @override
+  String confirmDeleteYarnLot(Object code) {
+    return 'Delete yarn lot $code?';
+  }
+
+  @override
+  String get selectYarn => 'Select Yarn';
+
+  @override
+  String get selectEmployee => 'Select Employee';
+
+  @override
+  String get materialTitle => 'Materials';
+
+  @override
+  String get materialName => 'Material Name';
+
+  @override
+  String get quantity => 'Quantity';
+
+  @override
+  String get unit => 'Unit';
+
+  @override
+  String get importedBy => 'Imported By';
+
+  @override
+  String get searchMaterial => 'Search material...';
+
+  @override
+  String get addMaterial => 'Add Material';
+
+  @override
+  String get editMaterial => 'Edit Material';
+
+  @override
+  String get deleteMaterial => 'Delete Material';
+
+  @override
+  String confirmDeleteMaterial(Object name) {
+    return 'Delete material $name?';
+  }
+
+  @override
+  String get noMaterialFound => 'No materials found';
+
+  @override
+  String get selectImporter => 'Select Importer';
+
+  @override
+  String get selectUnit => 'Select Unit';
+
+  @override
+  String get unitTitle => 'Units of Measurement';
+
+  @override
+  String get unitName => 'Unit Name';
+
+  @override
+  String get searchUnit => 'Search unit...';
+
+  @override
+  String get addUnit => 'Add Unit';
+
+  @override
+  String get editUnit => 'Edit Unit';
+
+  @override
+  String get deleteUnit => 'Delete Unit';
+
+  @override
+  String confirmDeleteUnit(Object name) {
+    return 'Delete unit $name?';
+  }
+
+  @override
+  String get noUnitFound => 'No units found';
 }

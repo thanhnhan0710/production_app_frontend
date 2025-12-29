@@ -166,6 +166,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get selectDept => 'Chọn phòng ban';
 
   @override
+  String get totalDepartments => 'Tổng số bộ phận';
+
+  @override
+  String get status => 'Trạng thái';
+
+  @override
+  String get active => 'Hoạt động';
+
+  @override
+  String get members => 'Thành viên';
+
+  @override
   String get supplierTitle => 'Nhà cung cấp';
 
   @override
@@ -208,4 +220,165 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get successDeleted => 'Xóa thành công';
+
+  @override
+  String get yarnTitle => 'Kho Sợi';
+
+  @override
+  String get yarnName => 'Loại sợi';
+
+  @override
+  String get itemCode => 'Mã hàng';
+
+  @override
+  String get yarnType => 'Loại sợi';
+
+  @override
+  String get color => 'Màu sắc';
+
+  @override
+  String get origin => 'Xuất xứ';
+
+  @override
+  String get supplier => 'Nhà cung cấp';
+
+  @override
+  String get searchYarn => 'Tìm sợi (tên, mã)...';
+
+  @override
+  String get addYarn => 'Thêm sợi';
+
+  @override
+  String get editYarn => 'Sửa sợi';
+
+  @override
+  String get deleteYarn => 'Xóa sợi';
+
+  @override
+  String confirmDeleteYarn(Object name) {
+    return 'Xóa sợi $name?';
+  }
+
+  @override
+  String get selectSupplier => 'Chọn nhà cung cấp';
+
+  @override
+  String get noYarnFound => 'Không tìm thấy dữ liệu sợi';
+
+  @override
+  String get yarnLotTitle => 'Lô Sợi';
+
+  @override
+  String get lotCode => 'Mã lô';
+
+  @override
+  String get importDate => 'Ngày nhập';
+
+  @override
+  String get totalKg => 'Tổng kg';
+
+  @override
+  String get rollCount => 'Số cuộn';
+
+  @override
+  String get warehouseLoc => 'Vị trí kho';
+
+  @override
+  String get containerCode => 'Số container';
+
+  @override
+  String get driver => 'Tài xế';
+
+  @override
+  String get receiver => 'Người nhận';
+
+  @override
+  String get searchYarnLot => 'Tìm mã lô...';
+
+  @override
+  String get addYarnLot => 'Nhập lô sợi';
+
+  @override
+  String get editYarnLot => 'Sửa lô sợi';
+
+  @override
+  String get deleteYarnLot => 'Xóa lô sợi';
+
+  @override
+  String confirmDeleteYarnLot(Object code) {
+    return 'Xóa lô $code?';
+  }
+
+  @override
+  String get selectYarn => 'Chọn loại sợi';
+
+  @override
+  String get selectEmployee => 'Chọn nhân viên';
+
+  @override
+  String get materialTitle => 'Nguyên vật liệu';
+
+  @override
+  String get materialName => 'Tên vật liệu';
+
+  @override
+  String get quantity => 'Số lượng';
+
+  @override
+  String get unit => 'Đơn vị';
+
+  @override
+  String get importedBy => 'Người nhập';
+
+  @override
+  String get searchMaterial => 'Tìm vật liệu...';
+
+  @override
+  String get addMaterial => 'Thêm vật liệu';
+
+  @override
+  String get editMaterial => 'Sửa vật liệu';
+
+  @override
+  String get deleteMaterial => 'Xóa vật liệu';
+
+  @override
+  String confirmDeleteMaterial(Object name) {
+    return 'Xóa vật liệu $name?';
+  }
+
+  @override
+  String get noMaterialFound => 'Không tìm thấy vật liệu';
+
+  @override
+  String get selectImporter => 'Chọn người nhập';
+
+  @override
+  String get selectUnit => 'Chọn đơn vị';
+
+  @override
+  String get unitTitle => 'Đơn vị tính';
+
+  @override
+  String get unitName => 'Tên đơn vị';
+
+  @override
+  String get searchUnit => 'Tìm đơn vị...';
+
+  @override
+  String get addUnit => 'Thêm đơn vị';
+
+  @override
+  String get editUnit => 'Sửa đơn vị';
+
+  @override
+  String get deleteUnit => 'Xóa đơn vị';
+
+  @override
+  String confirmDeleteUnit(Object name) {
+    return 'Xóa đơn vị $name?';
+  }
+
+  @override
+  String get noUnitFound => 'Không tìm thấy đơn vị nào';
 }

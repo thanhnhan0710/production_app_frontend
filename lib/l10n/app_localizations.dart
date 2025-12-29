@@ -398,6 +398,30 @@ abstract class AppLocalizations {
   /// **'Select Department'**
   String get selectDept;
 
+  /// No description provided for @totalDepartments.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Departments'**
+  String get totalDepartments;
+
+  /// No description provided for @status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get status;
+
+  /// No description provided for @active.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get active;
+
+  /// No description provided for @members.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get members;
+
   /// No description provided for @supplierTitle.
   ///
   /// In en, this message translates to:
@@ -481,6 +505,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deleted successfully'**
   String get successDeleted;
+
+  /// No description provided for @yarnTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Yarn Inventory'**
+  String get yarnTitle;
+
+  /// No description provided for @yarnName.
+  ///
+  /// In en, this message translates to:
+  /// **'Yarn'**
+  String get yarnName;
+
+  /// No description provided for @itemCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Item Code'**
+  String get itemCode;
+
+  /// No description provided for @yarnType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get yarnType;
+
+  /// No description provided for @color.
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get color;
+
+  /// No description provided for @origin.
+  ///
+  /// In en, this message translates to:
+  /// **'Origin'**
+  String get origin;
+
+  /// No description provided for @supplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get supplier;
+
+  /// No description provided for @searchYarn.
+  ///
+  /// In en, this message translates to:
+  /// **'Search yarn (name, code)...'**
+  String get searchYarn;
+
+  /// No description provided for @addYarn.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Yarn'**
+  String get addYarn;
+
+  /// No description provided for @editYarn.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Yarn'**
+  String get editYarn;
+
+  /// No description provided for @deleteYarn.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Yarn'**
+  String get deleteYarn;
+
+  /// No description provided for @confirmDeleteYarn.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete yarn {name}?'**
+  String confirmDeleteYarn(Object name);
+
+  /// No description provided for @selectSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Supplier'**
+  String get selectSupplier;
+
+  /// No description provided for @noYarnFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No yarn items found'**
+  String get noYarnFound;
+
+  /// No description provided for @yarnLotTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Yarn Lots'**
+  String get yarnLotTitle;
+
+  /// No description provided for @lotCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Lot Code'**
+  String get lotCode;
+
+  /// No description provided for @importDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Date'**
+  String get importDate;
+
+  /// No description provided for @totalKg.
+  ///
+  /// In en, this message translates to:
+  /// **'Total (kg)'**
+  String get totalKg;
+
+  /// No description provided for @rollCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Rolls'**
+  String get rollCount;
+
+  /// No description provided for @warehouseLoc.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get warehouseLoc;
+
+  /// No description provided for @containerCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Container'**
+  String get containerCode;
+
+  /// No description provided for @driver.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver'**
+  String get driver;
+
+  /// No description provided for @receiver.
+  ///
+  /// In en, this message translates to:
+  /// **'Receiver'**
+  String get receiver;
+
+  /// No description provided for @searchYarnLot.
+  ///
+  /// In en, this message translates to:
+  /// **'Search lot code...'**
+  String get searchYarnLot;
+
+  /// No description provided for @addYarnLot.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Yarn Lot'**
+  String get addYarnLot;
+
+  /// No description provided for @editYarnLot.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Yarn Lot'**
+  String get editYarnLot;
+
+  /// No description provided for @deleteYarnLot.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Yarn Lot'**
+  String get deleteYarnLot;
+
+  /// No description provided for @confirmDeleteYarnLot.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete yarn lot {code}?'**
+  String confirmDeleteYarnLot(Object code);
+
+  /// No description provided for @selectYarn.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Yarn'**
+  String get selectYarn;
+
+  /// No description provided for @selectEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Employee'**
+  String get selectEmployee;
+
+  /// No description provided for @materialTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Materials'**
+  String get materialTitle;
+
+  /// No description provided for @materialName.
+  ///
+  /// In en, this message translates to:
+  /// **'Material Name'**
+  String get materialName;
+
+  /// No description provided for @quantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get quantity;
+
+  /// No description provided for @unit.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get unit;
+
+  /// No description provided for @importedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported By'**
+  String get importedBy;
+
+  /// No description provided for @searchMaterial.
+  ///
+  /// In en, this message translates to:
+  /// **'Search material...'**
+  String get searchMaterial;
+
+  /// No description provided for @addMaterial.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Material'**
+  String get addMaterial;
+
+  /// No description provided for @editMaterial.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Material'**
+  String get editMaterial;
+
+  /// No description provided for @deleteMaterial.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Material'**
+  String get deleteMaterial;
+
+  /// No description provided for @confirmDeleteMaterial.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete material {name}?'**
+  String confirmDeleteMaterial(Object name);
+
+  /// No description provided for @noMaterialFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No materials found'**
+  String get noMaterialFound;
+
+  /// No description provided for @selectImporter.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Importer'**
+  String get selectImporter;
+
+  /// No description provided for @selectUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Unit'**
+  String get selectUnit;
+
+  /// No description provided for @unitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Units of Measurement'**
+  String get unitTitle;
+
+  /// No description provided for @unitName.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit Name'**
+  String get unitName;
+
+  /// No description provided for @searchUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Search unit...'**
+  String get searchUnit;
+
+  /// No description provided for @addUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Unit'**
+  String get addUnit;
+
+  /// No description provided for @editUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Unit'**
+  String get editUnit;
+
+  /// No description provided for @deleteUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Unit'**
+  String get deleteUnit;
+
+  /// No description provided for @confirmDeleteUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete unit {name}?'**
+  String confirmDeleteUnit(Object name);
+
+  /// No description provided for @noUnitFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No units found'**
+  String get noUnitFound;
 }
 
 class _AppLocalizationsDelegate

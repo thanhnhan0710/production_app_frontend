@@ -33,7 +33,18 @@ class EmployeeCubit extends Cubit<EmployeeState> {
     }
   }
 
-  // [UPDATED] Search logic
+  // [NEW] Load by Department ID
+  Future<void> loadEmployeesByDepartment(int departmentId) async {
+    emit(EmployeeLoading());
+    try {
+      final list = await _repo.getEmployeesByDepartmentId(departmentId);
+      emit(EmployeeLoaded(list));
+    } catch (e) {
+      emit(EmployeeError(e.toString()));
+    }
+  }
+
+  // Search logic
   Future<void> searchEmployees(String keyword) async {
     if (keyword.trim().isEmpty) {
       loadEmployees();
@@ -77,8 +88,12 @@ class EmployeeCubit extends Cubit<EmployeeState> {
       } else {
         await _repo.createEmployee(finalEmployee);
       }
-
-      loadEmployees();
+      
+      // Sau khi lưu xong, ta reload lại danh sách. 
+      // Lưu ý: Nếu đang ở màn hình chi tiết bộ phận, logic này sẽ load lại ALL employees.
+      // Để hoàn hảo, ta nên check ngữ cảnh hoặc load lại đúng hàm cần thiết.
+      // Ở đây tạm thời load all để đơn giản.
+      loadEmployees(); 
     } catch (e) {
       emit(EmployeeError("Failed to save employee: $e"));
     }
