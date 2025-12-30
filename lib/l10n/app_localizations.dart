@@ -811,6 +811,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No units found'**
   String get noUnitFound;
+
+  /// No description provided for @machineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Machines'**
+  String get machineTitle;
+
+  /// No description provided for @machineName.
+  ///
+  /// In en, this message translates to:
+  /// **'Machine Name'**
+  String get machineName;
+
+  /// No description provided for @totalLines.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Lines'**
+  String get totalLines;
+
+  /// No description provided for @purpose.
+  ///
+  /// In en, this message translates to:
+  /// **'Purpose'**
+  String get purpose;
+
+  /// No description provided for @searchMachine.
+  ///
+  /// In en, this message translates to:
+  /// **'Search machine...'**
+  String get searchMachine;
+
+  /// No description provided for @addMachine.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Machine'**
+  String get addMachine;
+
+  /// No description provided for @editMachine.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Machine'**
+  String get editMachine;
+
+  /// No description provided for @deleteMachine.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Machine'**
+  String get deleteMachine;
+
+  /// No description provided for @confirmDeleteMachine.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete machine {name}?'**
+  String confirmDeleteMachine(Object name);
+
+  /// No description provided for @noMachineFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No machines found'**
+  String get noMachineFound;
+
+  /// No description provided for @running.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get running;
+
+  /// No description provided for @stopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get stopped;
+
+  /// No description provided for @maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get maintenance;
 }
 
 class _AppLocalizationsDelegate

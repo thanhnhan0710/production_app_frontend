@@ -380,4 +380,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noUnitFound => 'No units found';
+
+  @override
+  String get machineTitle => 'Machines';
+
+  @override
+  String get machineName => 'Machine Name';
+
+  @override
+  String get totalLines => 'Total Lines';
+
+  @override
+  String get purpose => 'Purpose';
+
+  @override
+  String get searchMachine => 'Search machine...';
+
+  @override
+  String get addMachine => 'Add Machine';
+
+  @override
+  String get editMachine => 'Edit Machine';
+
+  @override
+  String get deleteMachine => 'Delete Machine';
+
+  @override
+  String confirmDeleteMachine(Object name) {
+    return 'Delete machine $name?';
+  }
+
+  @override
+  String get noMachineFound => 'No machines found';
+
+  @override
+  String get running => 'Running';
+
+  @override
+  String get stopped => 'Stopped';
+
+  @override
+  String get maintenance => 'Maintenance';
 }

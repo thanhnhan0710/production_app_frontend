@@ -155,9 +155,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 children: [
                   _buildMenuItem(context, Icons.dashboard, l10n.dashboard, '/dashboard', isMobile, currentPath),
-                  _buildMenuItem(context, Icons.precision_manufacturing, l10n.production, '/production', isMobile, currentPath),
                   
-                  // --- INVENTORY GROUP (Kho + Vật liệu + Sợi + Lô Sợi + Nhà cung cấp) ---
+                  // --- PRODUCTION GROUP (MỚI: KẾ HOẠCH + MÁY MÓC) ---
+                  Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      initiallyExpanded: currentPath.startsWith('/production') || 
+                                       currentPath.startsWith('/machines'),
+                      leading: const Icon(Icons.precision_manufacturing, color: Colors.white70),
+                      title: Text(l10n.production, style: const TextStyle(color: Colors.white70)),
+                      iconColor: Colors.white,
+                      collapsedIconColor: Colors.white70,
+                      childrenPadding: const EdgeInsets.only(left: 20),
+                      children: [
+                        _buildMenuItem(context, Icons.dashboard_customize, "Overview", '/production', isMobile, currentPath),
+                        // [MỚI] Máy móc
+                        _buildMenuItem(context, Icons.settings_input_component, l10n.machineTitle, '/machines', isMobile, currentPath),
+                      ],
+                    ),
+                  ),
+                  
+                  // --- INVENTORY GROUP (Full: KHO + VẬT TƯ + SỢI + NHÀ CUNG CẤP + ĐƠN VỊ) ---
                   Theme(
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
@@ -165,7 +183,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                        currentPath.startsWith('/materials') ||
                                        currentPath.startsWith('/yarns') || 
                                        currentPath.startsWith('/yarn-lots') ||
-                                       currentPath.startsWith('/suppliers')||
+                                       currentPath.startsWith('/suppliers') ||
                                        currentPath.startsWith('/units'),
                       leading: const Icon(Icons.inventory_2, color: Colors.white70),
                       title: Text(l10n.inventory, style: const TextStyle(color: Colors.white70)),
@@ -173,21 +191,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       collapsedIconColor: Colors.white70,
                       childrenPadding: const EdgeInsets.only(left: 20),
                       children: [
-                        _buildSubMenuItem(context, "Items", '/inventory', isMobile, currentPath),
-                        // [MỚI] Nguyên vật liệu
-                        _buildSubMenuItem(context, l10n.materialTitle, '/materials', isMobile, currentPath),
+                        _buildMenuItem(context, Icons.list_alt, "Items", '/inventory', isMobile, currentPath),
+                        // Nguyên vật liệu
+                        _buildMenuItem(context, Icons.category, l10n.materialTitle, '/materials', isMobile, currentPath),
                         // Sợi
-                        _buildSubMenuItem(context, l10n.yarnTitle, '/yarns', isMobile, currentPath),
+                        _buildMenuItem(context, Icons.line_style, l10n.yarnTitle, '/yarns', isMobile, currentPath),
                         // Lô Sợi
-                        _buildSubMenuItem(context, l10n.yarnLotTitle, '/yarn-lots', isMobile, currentPath),
+                        _buildMenuItem(context, Icons.qr_code, l10n.yarnLotTitle, '/yarn-lots', isMobile, currentPath),
                         // Nhà cung cấp
-                        _buildSubMenuItem(context, l10n.supplierTitle, '/suppliers', isMobile, currentPath),
-                        _buildSubMenuItem(context, l10n.unitTitle, '/units', isMobile, currentPath),
+                        _buildMenuItem(context, Icons.store, l10n.supplierTitle, '/suppliers', isMobile, currentPath),
+                        // Đơn vị tính
+                        _buildMenuItem(context, Icons.straighten, l10n.unitTitle, '/units', isMobile, currentPath),
                       ],
                     ),
                   ),
                   
-                  // --- HR GROUP (Bộ phận + Nhân viên) ---
+                  // --- HR GROUP ---
                   Theme(
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
@@ -198,8 +217,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       collapsedIconColor: Colors.white70,
                       childrenPadding: const EdgeInsets.only(left: 20),
                       children: [
-                        _buildSubMenuItem(context, l10n.departmentTitle, '/departments', isMobile, currentPath),
-                        _buildSubMenuItem(context, l10n.employeeTitle, '/employees', isMobile, currentPath),
+                        _buildMenuItem(context, Icons.domain, l10n.departmentTitle, '/departments', isMobile, currentPath),
+                        _buildMenuItem(context, Icons.badge, l10n.employeeTitle, '/employees', isMobile, currentPath),
                       ],
                     ),
                   ),
@@ -231,9 +250,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Item cấp 1
+  // Helper để vẽ từng item (Dùng chung cho cả Parent và Child)
   Widget _buildMenuItem(BuildContext context, IconData icon, String title, String route, bool isMobile, String currentPath) {
-    final bool isActive = currentPath == route;
+    // Check active
+    final bool isActive = currentPath.startsWith(route) && (route != '/' || currentPath == '/');
     
     return ListTile(
       leading: Icon(icon, color: isActive ? Colors.white : Colors.white70, size: 20),
@@ -246,7 +266,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
       tileColor: isActive ? Colors.white.withOpacity(0.1) : null,
-      dense: true,
+      dense: true, 
       onTap: () {
         context.go(route);
         if (isMobile) Navigator.pop(context);
@@ -254,32 +274,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Item cấp 2 (Sub-menu)
-  Widget _buildSubMenuItem(BuildContext context, String title, String route, bool isMobile, String currentPath) {
-    final bool isActive = currentPath.startsWith(route) && (route != '/' || currentPath == '/');
-
-    return Container(
-      color: Colors.black12,
-      child: ListTile(
-        contentPadding: const EdgeInsets.only(left: 54, right: 16),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isActive ? Colors.white : Colors.white70,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-            fontSize: 13,
-          ),
-        ),
-        dense: true,
-        onTap: () {
-          context.go(route);
-          if (isMobile) Navigator.pop(context);
-        },
-      ),
-    );
-  }
-
-  // --- TOP BAR ---
   Widget _buildDesktopTopBar(BuildContext context, AppLocalizations l10n) {
     return Container(
       height: 70,

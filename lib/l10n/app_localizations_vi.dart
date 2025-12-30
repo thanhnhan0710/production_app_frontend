@@ -381,4 +381,45 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get noUnitFound => 'Không tìm thấy đơn vị nào';
+
+  @override
+  String get machineTitle => 'Máy móc thiết bị';
+
+  @override
+  String get machineName => 'Tên máy';
+
+  @override
+  String get totalLines => 'Số dây/line';
+
+  @override
+  String get purpose => 'Mục đích sử dụng';
+
+  @override
+  String get searchMachine => 'Tìm máy...';
+
+  @override
+  String get addMachine => 'Thêm máy';
+
+  @override
+  String get editMachine => 'Sửa thông tin máy';
+
+  @override
+  String get deleteMachine => 'Xóa máy';
+
+  @override
+  String confirmDeleteMachine(Object name) {
+    return 'Xóa máy $name?';
+  }
+
+  @override
+  String get noMachineFound => 'Không tìm thấy máy nào';
+
+  @override
+  String get running => 'Đang chạy';
+
+  @override
+  String get stopped => 'Đang dừng';
+
+  @override
+  String get maintenance => 'Bảo trì';
 }

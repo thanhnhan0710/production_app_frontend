@@ -132,5 +132,21 @@
     "editUnit": "Sửa đơn vị",
     "deleteUnit": "Xóa đơn vị",
     "confirmDeleteUnit": "Xóa đơn vị {name}?",
-    "noUnitFound": "Không tìm thấy đơn vị nào"
+    "noUnitFound": "Không tìm thấy đơn vị nào",
+
+    "machineTitle": "Máy móc thiết bị",
+    "machineName": "Tên máy",
+    "totalLines": "Số dây/line",
+    "purpose": "Mục đích sử dụng",
+    "status": "Trạng thái",
+    "supplier": "Nhà cung cấp",
+    "searchMachine": "Tìm máy...",
+    "addMachine": "Thêm máy",
+    "editMachine": "Sửa thông tin máy",
+    "deleteMachine": "Xóa máy",
+    "confirmDeleteMachine": "Xóa máy {name}?",
+    "noMachineFound": "Không tìm thấy máy nào",
+    "running": "Đang chạy",
+    "stopped": "Đang dừng",
+    "maintenance": "Bảo trì"
 }

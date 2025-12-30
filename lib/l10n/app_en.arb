@@ -137,5 +137,21 @@
   "editUnit": "Edit Unit",
   "deleteUnit": "Delete Unit",
   "confirmDeleteUnit": "Delete unit {name}?",
-  "noUnitFound": "No units found"
+  "noUnitFound": "No units found",
+
+  "machineTitle": "Machines",
+  "machineName": "Machine Name",
+  "totalLines": "Total Lines",
+  "purpose": "Purpose",
+  "status": "Status",
+  "supplier": "Supplier",
+  "searchMachine": "Search machine...",
+  "addMachine": "Add Machine",
+  "editMachine": "Edit Machine",
+  "deleteMachine": "Delete Machine",
+  "confirmDeleteMachine": "Delete machine {name}?",
+  "noMachineFound": "No machines found",
+  "running": "Running",
+  "stopped": "Stopped",
+  "maintenance": "Maintenance"
 }

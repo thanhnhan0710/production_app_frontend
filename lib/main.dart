@@ -11,6 +11,9 @@ import 'package:production_app_frontend/features/inventory/unit/data/unit_reposi
 import 'package:production_app_frontend/features/inventory/unit/presentation/bloc/unit_cubit.dart';
 import 'package:production_app_frontend/features/inventory/unit/presentation/screens/unit_screen.dart';
 import 'package:production_app_frontend/features/inventory/yarn_lot/presentation/screens/yarn_lot_screen';
+import 'package:production_app_frontend/features/production/machine/data/machine_repository.dart';
+import 'package:production_app_frontend/features/production/machine/presentation/bloc/machine_cubit.dart';
+import 'package:production_app_frontend/features/production/machine/presentation/screens/machine_screen.dart';
 
 // --- CORE & L10N ---
 import 'core/bloc/language_cubit.dart';
@@ -73,12 +76,16 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => YarnLotCubit(YarnLotRepository())),
           BlocProvider(create: (context) => MaterialCubit(MaterialRepository())),
           BlocProvider(create: (context) => UnitCubit(UnitRepository())),
+          BlocProvider(create: (context) => MachineCubit(MachineRepository())),
         ],
         child: const AppView(),
       ),
     );
   }
 }
+
+
+
 
 class AppView extends StatelessWidget {
   const AppView({super.key});
@@ -140,6 +147,7 @@ class AppView extends StatelessWidget {
         ),
         GoRoute(path: '/materials', builder: (context, state) => const MaterialScreen()),
         GoRoute(path: '/units', builder: (context, state) => const UnitScreen()),
+        GoRoute(path: '/machines', builder: (context, state) => const MachineScreen()),
       ],
     );
 

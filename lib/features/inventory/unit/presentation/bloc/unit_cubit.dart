@@ -30,11 +30,6 @@ class UnitCubit extends Cubit<UnitState> {
   }
 
   Future<void> searchUnits(String keyword) async {
-    if (keyword.trim().isEmpty) {
-      loadUnits();
-      return;
-    }
-    emit(UnitLoading());
     try {
       final list = await _repo.searchUnits(keyword);
       emit(UnitLoaded(list));
