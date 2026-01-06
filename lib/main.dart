@@ -4,16 +4,40 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:production_app_frontend/features/hr/employee/presentation/screens/employee_screen.dart';
+import 'package:production_app_frontend/features/hr/shift/data/shift_repository.dart';
+import 'package:production_app_frontend/features/hr/shift/presentation/bloc/shift_cubit.dart';
+import 'package:production_app_frontend/features/hr/shift/presentation/screens/shift_screen.dart';
+import 'package:production_app_frontend/features/hr/work_schedule/data/work_schedule_repository.dart';
+import 'package:production_app_frontend/features/hr/work_schedule/domain/work_schedule_model.dart';
+import 'package:production_app_frontend/features/hr/work_schedule/presentation/bloc/work_schedule_cubit.dart';
+import 'package:production_app_frontend/features/hr/work_schedule/presentation/screens/work_schedule_screen.dart';
+import 'package:production_app_frontend/features/inventory/basket/data/baket_repository.dart';
+import 'package:production_app_frontend/features/inventory/basket/presentation/bloc/baket_cubit.dart';
+import 'package:production_app_frontend/features/inventory/basket/presentation/screens/baket_screen.dart';
+import 'package:production_app_frontend/features/inventory/dye_color/data/dye_color_repository.dart';
+import 'package:production_app_frontend/features/inventory/dye_color/presentation/bloc/dye_color_cubit.dart';
+import 'package:production_app_frontend/features/inventory/dye_color/presentation/screens/dye_color_screen.dart';
 import 'package:production_app_frontend/features/inventory/material/data/material_repository.dart';
 import 'package:production_app_frontend/features/inventory/material/presentation/bloc/material_cubit.dart';
 import 'package:production_app_frontend/features/inventory/material/presentation/screens/material_screen.dart';
+import 'package:production_app_frontend/features/inventory/product/data/product_repository.dart';
+import 'package:production_app_frontend/features/inventory/product/presentation/bloc/product_cubit.dart';
+import 'package:production_app_frontend/features/inventory/product/presentation/screens/product_screen.dart';
 import 'package:production_app_frontend/features/inventory/unit/data/unit_repository.dart';
 import 'package:production_app_frontend/features/inventory/unit/presentation/bloc/unit_cubit.dart';
 import 'package:production_app_frontend/features/inventory/unit/presentation/screens/unit_screen.dart';
 import 'package:production_app_frontend/features/inventory/yarn_lot/presentation/screens/yarn_lot_screen';
 import 'package:production_app_frontend/features/production/machine/data/machine_repository.dart';
 import 'package:production_app_frontend/features/production/machine/presentation/bloc/machine_cubit.dart';
+import 'package:production_app_frontend/features/production/machine/presentation/bloc/machine_operation_cubit.dart';
+import 'package:production_app_frontend/features/production/machine/presentation/screens/machine_opperation_screen.dart';
 import 'package:production_app_frontend/features/production/machine/presentation/screens/machine_screen.dart';
+import 'package:production_app_frontend/features/production/standard/data/standard_repository.dart';
+import 'package:production_app_frontend/features/production/standard/presentation/bloc/standard_cubit.dart';
+import 'package:production_app_frontend/features/production/standard/presentation/screen/standard_screen.dart';
+import 'package:production_app_frontend/features/production/weaving/data/weaving_repository.dart';
+import 'package:production_app_frontend/features/production/weaving/presentation/bloc/weaving_cubit.dart';
+import 'package:production_app_frontend/features/production/weaving/presentation/screens/weaving_screen.dart';
 
 // --- CORE & L10N ---
 import 'core/bloc/language_cubit.dart';
@@ -69,6 +93,7 @@ class MyApp extends StatelessWidget {
           // 2. HR Providers
           BlocProvider(create: (context) => DepartmentCubit(DepartmentRepository())),
           BlocProvider(create: (context) => EmployeeCubit(EmployeeRepository())),
+          BlocProvider(create: (context) => ShiftCubit(ShiftRepository())),
           
           // 3. Inventory Providers
           BlocProvider(create: (context) => SupplierCubit(SupplierRepository())),
@@ -77,14 +102,27 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => MaterialCubit(MaterialRepository())),
           BlocProvider(create: (context) => UnitCubit(UnitRepository())),
           BlocProvider(create: (context) => MachineCubit(MachineRepository())),
+          BlocProvider(create: (context) => BasketCubit(BasketRepository())),
+          BlocProvider(create: (context) => DyeColorCubit(DyeColorRepository())),
+          BlocProvider(create: (context) => ProductCubit(ProductRepository())),
+          BlocProvider(create: (context) => StandardCubit(StandardRepository())),
+          BlocProvider(create: (context) => WorkScheduleCubit(WorkScheduleRepository())),
+
+          //Production
+          BlocProvider(
+            create: (context) => MachineOperationCubit(
+              MachineRepository(),
+              WeavingRepository(),
+              BasketRepository(),
+            ),
+          ),
+          BlocProvider(create: (context) => WeavingCubit(WeavingRepository())),
         ],
         child: const AppView(),
       ),
     );
   }
 }
-
-
 
 
 class AppView extends StatelessWidget {
@@ -131,6 +169,7 @@ class AppView extends StatelessWidget {
             return EmployeeDepartmentScreen(departmentId: deptId);
           },
         ),
+        GoRoute(path: '/schedules', builder: (context, state) => const WorkScheduleScreen()),
 
         // --- INVENTORY ROUTES ---
         GoRoute(
@@ -148,6 +187,13 @@ class AppView extends StatelessWidget {
         GoRoute(path: '/materials', builder: (context, state) => const MaterialScreen()),
         GoRoute(path: '/units', builder: (context, state) => const UnitScreen()),
         GoRoute(path: '/machines', builder: (context, state) => const MachineScreen()),
+        GoRoute(path: '/shifts', builder: (context, state) => const ShiftScreen()),
+        GoRoute(path: '/baskets', builder: (context, state) => const BasketScreen()),
+        GoRoute(path: '/dye-colors', builder: (context, state) => const DyeColorScreen()),
+        GoRoute(path: '/products', builder: (context, state) => const ProductScreen()),
+        GoRoute(path: '/standards', builder: (context, state) => const StandardScreen()),
+        GoRoute(path: '/machine-operation',builder: (context, state) => const MachineOperationScreen(),),
+        GoRoute(path: '/weaving', builder: (context, state) => const WeavingScreen()),
       ],
     );
 

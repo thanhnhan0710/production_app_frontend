@@ -889,6 +889,654 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Maintenance'**
   String get maintenance;
+
+  /// No description provided for @shiftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Work Shifts'**
+  String get shiftTitle;
+
+  /// No description provided for @shiftName.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift Name'**
+  String get shiftName;
+
+  /// No description provided for @searchShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Search shift...'**
+  String get searchShift;
+
+  /// No description provided for @addShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Shift'**
+  String get addShift;
+
+  /// No description provided for @editShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Shift'**
+  String get editShift;
+
+  /// No description provided for @deleteShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Shift'**
+  String get deleteShift;
+
+  /// No description provided for @confirmDeleteShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete shift {name}?'**
+  String confirmDeleteShift(Object name);
+
+  /// No description provided for @noShiftFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts found'**
+  String get noShiftFound;
+
+  /// No description provided for @basketTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Baskets'**
+  String get basketTitle;
+
+  /// No description provided for @basketCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Basket Code'**
+  String get basketCode;
+
+  /// No description provided for @tareWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Tare Weight (kg)'**
+  String get tareWeight;
+
+  /// No description provided for @searchBasket.
+  ///
+  /// In en, this message translates to:
+  /// **'Search basket...'**
+  String get searchBasket;
+
+  /// No description provided for @addBasket.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Basket'**
+  String get addBasket;
+
+  /// No description provided for @editBasket.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Basket'**
+  String get editBasket;
+
+  /// No description provided for @deleteBasket.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Basket'**
+  String get deleteBasket;
+
+  /// No description provided for @confirmDeleteBasket.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete basket {code}?'**
+  String confirmDeleteBasket(Object code);
+
+  /// No description provided for @noBasketFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No baskets found'**
+  String get noBasketFound;
+
+  /// No description provided for @stReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get stReady;
+
+  /// No description provided for @stInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'In Use'**
+  String get stInUse;
+
+  /// No description provided for @stHolding.
+  ///
+  /// In en, this message translates to:
+  /// **'Holding'**
+  String get stHolding;
+
+  /// No description provided for @stDamaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Damaged'**
+  String get stDamaged;
+
+  /// No description provided for @dyeColorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dye Colors'**
+  String get dyeColorTitle;
+
+  /// No description provided for @colorName.
+  ///
+  /// In en, this message translates to:
+  /// **'Color Name'**
+  String get colorName;
+
+  /// No description provided for @hexCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Hex Code'**
+  String get hexCode;
+
+  /// No description provided for @searchColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Search color...'**
+  String get searchColor;
+
+  /// No description provided for @addColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Color'**
+  String get addColor;
+
+  /// No description provided for @editColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Color'**
+  String get editColor;
+
+  /// No description provided for @deleteColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Color'**
+  String get deleteColor;
+
+  /// No description provided for @confirmDeleteColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete color {name}?'**
+  String confirmDeleteColor(Object name);
+
+  /// No description provided for @noColorFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No colors found'**
+  String get noColorFound;
+
+  /// No description provided for @invalidHex.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid Hex Code (e.g., #FF0000)'**
+  String get invalidHex;
+
+  /// No description provided for @productTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get productTitle;
+
+  /// No description provided for @productImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get productImage;
+
+  /// No description provided for @searchProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Search product...'**
+  String get searchProduct;
+
+  /// No description provided for @addProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Product'**
+  String get addProduct;
+
+  /// No description provided for @editProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Product'**
+  String get editProduct;
+
+  /// No description provided for @deleteProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Product'**
+  String get deleteProduct;
+
+  /// No description provided for @confirmDeleteProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete product {code}?'**
+  String confirmDeleteProduct(Object code);
+
+  /// No description provided for @noProductFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No products found'**
+  String get noProductFound;
+
+  /// No description provided for @uploadImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Image'**
+  String get uploadImage;
+
+  /// No description provided for @standardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Standards'**
+  String get standardTitle;
+
+  /// No description provided for @standardCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard Code'**
+  String get standardCode;
+
+  /// No description provided for @product.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get product;
+
+  /// No description provided for @dyeColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Dye Color'**
+  String get dyeColor;
+
+  /// No description provided for @width.
+  ///
+  /// In en, this message translates to:
+  /// **'Width'**
+  String get width;
+
+  /// No description provided for @thickness.
+  ///
+  /// In en, this message translates to:
+  /// **'Thickness'**
+  String get thickness;
+
+  /// No description provided for @strength.
+  ///
+  /// In en, this message translates to:
+  /// **'Strength (daN)'**
+  String get strength;
+
+  /// No description provided for @elongation.
+  ///
+  /// In en, this message translates to:
+  /// **'Elongation (%)'**
+  String get elongation;
+
+  /// No description provided for @colorFastDry.
+  ///
+  /// In en, this message translates to:
+  /// **'Color Fastness (Dry)'**
+  String get colorFastDry;
+
+  /// No description provided for @colorFastWet.
+  ///
+  /// In en, this message translates to:
+  /// **'Color Fastness (Wet)'**
+  String get colorFastWet;
+
+  /// No description provided for @deltaE.
+  ///
+  /// In en, this message translates to:
+  /// **'Delta E'**
+  String get deltaE;
+
+  /// No description provided for @appearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearance;
+
+  /// No description provided for @weftDensity.
+  ///
+  /// In en, this message translates to:
+  /// **'Weft Density'**
+  String get weftDensity;
+
+  /// No description provided for @weight.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get weight;
+
+  /// No description provided for @searchStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Search standard...'**
+  String get searchStandard;
+
+  /// No description provided for @addStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Standard'**
+  String get addStandard;
+
+  /// No description provided for @editStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Standard'**
+  String get editStandard;
+
+  /// No description provided for @deleteStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Standard'**
+  String get deleteStandard;
+
+  /// No description provided for @confirmDeleteStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete standard {code}?'**
+  String confirmDeleteStandard(Object code);
+
+  /// No description provided for @noStandardFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No standards found'**
+  String get noStandardFound;
+
+  /// No description provided for @specs.
+  ///
+  /// In en, this message translates to:
+  /// **'Specifications'**
+  String get specs;
+
+  /// No description provided for @scheduleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Work Schedules'**
+  String get scheduleTitle;
+
+  /// No description provided for @workDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Work Date'**
+  String get workDate;
+
+  /// No description provided for @employee.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee'**
+  String get employee;
+
+  /// No description provided for @shift.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift'**
+  String get shift;
+
+  /// No description provided for @startTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Time'**
+  String get startTime;
+
+  /// No description provided for @endTime.
+  ///
+  /// In en, this message translates to:
+  /// **'End Time'**
+  String get endTime;
+
+  /// No description provided for @searchSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Search schedule...'**
+  String get searchSchedule;
+
+  /// No description provided for @addSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign Schedule'**
+  String get addSchedule;
+
+  /// No description provided for @editSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Schedule'**
+  String get editSchedule;
+
+  /// No description provided for @deleteSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Schedule'**
+  String get deleteSchedule;
+
+  /// No description provided for @confirmDeleteSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete schedule for {name} on {date}?'**
+  String confirmDeleteSchedule(Object date, Object name);
+
+  /// No description provided for @noScheduleFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No schedules found'**
+  String get noScheduleFound;
+
+  /// No description provided for @filterDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by Date'**
+  String get filterDate;
+
+  /// No description provided for @errorDuplicateSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict: This employee already has a shift on this date.'**
+  String get errorDuplicateSchedule;
+
+  /// No description provided for @errorUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'An unknown error occurred'**
+  String get errorUnknown;
+
+  /// No description provided for @weavingTicketTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Weaving Tickets'**
+  String get weavingTicketTitle;
+
+  /// No description provided for @ticketCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket Code'**
+  String get ticketCode;
+
+  /// No description provided for @machineInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Machine / Line'**
+  String get machineInfo;
+
+  /// No description provided for @yarnInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Yarn Lot / Date'**
+  String get yarnInfo;
+
+  /// No description provided for @productionData.
+  ///
+  /// In en, this message translates to:
+  /// **'Production Data'**
+  String get productionData;
+
+  /// No description provided for @weightInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross / Net / Tare'**
+  String get weightInfo;
+
+  /// No description provided for @lengthKnots.
+  ///
+  /// In en, this message translates to:
+  /// **'Length (m) / Knots'**
+  String get lengthKnots;
+
+  /// No description provided for @employees.
+  ///
+  /// In en, this message translates to:
+  /// **'Operators'**
+  String get employees;
+
+  /// No description provided for @timeInOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Time In / Out'**
+  String get timeInOut;
+
+  /// No description provided for @inspections.
+  ///
+  /// In en, this message translates to:
+  /// **'QC Inspections'**
+  String get inspections;
+
+  /// No description provided for @addTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'New Ticket'**
+  String get addTicket;
+
+  /// No description provided for @addInspection.
+  ///
+  /// In en, this message translates to:
+  /// **'Add QC'**
+  String get addInspection;
+
+  /// No description provided for @stageName.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage'**
+  String get stageName;
+
+  /// No description provided for @density.
+  ///
+  /// In en, this message translates to:
+  /// **'Density'**
+  String get density;
+
+  /// No description provided for @tension.
+  ///
+  /// In en, this message translates to:
+  /// **'Tension'**
+  String get tension;
+
+  /// No description provided for @bowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Bowing'**
+  String get bowing;
+
+  /// No description provided for @inspector.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspector'**
+  String get inspector;
+
+  /// No description provided for @noTicketSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a ticket to view details'**
+  String get noTicketSelected;
+
+  /// No description provided for @deleteTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Ticket'**
+  String get deleteTicket;
+
+  /// No description provided for @confirmDeleteTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete ticket {code}?'**
+  String confirmDeleteTicket(Object code);
+
+  /// No description provided for @deleteInspection.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Inspection'**
+  String get deleteInspection;
+
+  /// No description provided for @machineOperation.
+  ///
+  /// In en, this message translates to:
+  /// **'Machine Operation'**
+  String get machineOperation;
+
+  /// No description provided for @line.
+  ///
+  /// In en, this message translates to:
+  /// **'Line'**
+  String get line;
+
+  /// No description provided for @assignBasket.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign Basket'**
+  String get assignBasket;
+
+  /// No description provided for @selectBasket.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Ready Basket'**
+  String get selectBasket;
+
+  /// No description provided for @scanBarcode.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Barcode / Input Code'**
+  String get scanBarcode;
+
+  /// No description provided for @releaseLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish / Release'**
+  String get releaseLine;
+
+  /// No description provided for @viewTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'View Ticket'**
+  String get viewTicket;
+
+  /// No description provided for @currentBasket.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Basket'**
+  String get currentBasket;
+
+  /// No description provided for @noActiveBasket.
+  ///
+  /// In en, this message translates to:
+  /// **'No active basket'**
+  String get noActiveBasket;
+
+  /// No description provided for @confirmRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish this ticket and release basket?'**
+  String get confirmRelease;
+
+  /// No description provided for @basketAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Basket assigned successfully'**
+  String get basketAssigned;
 }
 
 class _AppLocalizationsDelegate

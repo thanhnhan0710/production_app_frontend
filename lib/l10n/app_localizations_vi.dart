@@ -228,7 +228,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get yarnName => 'Loại sợi';
 
   @override
-  String get itemCode => 'Mã hàng';
+  String get itemCode => 'Mã sản phẩm';
 
   @override
   String get yarnType => 'Loại sợi';
@@ -422,4 +422,343 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get maintenance => 'Bảo trì';
+
+  @override
+  String get shiftTitle => 'Ca làm việc';
+
+  @override
+  String get shiftName => 'Tên ca';
+
+  @override
+  String get searchShift => 'Tìm ca làm việc...';
+
+  @override
+  String get addShift => 'Thêm ca';
+
+  @override
+  String get editShift => 'Sửa ca';
+
+  @override
+  String get deleteShift => 'Xóa ca';
+
+  @override
+  String confirmDeleteShift(Object name) {
+    return 'Xóa ca $name?';
+  }
+
+  @override
+  String get noShiftFound => 'Không tìm thấy ca làm việc';
+
+  @override
+  String get basketTitle => 'Rổ chứa / Pallet';
+
+  @override
+  String get basketCode => 'Mã rổ';
+
+  @override
+  String get tareWeight => 'Trọng lượng bì (kg)';
+
+  @override
+  String get searchBasket => 'Tìm mã rổ...';
+
+  @override
+  String get addBasket => 'Thêm rổ';
+
+  @override
+  String get editBasket => 'Sửa rổ';
+
+  @override
+  String get deleteBasket => 'Xóa rổ';
+
+  @override
+  String confirmDeleteBasket(Object code) {
+    return 'Xóa rổ $code?';
+  }
+
+  @override
+  String get noBasketFound => 'Không tìm thấy rổ nào';
+
+  @override
+  String get stReady => 'Sẵn sàng';
+
+  @override
+  String get stInUse => 'Đang sử dụng';
+
+  @override
+  String get stHolding => 'Đang lưu kho';
+
+  @override
+  String get stDamaged => 'Hư hỏng';
+
+  @override
+  String get dyeColorTitle => 'Màu nhuộm';
+
+  @override
+  String get colorName => 'Tên màu';
+
+  @override
+  String get hexCode => 'Mã màu (Hex)';
+
+  @override
+  String get searchColor => 'Tìm màu...';
+
+  @override
+  String get addColor => 'Thêm màu';
+
+  @override
+  String get editColor => 'Sửa màu';
+
+  @override
+  String get deleteColor => 'Xóa màu';
+
+  @override
+  String confirmDeleteColor(Object name) {
+    return 'Xóa màu $name?';
+  }
+
+  @override
+  String get noColorFound => 'Không tìm thấy màu nào';
+
+  @override
+  String get invalidHex => 'Mã màu không hợp lệ (VD: #FF0000)';
+
+  @override
+  String get productTitle => 'Sản phẩm';
+
+  @override
+  String get productImage => 'Hình ảnh';
+
+  @override
+  String get searchProduct => 'Tìm sản phẩm...';
+
+  @override
+  String get addProduct => 'Thêm sản phẩm';
+
+  @override
+  String get editProduct => 'Sửa sản phẩm';
+
+  @override
+  String get deleteProduct => 'Xóa sản phẩm';
+
+  @override
+  String confirmDeleteProduct(Object code) {
+    return 'Xóa sản phẩm $code?';
+  }
+
+  @override
+  String get noProductFound => 'Không tìm thấy sản phẩm';
+
+  @override
+  String get uploadImage => 'Tải ảnh lên';
+
+  @override
+  String get standardTitle => 'Tiêu chuẩn';
+
+  @override
+  String get standardCode => 'Mã tiêu chuẩn';
+
+  @override
+  String get product => 'Sản phẩm';
+
+  @override
+  String get dyeColor => 'Màu nhuộm';
+
+  @override
+  String get width => 'Khổ';
+
+  @override
+  String get thickness => 'Độ dày';
+
+  @override
+  String get strength => 'Lực đứt (daN)';
+
+  @override
+  String get elongation => 'Độ giãn (%)';
+
+  @override
+  String get colorFastDry => 'Bền màu (Khô)';
+
+  @override
+  String get colorFastWet => 'Bền màu (Ướt)';
+
+  @override
+  String get deltaE => 'Sai lệch màu (Delta E)';
+
+  @override
+  String get appearance => 'Ngoại quan';
+
+  @override
+  String get weftDensity => 'Mật độ ngang';
+
+  @override
+  String get weight => 'Trọng lượng';
+
+  @override
+  String get searchStandard => 'Tìm tiêu chuẩn...';
+
+  @override
+  String get addStandard => 'Thêm tiêu chuẩn';
+
+  @override
+  String get editStandard => 'Sửa tiêu chuẩn';
+
+  @override
+  String get deleteStandard => 'Xóa tiêu chuẩn';
+
+  @override
+  String confirmDeleteStandard(Object code) {
+    return 'Xóa tiêu chuẩn $code?';
+  }
+
+  @override
+  String get noStandardFound => 'Không tìm thấy tiêu chuẩn';
+
+  @override
+  String get specs => 'Thông số kỹ thuật';
+
+  @override
+  String get scheduleTitle => 'Lịch làm việc';
+
+  @override
+  String get workDate => 'Ngày làm việc';
+
+  @override
+  String get employee => 'Nhân viên';
+
+  @override
+  String get shift => 'Ca làm việc';
+
+  @override
+  String get startTime => 'Giờ bắt đầu';
+
+  @override
+  String get endTime => 'Giờ kết thúc';
+
+  @override
+  String get searchSchedule => 'Tìm lịch...';
+
+  @override
+  String get addSchedule => 'Xếp lịch';
+
+  @override
+  String get editSchedule => 'Sửa lịch';
+
+  @override
+  String get deleteSchedule => 'Xóa lịch';
+
+  @override
+  String confirmDeleteSchedule(Object date, Object name) {
+    return 'Xóa lịch của $name ngày $date?';
+  }
+
+  @override
+  String get noScheduleFound => 'Không tìm thấy lịch làm việc';
+
+  @override
+  String get filterDate => 'Lọc theo ngày';
+
+  @override
+  String get errorDuplicateSchedule =>
+      'Xung đột: Nhân viên này đã có ca làm việc trong ngày này rồi.';
+
+  @override
+  String get errorUnknown => 'Đã xảy ra lỗi không xác định';
+
+  @override
+  String get weavingTicketTitle => 'Phiếu Rổ Dệt';
+
+  @override
+  String get ticketCode => 'Mã phiếu';
+
+  @override
+  String get machineInfo => 'Máy / Line';
+
+  @override
+  String get yarnInfo => 'Lô sợi / Ngày nạp';
+
+  @override
+  String get productionData => 'Thông số sản xuất';
+
+  @override
+  String get weightInfo => 'Tổng / Tịnh / Bì (kg)';
+
+  @override
+  String get lengthKnots => 'Dài (m) / Số nối';
+
+  @override
+  String get employees => 'Nhân viên vận hành';
+
+  @override
+  String get timeInOut => 'Giờ Vào / Ra';
+
+  @override
+  String get inspections => 'Kết quả kiểm tra QC';
+
+  @override
+  String get addTicket => 'Tạo phiếu mới';
+
+  @override
+  String get addInspection => 'Kiểm tra QC';
+
+  @override
+  String get stageName => 'Công đoạn';
+
+  @override
+  String get density => 'Mật độ';
+
+  @override
+  String get tension => 'Sức căng';
+
+  @override
+  String get bowing => 'Độ lệch (Bowing)';
+
+  @override
+  String get inspector => 'Người kiểm tra';
+
+  @override
+  String get noTicketSelected => 'Chọn một phiếu để xem chi tiết';
+
+  @override
+  String get deleteTicket => 'Xóa phiếu';
+
+  @override
+  String confirmDeleteTicket(Object code) {
+    return 'Xóa phiếu $code?';
+  }
+
+  @override
+  String get deleteInspection => 'Xóa kiểm tra';
+
+  @override
+  String get machineOperation => 'Vận hành Máy dệt';
+
+  @override
+  String get line => 'Trục';
+
+  @override
+  String get assignBasket => 'Gán rổ';
+
+  @override
+  String get selectBasket => 'Chọn rổ sẵn sàng';
+
+  @override
+  String get scanBarcode => 'Quét mã vạch / Nhập mã';
+
+  @override
+  String get releaseLine => 'Kết thúc / Tháo rổ';
+
+  @override
+  String get viewTicket => 'Xem phiếu';
+
+  @override
+  String get currentBasket => 'Rổ hiện tại';
+
+  @override
+  String get noActiveBasket => 'Trống';
+
+  @override
+  String get confirmRelease => 'Kết thúc phiếu và tháo rổ?';
+
+  @override
+  String get basketAssigned => 'Đã gán rổ thành công';
 }

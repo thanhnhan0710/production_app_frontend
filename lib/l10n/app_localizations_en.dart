@@ -421,4 +421,343 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get maintenance => 'Maintenance';
+
+  @override
+  String get shiftTitle => 'Work Shifts';
+
+  @override
+  String get shiftName => 'Shift Name';
+
+  @override
+  String get searchShift => 'Search shift...';
+
+  @override
+  String get addShift => 'Add Shift';
+
+  @override
+  String get editShift => 'Edit Shift';
+
+  @override
+  String get deleteShift => 'Delete Shift';
+
+  @override
+  String confirmDeleteShift(Object name) {
+    return 'Delete shift $name?';
+  }
+
+  @override
+  String get noShiftFound => 'No shifts found';
+
+  @override
+  String get basketTitle => 'Baskets';
+
+  @override
+  String get basketCode => 'Basket Code';
+
+  @override
+  String get tareWeight => 'Tare Weight (kg)';
+
+  @override
+  String get searchBasket => 'Search basket...';
+
+  @override
+  String get addBasket => 'Add Basket';
+
+  @override
+  String get editBasket => 'Edit Basket';
+
+  @override
+  String get deleteBasket => 'Delete Basket';
+
+  @override
+  String confirmDeleteBasket(Object code) {
+    return 'Delete basket $code?';
+  }
+
+  @override
+  String get noBasketFound => 'No baskets found';
+
+  @override
+  String get stReady => 'Ready';
+
+  @override
+  String get stInUse => 'In Use';
+
+  @override
+  String get stHolding => 'Holding';
+
+  @override
+  String get stDamaged => 'Damaged';
+
+  @override
+  String get dyeColorTitle => 'Dye Colors';
+
+  @override
+  String get colorName => 'Color Name';
+
+  @override
+  String get hexCode => 'Hex Code';
+
+  @override
+  String get searchColor => 'Search color...';
+
+  @override
+  String get addColor => 'Add Color';
+
+  @override
+  String get editColor => 'Edit Color';
+
+  @override
+  String get deleteColor => 'Delete Color';
+
+  @override
+  String confirmDeleteColor(Object name) {
+    return 'Delete color $name?';
+  }
+
+  @override
+  String get noColorFound => 'No colors found';
+
+  @override
+  String get invalidHex => 'Invalid Hex Code (e.g., #FF0000)';
+
+  @override
+  String get productTitle => 'Products';
+
+  @override
+  String get productImage => 'Image';
+
+  @override
+  String get searchProduct => 'Search product...';
+
+  @override
+  String get addProduct => 'Add Product';
+
+  @override
+  String get editProduct => 'Edit Product';
+
+  @override
+  String get deleteProduct => 'Delete Product';
+
+  @override
+  String confirmDeleteProduct(Object code) {
+    return 'Delete product $code?';
+  }
+
+  @override
+  String get noProductFound => 'No products found';
+
+  @override
+  String get uploadImage => 'Upload Image';
+
+  @override
+  String get standardTitle => 'Standards';
+
+  @override
+  String get standardCode => 'Standard Code';
+
+  @override
+  String get product => 'Product';
+
+  @override
+  String get dyeColor => 'Dye Color';
+
+  @override
+  String get width => 'Width';
+
+  @override
+  String get thickness => 'Thickness';
+
+  @override
+  String get strength => 'Strength (daN)';
+
+  @override
+  String get elongation => 'Elongation (%)';
+
+  @override
+  String get colorFastDry => 'Color Fastness (Dry)';
+
+  @override
+  String get colorFastWet => 'Color Fastness (Wet)';
+
+  @override
+  String get deltaE => 'Delta E';
+
+  @override
+  String get appearance => 'Appearance';
+
+  @override
+  String get weftDensity => 'Weft Density';
+
+  @override
+  String get weight => 'Weight';
+
+  @override
+  String get searchStandard => 'Search standard...';
+
+  @override
+  String get addStandard => 'Add Standard';
+
+  @override
+  String get editStandard => 'Edit Standard';
+
+  @override
+  String get deleteStandard => 'Delete Standard';
+
+  @override
+  String confirmDeleteStandard(Object code) {
+    return 'Delete standard $code?';
+  }
+
+  @override
+  String get noStandardFound => 'No standards found';
+
+  @override
+  String get specs => 'Specifications';
+
+  @override
+  String get scheduleTitle => 'Work Schedules';
+
+  @override
+  String get workDate => 'Work Date';
+
+  @override
+  String get employee => 'Employee';
+
+  @override
+  String get shift => 'Shift';
+
+  @override
+  String get startTime => 'Start Time';
+
+  @override
+  String get endTime => 'End Time';
+
+  @override
+  String get searchSchedule => 'Search schedule...';
+
+  @override
+  String get addSchedule => 'Assign Schedule';
+
+  @override
+  String get editSchedule => 'Edit Schedule';
+
+  @override
+  String get deleteSchedule => 'Delete Schedule';
+
+  @override
+  String confirmDeleteSchedule(Object date, Object name) {
+    return 'Delete schedule for $name on $date?';
+  }
+
+  @override
+  String get noScheduleFound => 'No schedules found';
+
+  @override
+  String get filterDate => 'Filter by Date';
+
+  @override
+  String get errorDuplicateSchedule =>
+      'Conflict: This employee already has a shift on this date.';
+
+  @override
+  String get errorUnknown => 'An unknown error occurred';
+
+  @override
+  String get weavingTicketTitle => 'Weaving Tickets';
+
+  @override
+  String get ticketCode => 'Ticket Code';
+
+  @override
+  String get machineInfo => 'Machine / Line';
+
+  @override
+  String get yarnInfo => 'Yarn Lot / Date';
+
+  @override
+  String get productionData => 'Production Data';
+
+  @override
+  String get weightInfo => 'Gross / Net / Tare';
+
+  @override
+  String get lengthKnots => 'Length (m) / Knots';
+
+  @override
+  String get employees => 'Operators';
+
+  @override
+  String get timeInOut => 'Time In / Out';
+
+  @override
+  String get inspections => 'QC Inspections';
+
+  @override
+  String get addTicket => 'New Ticket';
+
+  @override
+  String get addInspection => 'Add QC';
+
+  @override
+  String get stageName => 'Stage';
+
+  @override
+  String get density => 'Density';
+
+  @override
+  String get tension => 'Tension';
+
+  @override
+  String get bowing => 'Bowing';
+
+  @override
+  String get inspector => 'Inspector';
+
+  @override
+  String get noTicketSelected => 'Select a ticket to view details';
+
+  @override
+  String get deleteTicket => 'Delete Ticket';
+
+  @override
+  String confirmDeleteTicket(Object code) {
+    return 'Delete ticket $code?';
+  }
+
+  @override
+  String get deleteInspection => 'Delete Inspection';
+
+  @override
+  String get machineOperation => 'Machine Operation';
+
+  @override
+  String get line => 'Line';
+
+  @override
+  String get assignBasket => 'Assign Basket';
+
+  @override
+  String get selectBasket => 'Select Ready Basket';
+
+  @override
+  String get scanBarcode => 'Scan Barcode / Input Code';
+
+  @override
+  String get releaseLine => 'Finish / Release';
+
+  @override
+  String get viewTicket => 'View Ticket';
+
+  @override
+  String get currentBasket => 'Current Basket';
+
+  @override
+  String get noActiveBasket => 'No active basket';
+
+  @override
+  String get confirmRelease => 'Finish this ticket and release basket?';
+
+  @override
+  String get basketAssigned => 'Basket assigned successfully';
 }
