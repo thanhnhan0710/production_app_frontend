@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:production_app_frontend/features/inventory/basket/data/baket_repository.dart';
 import 'package:production_app_frontend/features/inventory/basket/doamain/baket_model.dart';
 import '../../domain/machine_model.dart';
@@ -12,7 +13,6 @@ class MachineOpInitial extends MachineOpState {}
 class MachineOpLoading extends MachineOpState {}
 class MachineOpLoaded extends MachineOpState {
   final List<Machine> machines;
-  // Map lưu trữ: Key là "machineId_lineIndex" (VD: "1_1", "1_2"), Value là Ticket đang chạy
   final Map<String, WeavingTicket> activeTickets; 
   final List<Basket> readyBaskets;
 
@@ -38,22 +38,17 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
   Future<void> loadDashboard() async {
     emit(MachineOpLoading());
     try {
-      // 1. Load danh sách máy
       final machines = await _machineRepo.getMachines();
       
-      // 2. Load danh sách rổ đang READY
       final allBaskets = await _basketRepo.getBaskets();
       final readyBaskets = allBaskets.where((b) => b.status == 'READY').toList();
 
-      // 3. Load các Ticket đang active (Chưa có time_out)
-      // Giả sử API getTickets trả về tất cả, ta lọc ở client (Thực tế nên có API filter status)
       final allTickets = await _weavingRepo.getTickets();
+      // Lọc các ticket chưa có timeOut (đang chạy)
       final activeTicketsList = allTickets.where((t) => t.timeOut == null).toList();
 
-      // Map ticket vào từng line máy
       final Map<String, WeavingTicket> activeMap = {};
       for (var t in activeTicketsList) {
-        // machineLine lưu dạng "1" hoặc "2"
         final key = "${t.machineId}_${t.machineLine}"; 
         activeMap[key] = t;
       }
@@ -68,58 +63,67 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
     }
   }
 
-  // Gán rổ vào máy -> Tạo Ticket mới -> Update Basket Status
-  Future<void> assignBasketToMachine(int machineId, String line, Basket basket) async {
+  // [CẬP NHẬT QUAN TRỌNG] Thêm tham số employeeId vào hàm này
+  Future<void> assignBasketToMachine({
+    required int machineId,
+    required String line,
+    required Basket basket,
+    required int productId,
+    required int standardId,
+    required int yarnLotId,
+    required int employeeId, // <--- Tham số này phải có
+  }) async {
     try {
-      // 1. Tạo Ticket mới
+      final String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final String nowTime = DateTime.now().toIso8601String();
+
       final newTicket = WeavingTicket(
-        id: 0, // Backend tự sinh
-        code: "TKT-${DateTime.now().millisecondsSinceEpoch}", // Mã tạm hoặc backend sinh
-        productId: 0, // Cần logic chọn SP, tạm thời để 0 hoặc lấy từ context
-        standardId: 0,
+        id: 0, 
+        code: "TKT-${DateTime.now().millisecondsSinceEpoch}", 
+        productId: productId,   
+        standardId: standardId, 
         machineId: machineId,
         machineLine: line,
-        yarnLoadDate: DateTime.now().toIso8601String(),
-        yarnLotId: 0, // Cần logic chọn lô sợi
+        yarnLoadDate: todayDate,
+        yarnLotId: yarnLotId,   
         basketId: basket.id,
-        timeIn: DateTime.now().toIso8601String(),
+        timeIn: nowTime,
         grossWeight: 0,
         netWeight: 0,
         lengthMeters: 0,
         numberOfKnots: 0,
+        
+        // Sử dụng ID nhân viên được truyền vào
+        employeeInId: employeeId, 
+        
+        employeeOutId: null,
+        timeOut: null,
       );
       
       await _weavingRepo.createTicket(newTicket);
 
-      // 2. Cập nhật trạng thái rổ -> IN_USE
       final updatedBasket = Basket(
         id: basket.id,
         code: basket.code,
         tareWeight: basket.tareWeight,
         supplier: basket.supplier,
-        status: "IN_USE", // [QUAN TRỌNG]
+        status: "IN_USE",
         note: basket.note,
       );
       await _basketRepo.updateBasket(updatedBasket);
 
-      // 3. Reload lại màn hình
       loadDashboard();
     } catch (e) {
       emit(MachineOpError("Lỗi gán rổ: $e"));
-      loadDashboard(); // Reload để quay lại trạng thái cũ
+      loadDashboard();
     }
   }
 
-  // Kết thúc phiếu (Tháo rổ)
+  // Hàm kết thúc phiếu (Tháo rổ) - Placeholder để sau này phát triển
   Future<void> releaseBasket(WeavingTicket ticket) async {
     try {
-      // 1. Cập nhật Ticket: thêm timeOut
-      // Code xử lý update ticket ở đây...
-      
-      // 2. Cập nhật Basket -> READY (hoặc HOLDING tùy quy trình)
-      // Cần lấy Basket theo ID trước (logic này nên ở Backend thì tốt hơn)
-      
-      loadDashboard();
+       // Logic tháo rổ sẽ code sau
+       loadDashboard();
     } catch (e) {
       emit(MachineOpError("Lỗi tháo rổ: $e"));
     }
