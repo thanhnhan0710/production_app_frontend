@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:production_app_frontend/features/inventory/basket/doamain/baket_model.dart';
+import 'package:production_app_frontend/features/production/weaving/presentation/screens/weaving_inspection_dialog.dart';
 import 'package:production_app_frontend/l10n/app_localizations.dart';
 import '../../../weaving/domain/weaving_model.dart';
 import '../../domain/machine_model.dart';
@@ -15,6 +16,7 @@ import 'package:production_app_frontend/features/inventory/yarn_lot/domain/yarn_
 import 'package:production_app_frontend/features/inventory/yarn_lot/presentation/bloc/yarn_lot_cubit.dart';
 import 'package:production_app_frontend/features/hr/employee/domain/employee_model.dart';
 import 'package:production_app_frontend/features/hr/employee/presentation/bloc/employee_cubit.dart';
+import 'package:production_app_frontend/features/hr/shift/presentation/bloc/shift_cubit.dart';
 
 class MachineOperationScreen extends StatefulWidget {
   const MachineOperationScreen({super.key});
@@ -25,7 +27,8 @@ class MachineOperationScreen extends StatefulWidget {
 
 class _MachineOperationScreenState extends State<MachineOperationScreen> {
   final Color _primaryColor = const Color(0xFF003366);
-
+  final TextEditingController _machineSearchCtrl = TextEditingController();
+  String _searchKeyword = "";
   @override
   void initState() {
     super.initState();
@@ -34,6 +37,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     context.read<StandardCubit>().loadStandards();
     context.read<YarnLotCubit>().loadYarnLots();
     context.read<EmployeeCubit>().loadEmployees();
+    context.read<ShiftCubit>().loadShifts();
   }
 
   @override
@@ -53,54 +57,96 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
           )
         ],
       ),
-      body: BlocConsumer<MachineOperationCubit, MachineOpState>(
-        listener: (context, state) {
-          if (state is MachineOpError) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
-          }
-        },
-        builder: (context, state) {
-          if (state is MachineOpLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          
-          if (state is MachineOpLoaded) {
-            if (state.machines.isEmpty) {
-              return const Center(child: Text("No machines configured"));
-            }
-
-            return GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 400,
-                childAspectRatio: 1.1,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+      body: Column(
+        children: [
+          // [YÊU CẦU 1] Thanh tìm kiếm máy
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: TextField(
+              controller: _machineSearchCtrl,
+              decoration: InputDecoration(
+                hintText: l10n.searchMachine, // "Tìm tên máy..."
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
               ),
-              itemCount: state.machines.length,
-              itemBuilder: (context, index) {
-                final machine = state.machines[index];
-                return _buildMachineCard(context, machine, state, l10n);
+              onChanged: (val) {
+                setState(() {
+                  _searchKeyword = val.toLowerCase();
+                });
               },
-            );
-          }
-          return const SizedBox();
-        },
+            ),
+          ),
+
+          // Grid Máy
+          Expanded(
+            child: BlocConsumer<MachineOperationCubit, MachineOpState>(
+              listener: (context, state) {
+                if (state is MachineOpError) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+                }
+              },
+              builder: (context, state) {
+                if (state is MachineOpLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                
+                if (state is MachineOpLoaded) {
+                  // Lọc máy theo từ khóa
+                  final filteredMachines = state.machines.where((m) => 
+                    m.name.toLowerCase().contains(_searchKeyword) || 
+                    m.status.toLowerCase().contains(_searchKeyword)
+                  ).toList();
+
+                  if (filteredMachines.isEmpty) {
+                    return Center(child: Text(l10n.noMachineFound));
+                  }
+
+                  return GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 400,
+                      mainAxisExtent: 300, // Tăng chiều cao thẻ một chút
+                      childAspectRatio: 1.1,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: filteredMachines.length,
+                    itemBuilder: (context, index) {
+                      final machine = filteredMachines[index];
+                      return _buildMachineCard(context, machine, state, l10n);
+                    },
+                  );
+                }
+                return const SizedBox();
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildMachineCard(BuildContext context, Machine machine, MachineOpLoaded state, AppLocalizations l10n) {
+    final statusColor = _getMachineStatusColor(machine.status);
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: _getMachineBgColor(machine.status),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: statusColor, width: 1.5),
+      ),
       child: Column(
         children: [
+          // Header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _primaryColor,
+              color: statusColor,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Row(
@@ -117,24 +163,27 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(4)),
-                  child: Text(machine.status, style: const TextStyle(color: Colors.white, fontSize: 10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    machine.status,
+                    style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 11),
+                  ),
                 )
               ],
             ),
           ),
 
+          // Lines
           Expanded(
             child: Row(
               children: [
-                Expanded(
-                  child: _buildLineSlot(context, machine, "1", state.activeTickets["${machine.id}_1"], state.readyBaskets, l10n),
-                ),
+                Expanded(child: _buildLineSlot(context, machine, "1", state.activeTickets["${machine.id}_1"], state.readyBaskets, l10n)),
                 Container(width: 1, color: Colors.grey.shade300),
-                Expanded(
-                  child: _buildLineSlot(context, machine, "2", state.activeTickets["${machine.id}_2"], state.readyBaskets, l10n),
-                ),
+                Expanded(child: _buildLineSlot(context, machine, "2", state.activeTickets["${machine.id}_2"], state.readyBaskets, l10n)),
               ],
             ),
           ),
@@ -151,7 +200,19 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
         if (!isActive) {
           _showAssignDialog(context, machine, lineCode, readyBaskets, l10n);
         } else {
-         
+          // Mở dialog kiểm tra/tháo rổ
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => WeavingInspectionDialog(
+              ticket: ticket,
+              // [YÊU CẦU 1 - Tháo rổ] Callback để mở dialog tháo rổ từ Inspection Dialog
+              onRelease: () {
+                Navigator.pop(ctx); // Đóng Inspection Dialog
+                _showReleaseDialog(context, ticket, l10n); // Mở Release Dialog
+              },
+            ),
+          );
         }
       },
       child: Container(
@@ -164,25 +225,27 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
             const SizedBox(height: 12),
             
             if (isActive) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.green, width: 2),
-                  boxShadow: [BoxShadow(color: Colors.green.withOpacity(0.2), blurRadius: 8)]
-                ),
-                child: const Icon(Icons.settings_backup_restore, color: Colors.green, size: 28),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.green, width: 2),
+                      boxShadow: [BoxShadow(color: Colors.green.withOpacity(0.2), blurRadius: 8)]
+                    ),
+                    child: const Icon(Icons.settings_backup_restore, color: Colors.green, size: 28),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               Text(
                 ticket.basketCode ?? "Unknown",
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              Text(
-                "#${ticket.code}",
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              ),
+              Text("#${ticket.code}", style: const TextStyle(fontSize: 10, color: Colors.grey)),
             ] else ...[
               const Icon(Icons.add_circle_outline, color: Colors.grey, size: 40),
               const SizedBox(height: 8),
@@ -190,6 +253,88 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
             ]
           ],
         ),
+      ),
+    );
+  }
+
+   void _showReleaseDialog(BuildContext context, WeavingTicket ticket, AppLocalizations l10n) {
+    final grossCtrl = TextEditingController();
+    final netCtrl = TextEditingController();
+    final lengthCtrl = TextEditingController();
+    int? employeeOutId;
+    final formKey = GlobalKey<FormState>();
+
+    // Lấy list nhân viên
+    final empState = context.read<EmployeeCubit>().state;
+    List<Employee> employees = (empState is EmployeeLoaded) ? empState.employees : [];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.finishTicket),
+        content: Form(
+          key: formKey,
+          child: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("${l10n.ticketCode}: ${ticket.code}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                
+                DropdownButtonFormField<int>(
+                  decoration: InputDecoration(labelText: l10n.employeeOut, border: const OutlineInputBorder()),
+                  items: employees.map((e) => DropdownMenuItem(value: e.id, child: Text(e.fullName))).toList(),
+                  onChanged: (v) => employeeOutId = v,
+                  validator: (v) => v == null ? l10n.required : null,
+                ),
+                const SizedBox(height: 16),
+                
+                Row(children: [
+                  Expanded(child: TextFormField(
+                    controller: grossCtrl, 
+                    decoration: InputDecoration(labelText: l10n.grossWeight, border: const OutlineInputBorder()),
+                    keyboardType: TextInputType.number,
+                    validator: (v) => v!.isEmpty ? l10n.required : null,
+                  )),
+                  const SizedBox(width: 12),
+                  Expanded(child: TextFormField(
+                    controller: netCtrl, 
+                    decoration: InputDecoration(labelText: l10n.netWeight, border: const OutlineInputBorder()),
+                    keyboardType: TextInputType.number,
+                    validator: (v) => v!.isEmpty ? l10n.required : null,
+                  )),
+                ]),
+                const SizedBox(height: 16),
+                TextFormField(
+                    controller: lengthCtrl, 
+                    decoration: InputDecoration(labelText: l10n.length, border: const OutlineInputBorder()),
+                    keyboardType: TextInputType.number,
+                    validator: (v) => v!.isEmpty ? l10n.required : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () {
+              if (formKey.currentState!.validate() && employeeOutId != null) {
+                Navigator.pop(ctx);
+                context.read<MachineOperationCubit>().finishTicket(
+                  ticket: ticket,
+                  employeeOutId: employeeOutId!,
+                  grossWeight: double.parse(grossCtrl.text),
+                  netWeight: double.parse(netCtrl.text),
+                  length: double.parse(lengthCtrl.text),
+                );
+              }
+            },
+            child: Text(l10n.releaseBasket),
+          )
+        ],
       ),
     );
   }
@@ -264,7 +409,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                             icon: const Icon(Icons.check_circle, color: Colors.green),
                             onPressed: () => onScanBarcode(barcodeCtrl.text),
                           ),
-                          helperText: "Quét mã rổ tại đây để tự chọn",
+                          helperText: l10n.scanBarcodeSubline
                         ),
                         // Khi máy quét nhập xong và nhấn Enter
                         onFieldSubmitted: (value) => onScanBarcode(value),
@@ -274,7 +419,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                       // 1. CHỌN RỔ (Basket) - Sẽ tự điền nếu quét đúng
                       DropdownButtonFormField<Basket>(
                         value: selectedBasket,
-                        decoration: const InputDecoration(labelText: "Basket (Rổ)", border: OutlineInputBorder()),
+                        decoration: InputDecoration(labelText: l10n.basketTitleVS2, border: const OutlineInputBorder()),
                         items: readyBaskets.map((b) => DropdownMenuItem(
                           value: b,
                           child: Text("${b.code} (${b.tareWeight}kg)"),
@@ -298,7 +443,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                       
                       // 3. CHỌN SẢN PHẨM
                       DropdownButtonFormField<int>(
-                        decoration: const InputDecoration(labelText: "Product (Sản phẩm)", border: OutlineInputBorder()),
+                        decoration: InputDecoration(labelText: l10n.productTitle, border: const OutlineInputBorder()),
                         items: products.map((p) => DropdownMenuItem(
                           value: p.id, 
                           child: Text(p.itemCode)
@@ -317,10 +462,10 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                       DropdownButtonFormField<int>(
                         value: selectedStandardId,
                         decoration: InputDecoration(
-                          labelText: "Standard (Tiêu chuẩn)", 
+                          labelText: l10n.standardTitle, 
                           border: const OutlineInputBorder(),
                           enabled: selectedProductId != null, 
-                          helperText: selectedProductId == null ? "Chọn sản phẩm trước" : null
+                          helperText: selectedProductId == null ? l10n.selectProductBefore: null
                         ),
                         items: filteredStandards.map((s) => DropdownMenuItem(
                           value: s.id, 
@@ -333,7 +478,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
 
                       // 5. CHỌN LÔ SỢI
                       DropdownButtonFormField<int>(
-                        decoration: const InputDecoration(labelText: "Yarn Lot (Lô sợi)", border: OutlineInputBorder()),
+                        decoration: InputDecoration(labelText: l10n.yarnLotTitle, border: const OutlineInputBorder()),
                         items: yarnLots.map((y) => DropdownMenuItem(
                           value: y.id, 
                           child: Text("${y.lotCode} (${y.totalKg}kg)")
@@ -371,5 +516,30 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
         }
       ),
     );
+  }
+
+  Color _getMachineStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'RUNNING':
+        return Colors.blue;
+      case 'MAINTENANCE':
+        return Colors.grey;
+      case 'STOPPED':
+        return Colors.red;
+      default:
+        return Colors.blueGrey;
+    }
+  }
+  Color _getMachineBgColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'RUNNING':
+        return Colors.green.shade50;
+      case 'MAINTENANCE':
+        return Colors.grey.shade200;
+      case 'STOPPED':
+        return Colors.red.shade100;
+      default:
+        return Colors.white;
+    }
   }
 }

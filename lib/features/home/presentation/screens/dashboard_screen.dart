@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -172,8 +174,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         _buildSubMenuItem(context, Icons.dashboard_customize, "Overview", '/production', isMobile, currentPath),
                         _buildSubMenuItem(context, Icons.settings_input_component, l10n.machineTitle, '/machines', isMobile, currentPath),
                         _buildSubMenuItem(context, Icons.assignment, l10n.standardTitle, '/standards', isMobile, currentPath),
-                        _buildSubMenuItem(context,Icons.build,"Machine Operation",'/machine-operation',isMobile,currentPath,),
-                        _buildSubMenuItem(context, Icons.precision_manufacturing, l10n.weavingTicketTitle, '/weaving', isMobile, currentPath),
+                        _buildSubMenuItem(context,Icons.precision_manufacturing, l10n.machineOperation,'/machine-operation',isMobile,currentPath,),
+                        _buildSubMenuItem(context, Icons.build, l10n.weavingTicketTitle, '/weaving', isMobile, currentPath),
                       ],
                     ),
                   ),

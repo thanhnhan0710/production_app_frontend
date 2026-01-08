@@ -839,7 +839,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchMachine.
   ///
   /// In en, this message translates to:
-  /// **'Search machine...'**
+  /// **'Search machine name...'**
   String get searchMachine;
 
   /// No description provided for @addMachine.
@@ -949,6 +949,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Basket Code'**
   String get basketCode;
+
+  /// No description provided for @basketTitleVS2.
+  ///
+  /// In en, this message translates to:
+  /// **'Basket'**
+  String get basketTitleVS2;
 
   /// No description provided for @tareWeight.
   ///
@@ -1358,6 +1364,48 @@ abstract class AppLocalizations {
   /// **'Ticket Code'**
   String get ticketCode;
 
+  /// No description provided for @loadDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Load date'**
+  String get loadDate;
+
+  /// No description provided for @date.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get date;
+
+  /// No description provided for @timeIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Time In'**
+  String get timeIn;
+
+  /// No description provided for @empIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Emp In'**
+  String get empIn;
+
+  /// No description provided for @timeOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Out'**
+  String get timeOut;
+
+  /// No description provided for @empOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Emp Out'**
+  String get empOut;
+
+  /// No description provided for @tage.
+  ///
+  /// In en, this message translates to:
+  /// **'Tage weight'**
+  String get tage;
+
   /// No description provided for @machineInfo.
   ///
   /// In en, this message translates to:
@@ -1370,11 +1418,11 @@ abstract class AppLocalizations {
   /// **'Yarn Lot / Date'**
   String get yarnInfo;
 
-  /// No description provided for @productionData.
+  /// No description provided for @standardData.
   ///
   /// In en, this message translates to:
-  /// **'Production Data'**
-  String get productionData;
+  /// **'Standard Specifications'**
+  String get standardData;
 
   /// No description provided for @weightInfo.
   ///
@@ -1424,6 +1472,18 @@ abstract class AppLocalizations {
   /// **'Stage'**
   String get stageName;
 
+  /// No description provided for @gross.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross Weight'**
+  String get gross;
+
+  /// No description provided for @length.
+  ///
+  /// In en, this message translates to:
+  /// **'Length (m)'**
+  String get length;
+
   /// No description provided for @density.
   ///
   /// In en, this message translates to:
@@ -1472,11 +1532,41 @@ abstract class AppLocalizations {
   /// **'Delete Inspection'**
   String get deleteInspection;
 
+  /// No description provided for @machineAndMaterial.
+  ///
+  /// In en, this message translates to:
+  /// **'Machine & Material'**
+  String get machineAndMaterial;
+
+  /// No description provided for @generalInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'General Info'**
+  String get generalInfo;
+
+  /// No description provided for @personnel.
+  ///
+  /// In en, this message translates to:
+  /// **'Personnel'**
+  String get personnel;
+
+  /// No description provided for @resultsUpdateOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Results (Update Only)'**
+  String get resultsUpdateOnly;
+
   /// No description provided for @machineOperation.
   ///
   /// In en, this message translates to:
   /// **'Machine Operation'**
   String get machineOperation;
+
+  /// No description provided for @selectProductBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the product first'**
+  String get selectProductBefore;
 
   /// No description provided for @line.
   ///
@@ -1502,17 +1592,23 @@ abstract class AppLocalizations {
   /// **'Scan Barcode / Input Code'**
   String get scanBarcode;
 
-  /// No description provided for @releaseLine.
+  /// No description provided for @scanBarcodeSubline.
   ///
   /// In en, this message translates to:
-  /// **'Finish / Release'**
-  String get releaseLine;
+  /// **'Scan the basket code here to select your own items'**
+  String get scanBarcodeSubline;
 
   /// No description provided for @viewTicket.
   ///
   /// In en, this message translates to:
   /// **'View Ticket'**
   String get viewTicket;
+
+  /// No description provided for @editTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit ticket'**
+  String get editTicket;
 
   /// No description provided for @currentBasket.
   ///
@@ -1537,6 +1633,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Basket assigned successfully'**
   String get basketAssigned;
+
+  /// No description provided for @releaseBasket.
+  ///
+  /// In en, this message translates to:
+  /// **'Release Basket / Finish Ticket'**
+  String get releaseBasket;
+
+  /// No description provided for @finishTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish Ticket'**
+  String get finishTicket;
+
+  /// No description provided for @grossWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross Weight (kg)'**
+  String get grossWeight;
+
+  /// No description provided for @netWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Net Weight (kg)'**
+  String get netWeight;
+
+  /// No description provided for @knots.
+  ///
+  /// In en, this message translates to:
+  /// **'Knots'**
+  String get knots;
+
+  /// No description provided for @bow.
+  ///
+  /// In en, this message translates to:
+  /// **'Bow'**
+  String get bow;
+
+  /// No description provided for @employeeOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Receiver / Operator Out'**
+  String get employeeOut;
+
+  /// No description provided for @ticketDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket Details'**
+  String get ticketDetails;
+
+  /// No description provided for @inspectionHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspection History'**
+  String get inspectionHistory;
+
+  /// No description provided for @newInspection.
+  ///
+  /// In en, this message translates to:
+  /// **'New Inspection'**
+  String get newInspection;
+
+  /// No description provided for @confirmReleaseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Finish'**
+  String get confirmReleaseTitle;
+
+  /// No description provided for @confirmReleaseMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to finish this ticket and release the basket?'**
+  String get confirmReleaseMsg;
+
+  /// No description provided for @required.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get required;
+
+  /// No description provided for @saveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved successfully'**
+  String get saveSuccess;
+
+  /// No description provided for @noTicketsFoundForThisDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No tickets found for this date'**
+  String get noTicketsFoundForThisDate;
+
+  /// No description provided for @noBasket.
+  ///
+  /// In en, this message translates to:
+  /// **'No Basket'**
+  String get noBasket;
+
+  /// No description provided for @productionInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Production Info'**
+  String get productionInfo;
+
+  /// No description provided for @timeAndPersonnel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time & Personnel'**
+  String get timeAndPersonnel;
+
+  /// No description provided for @output.
+  ///
+  /// In en, this message translates to:
+  /// **'Output'**
+  String get output;
+
+  /// No description provided for @noInspectionsRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'No inspections recorded'**
+  String get noInspectionsRecorded;
 }
 
 class _AppLocalizationsDelegate

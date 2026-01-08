@@ -128,4 +128,63 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
       emit(MachineOpError("Lỗi tháo rổ: $e"));
     }
   }
+
+   Future<void> finishTicket({
+    required WeavingTicket ticket,
+    required int employeeOutId,
+    required double grossWeight,
+    required double netWeight,
+    required double length,
+  }) async {
+    try {
+      // 1. Cập nhật Ticket: Thêm timeOut và kết quả
+      final updatedTicket = WeavingTicket(
+        id: ticket.id,
+        code: ticket.code,
+        productId: ticket.productId,
+        standardId: ticket.standardId,
+        machineId: ticket.machineId,
+        machineLine: ticket.machineLine,
+        yarnLoadDate: ticket.yarnLoadDate,
+        yarnLotId: ticket.yarnLotId,
+        basketId: ticket.basketId,
+        timeIn: ticket.timeIn,
+        employeeInId: ticket.employeeInId,
+        
+        // Cập nhật thông tin ra
+        timeOut: DateTime.now().toIso8601String(),
+        employeeOutId: employeeOutId,
+        grossWeight: grossWeight,
+        netWeight: netWeight,
+        lengthMeters: length,
+        numberOfKnots: ticket.numberOfKnots,
+      );
+
+      await _weavingRepo.updateTicket(updatedTicket);
+
+      // 2. Cập nhật Rổ -> HOLDING (Chờ nhập kho thành phẩm) hoặc READY (Nếu xong luôn)
+      // Ở đây ta set thành READY để máy khác có thể dùng lại ngay (tùy quy trình)
+      // Hoặc set thành HOLDING
+      final basketList = await _basketRepo.getBaskets();
+      final currentBasket = basketList.where((b) => b.id == ticket.basketId).firstOrNull;
+      
+      if (currentBasket != null) {
+        final updatedBasket = Basket(
+          id: currentBasket.id,
+          code: currentBasket.code,
+          tareWeight: currentBasket.tareWeight,
+          supplier: currentBasket.supplier,
+          status: "READY", // Trả rổ về trạng thái sẵn sàng
+          note: currentBasket.note,
+        );
+        await _basketRepo.updateBasket(updatedBasket);
+      }
+
+      // 3. Reload dashboard
+      loadDashboard();
+    } catch (e) {
+      emit(MachineOpError("Lỗi kết thúc phiếu: $e"));
+      loadDashboard();
+    }
+  }
 }

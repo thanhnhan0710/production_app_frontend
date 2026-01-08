@@ -395,7 +395,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get purpose => 'Mục đích sử dụng';
 
   @override
-  String get searchMachine => 'Tìm máy...';
+  String get searchMachine => 'Tìm tên máy...';
 
   @override
   String get addMachine => 'Thêm máy';
@@ -454,6 +454,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get basketCode => 'Mã rổ';
+
+  @override
+  String get basketTitleVS2 => 'Rổ';
 
   @override
   String get tareWeight => 'Trọng lượng bì (kg)';
@@ -564,7 +567,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dyeColor => 'Màu nhuộm';
 
   @override
-  String get width => 'Khổ';
+  String get width => 'Rộng';
 
   @override
   String get thickness => 'Độ dày';
@@ -671,13 +674,34 @@ class AppLocalizationsVi extends AppLocalizations {
   String get ticketCode => 'Mã phiếu';
 
   @override
+  String get loadDate => 'Ngày lên sợi';
+
+  @override
+  String get date => 'Ngày';
+
+  @override
+  String get timeIn => 'Thời gian vào';
+
+  @override
+  String get empIn => 'Người vào';
+
+  @override
+  String get timeOut => 'Thời gian ra';
+
+  @override
+  String get empOut => 'Người ra';
+
+  @override
+  String get tage => 'Trọng lượng rổ';
+
+  @override
   String get machineInfo => 'Máy / Line';
 
   @override
   String get yarnInfo => 'Lô sợi / Ngày nạp';
 
   @override
-  String get productionData => 'Thông số sản xuất';
+  String get standardData => 'Standard Specifications';
 
   @override
   String get weightInfo => 'Tổng / Tịnh / Bì (kg)';
@@ -704,10 +728,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get stageName => 'Công đoạn';
 
   @override
-  String get density => 'Mật độ';
+  String get gross => 'Tổng trọng lượng';
 
   @override
-  String get tension => 'Sức căng';
+  String get length => 'Chiều dài (m)';
+
+  @override
+  String get density => 'Mật độ sợi ngang';
+
+  @override
+  String get tension => 'Lực căng';
 
   @override
   String get bowing => 'Độ lệch (Bowing)';
@@ -730,7 +760,22 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteInspection => 'Xóa kiểm tra';
 
   @override
+  String get machineAndMaterial => 'Máy & Nguyên vật liệu';
+
+  @override
+  String get generalInfo => 'Thông tin chung';
+
+  @override
+  String get personnel => 'Nhân sự';
+
+  @override
+  String get resultsUpdateOnly => 'Kết quả (chỉ cập nhật)';
+
+  @override
   String get machineOperation => 'Vận hành Máy dệt';
+
+  @override
+  String get selectProductBefore => 'Chọn sản phẩm trước';
 
   @override
   String get line => 'Trục';
@@ -745,10 +790,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get scanBarcode => 'Quét mã vạch / Nhập mã';
 
   @override
-  String get releaseLine => 'Kết thúc / Tháo rổ';
+  String get scanBarcodeSubline => 'Quét mã rổ tại đây để tự chọn';
 
   @override
   String get viewTicket => 'Xem phiếu';
+
+  @override
+  String get editTicket => 'Sửa phiếu';
 
   @override
   String get currentBasket => 'Rổ hiện tại';
@@ -761,4 +809,66 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get basketAssigned => 'Đã gán rổ thành công';
+
+  @override
+  String get releaseBasket => 'Tháo rổ / Kết thúc phiếu';
+
+  @override
+  String get finishTicket => 'Kết thúc phiếu';
+
+  @override
+  String get grossWeight => 'Trọng lượng cả bì (kg)';
+
+  @override
+  String get netWeight => 'Trọng lượng tịnh (kg)';
+
+  @override
+  String get knots => 'Số mối nối';
+
+  @override
+  String get bow => 'Cong';
+
+  @override
+  String get employeeOut => 'Người nhận / NV Tháo';
+
+  @override
+  String get ticketDetails => 'Chi tiết Phiếu';
+
+  @override
+  String get inspectionHistory => 'Lịch sử kiểm tra';
+
+  @override
+  String get newInspection => 'Kiểm tra mới';
+
+  @override
+  String get confirmReleaseTitle => 'Xác nhận kết thúc';
+
+  @override
+  String get confirmReleaseMsg =>
+      'Bạn có chắc muốn kết thúc phiếu này và tháo rổ ra không?';
+
+  @override
+  String get required => 'Bắt buộc';
+
+  @override
+  String get saveSuccess => 'Lưu thành công';
+
+  @override
+  String get noTicketsFoundForThisDate =>
+      'Không có phiếu sản xuất nào trong ngày này';
+
+  @override
+  String get noBasket => 'Không có rổ';
+
+  @override
+  String get productionInfo => 'Thông tin sản xuất';
+
+  @override
+  String get timeAndPersonnel => 'Thời gian & nhân sự';
+
+  @override
+  String get output => 'Sản lượng';
+
+  @override
+  String get noInspectionsRecorded => 'Chưa có dữ liệu kiểm tra';
 }

@@ -394,7 +394,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get purpose => 'Purpose';
 
   @override
-  String get searchMachine => 'Search machine...';
+  String get searchMachine => 'Search machine name...';
 
   @override
   String get addMachine => 'Add Machine';
@@ -453,6 +453,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get basketCode => 'Basket Code';
+
+  @override
+  String get basketTitleVS2 => 'Basket';
 
   @override
   String get tareWeight => 'Tare Weight (kg)';
@@ -670,13 +673,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ticketCode => 'Ticket Code';
 
   @override
+  String get loadDate => 'Load date';
+
+  @override
+  String get date => 'Date';
+
+  @override
+  String get timeIn => 'Time In';
+
+  @override
+  String get empIn => 'Emp In';
+
+  @override
+  String get timeOut => 'Time Out';
+
+  @override
+  String get empOut => 'Emp Out';
+
+  @override
+  String get tage => 'Tage weight';
+
+  @override
   String get machineInfo => 'Machine / Line';
 
   @override
   String get yarnInfo => 'Yarn Lot / Date';
 
   @override
-  String get productionData => 'Production Data';
+  String get standardData => 'Standard Specifications';
 
   @override
   String get weightInfo => 'Gross / Net / Tare';
@@ -701,6 +725,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stageName => 'Stage';
+
+  @override
+  String get gross => 'Gross Weight';
+
+  @override
+  String get length => 'Length (m)';
 
   @override
   String get density => 'Density';
@@ -729,7 +759,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteInspection => 'Delete Inspection';
 
   @override
+  String get machineAndMaterial => 'Machine & Material';
+
+  @override
+  String get generalInfo => 'General Info';
+
+  @override
+  String get personnel => 'Personnel';
+
+  @override
+  String get resultsUpdateOnly => 'Results (Update Only)';
+
+  @override
   String get machineOperation => 'Machine Operation';
+
+  @override
+  String get selectProductBefore => 'Select the product first';
 
   @override
   String get line => 'Line';
@@ -744,10 +789,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanBarcode => 'Scan Barcode / Input Code';
 
   @override
-  String get releaseLine => 'Finish / Release';
+  String get scanBarcodeSubline =>
+      'Scan the basket code here to select your own items';
 
   @override
   String get viewTicket => 'View Ticket';
+
+  @override
+  String get editTicket => 'Edit ticket';
 
   @override
   String get currentBasket => 'Current Basket';
@@ -760,4 +809,65 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get basketAssigned => 'Basket assigned successfully';
+
+  @override
+  String get releaseBasket => 'Release Basket / Finish Ticket';
+
+  @override
+  String get finishTicket => 'Finish Ticket';
+
+  @override
+  String get grossWeight => 'Gross Weight (kg)';
+
+  @override
+  String get netWeight => 'Net Weight (kg)';
+
+  @override
+  String get knots => 'Knots';
+
+  @override
+  String get bow => 'Bow';
+
+  @override
+  String get employeeOut => 'Receiver / Operator Out';
+
+  @override
+  String get ticketDetails => 'Ticket Details';
+
+  @override
+  String get inspectionHistory => 'Inspection History';
+
+  @override
+  String get newInspection => 'New Inspection';
+
+  @override
+  String get confirmReleaseTitle => 'Confirm Finish';
+
+  @override
+  String get confirmReleaseMsg =>
+      'Are you sure you want to finish this ticket and release the basket?';
+
+  @override
+  String get required => 'Required';
+
+  @override
+  String get saveSuccess => 'Saved successfully';
+
+  @override
+  String get noTicketsFoundForThisDate => 'No tickets found for this date';
+
+  @override
+  String get noBasket => 'No Basket';
+
+  @override
+  String get productionInfo => 'Production Info';
+
+  @override
+  String get timeAndPersonnel => 'Time & Personnel';
+
+  @override
+  String get output => 'Output';
+
+  @override
+  String get noInspectionsRecorded => 'No inspections recorded';
 }
