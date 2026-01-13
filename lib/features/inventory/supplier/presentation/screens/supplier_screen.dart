@@ -16,8 +16,11 @@ class SupplierScreen extends StatefulWidget {
 class _SupplierScreenState extends State<SupplierScreen> {
   final _searchController = TextEditingController();
   final Color _primaryColor = const Color(0xFF003366);
-  final Color _accentColor = const Color(0xFFE65100);
   final Color _bgLight = const Color(0xFFF5F7FA);
+
+  // Define Options for Dropdowns
+  final List<String> _originOptions = ['Domestic', 'Import'];
+  final List<String> _currencyOptions = ['VND', 'USD'];
 
   @override
   void initState() {
@@ -33,7 +36,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Không thể mở liên kết: $path")),
+          SnackBar(content: Text("Could not launch: $path")),
         );
       }
     }
@@ -77,7 +80,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              "Manage external partners & vendors",
+                              "Manage partners, origins & contracts",
                               style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                             ),
                           ],
@@ -113,15 +116,9 @@ class _SupplierScreenState extends State<SupplierScreen> {
                               controller: _searchController,
                               textInputAction: TextInputAction.search,
                               decoration: InputDecoration(
-                                hintText: l10n.searchSupplier,
+                                hintText: l10n.searchSupplier, // "Search by name, code, contact..."
                                 hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
                                 prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
-                                suffixIcon: IconButton(
-                                  icon: const Icon(Icons.arrow_forward, color: Colors.blue),
-                                  onPressed: () {
-                                    context.read<SupplierCubit>().searchSuppliers(_searchController.text);
-                                  },
-                                ),
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(vertical: 14),
                               ),
@@ -132,15 +129,11 @@ class _SupplierScreenState extends State<SupplierScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: const Icon(Icons.filter_list, color: Colors.grey, size: 20),
-                        ),
+                        IconButton(
+                           onPressed: () => context.read<SupplierCubit>().loadSuppliers(),
+                           icon: const Icon(Icons.refresh, color: Colors.grey),
+                           tooltip: "Refresh",
+                        )
                       ],
                     ),
                   ],
@@ -154,21 +147,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                   builder: (context) {
                     if (state is SupplierLoading) return Center(child: CircularProgressIndicator(color: _primaryColor));
                     if (state is SupplierError) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                            const SizedBox(height: 16),
-                            Text("Error: ${state.message}", style: const TextStyle(color: Colors.red)),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: () => context.read<SupplierCubit>().loadSuppliers(),
-                              child: const Text("Retry"),
-                            )
-                          ],
-                        ),
-                      );
+                      return Center(child: Text("Error: ${state.message}", style: const TextStyle(color: Colors.red)));
                     }
                     if (state is SupplierLoaded) {
                       if (state.suppliers.isEmpty) {
@@ -205,7 +184,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
     );
   }
 
-  // --- DESKTOP TABLE (FULL WIDTH & FIXED HEIGHT ERROR) ---
+  // --- DESKTOP TABLE ---
   Widget _buildDesktopGrid(BuildContext context, List<Supplier> suppliers, AppLocalizations l10n) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -223,56 +202,108 @@ class _SupplierScreenState extends State<SupplierScreen> {
                   child: DataTable(
                     headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
                     horizontalMargin: 24,
-                    columnSpacing: 30,
-                    
-                    // [FIX LỖI] Đặt Max Height >= Min Height để tránh lỗi Not Normalized
-                    dataRowMinHeight: 60,
-                    dataRowMaxHeight: 60, 
+                    columnSpacing: 24,
+                    dataRowMinHeight: 70, // Tăng chiều cao để chứa nhiều thông tin hơn
+                    dataRowMaxHeight: 70,
                     
                     columns: [
-                      DataColumn(label: Text(l10n.supplierName.toUpperCase(), style: _headerStyle)),
-                      DataColumn(label: Text(l10n.contact.toUpperCase(), style: _headerStyle)),
-                      DataColumn(label: Text(l10n.address.toUpperCase(), style: _headerStyle)),
-                      DataColumn(label: Text(l10n.note.toUpperCase(), style: _headerStyle)),
+                      DataColumn(label: Text("INFO", style: _headerStyle)), // Name & Email
+                      DataColumn(label: Text("TYPE / CODE", style: _headerStyle)), // Origin, ShortName, Tax
+                      DataColumn(label: Text("CONTACT", style: _headerStyle)), // Person & Address
+                      DataColumn(label: Text("FINANCE", style: _headerStyle)), // Currency & LeadTime
+                      DataColumn(label: Text("STATUS", style: _headerStyle)), // Active
                       DataColumn(label: Text(l10n.actions.toUpperCase(), style: _headerStyle)),
                     ],
                     rows: suppliers.map((item) {
                       return DataRow(
                         cells: [
+                          // 1. INFO: Avatar + Name + Email
                           DataCell(Row(
                             children: [
                               CircleAvatar(
-                                radius: 16,
+                                radius: 18,
                                 backgroundColor: Colors.orange.shade50,
                                 child: Text(item.name.isNotEmpty ? item.name[0].toUpperCase() : '?', style: TextStyle(color: Colors.orange.shade800, fontWeight: FontWeight.bold, fontSize: 14)),
                               ),
                               const SizedBox(width: 12),
-                              Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                                  if(item.email.isNotEmpty)
+                                    InkWell(
+                                      onTap: () => _launchAction('mailto', item.email),
+                                      child: Text(item.email, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                                    ),
+                                ],
+                              ),
                             ],
                           )),
+
+                          // 2. TYPE / CODE: Short Name, Origin, Country
                           DataCell(Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              if(item.email.isNotEmpty) 
-                                InkWell(
-                                  onTap: () => _launchAction('mailto', item.email),
-                                  child: Row(children: [const Icon(Icons.email, size: 14, color: Colors.blue), const SizedBox(width: 6), Text(item.email, style: TextStyle(fontSize: 12, color: Colors.grey.shade700))]),
+                              if(item.shortName != null && item.shortName!.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)),
+                                  child: Text(item.shortName!, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blue.shade800)),
                                 ),
-                              if(item.phone.isNotEmpty) 
-                                InkWell(
-                                  onTap: () => _launchAction('tel', item.phone),
-                                  child: Row(children: [const Icon(Icons.phone, size: 14, color: Colors.green), const SizedBox(width: 6), Text(item.phone, style: TextStyle(fontSize: 12, color: Colors.grey.shade700))]),
-                                ),
+                              const SizedBox(height: 4),
+                              Text("${item.originType ?? '-'} • ${item.country ?? ''}", style: const TextStyle(fontSize: 12)),
+                              if(item.taxCode != null) Text("Tax: ${item.taxCode}", style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
                             ],
                           )),
-                          DataCell(Text(item.address, overflow: TextOverflow.ellipsis)),
-                          DataCell(Text(item.note, overflow: TextOverflow.ellipsis)),
+
+                          // 3. CONTACT
+                          DataCell(Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Row(children: [
+                                Icon(Icons.person, size: 14, color: Colors.grey.shade400),
+                                const SizedBox(width: 4),
+                                Text(item.contactPerson ?? '--', style: const TextStyle(fontSize: 13)),
+                              ]),
+                              const SizedBox(height: 2),
+                              Text(item.address ?? '', style: TextStyle(fontSize: 11, color: Colors.grey.shade500), overflow: TextOverflow.ellipsis, maxLines: 1),
+                            ],
+                          )),
+
+                          // 4. FINANCE
+                          DataCell(Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(item.currencyDefault, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              Text("Lead: ${item.leadTimeDays} days", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                            ],
+                          )),
+
+                          // 5. STATUS
+                          DataCell(
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: item.isActive ? Colors.green.shade50 : Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: item.isActive ? Colors.green.shade100 : Colors.red.shade100),
+                              ),
+                              child: Text(
+                                item.isActive ? "Active" : "Inactive",
+                                style: TextStyle(fontSize: 11, color: item.isActive ? Colors.green : Colors.red, fontWeight: FontWeight.w500),
+                              ),
+                            )
+                          ),
+
+                          // 6. ACTIONS
                           DataCell(Row(
                             children: [
-                              IconButton(icon: const Icon(Icons.edit_note, color: Colors.grey), onPressed: () => _showEditDialog(context, item, l10n)),
-                              IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent), onPressed: () => _confirmDelete(context, item, l10n)),
+                              IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.grey, size: 20), onPressed: () => _showEditDialog(context, item, l10n)),
+                              IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20), onPressed: () => _confirmDelete(context, item, l10n)),
                             ],
                           )),
                         ],
@@ -288,7 +319,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
     );
   }
 
-  TextStyle get _headerStyle => TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5);
+  TextStyle get _headerStyle => TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.5);
 
   // --- MOBILE LIST ---
   Widget _buildMobileList(BuildContext context, List<Supplier> suppliers, AppLocalizations l10n) {
@@ -305,121 +336,249 @@ class _SupplierScreenState extends State<SupplierScreen> {
             border: Border.all(color: Colors.grey.shade100),
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: CircleAvatar(
-              backgroundColor: Colors.orange.shade50,
-              child: Icon(Icons.store, color: Colors.orange.shade800),
+              backgroundColor: item.isActive ? Colors.green.shade50 : Colors.grey.shade100,
+              child: Icon(Icons.store, color: item.isActive ? Colors.green.shade700 : Colors.grey),
             ),
             title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                if(item.address.isNotEmpty) Row(children: [Icon(Icons.location_on, size: 14, color: Colors.grey.shade400), const SizedBox(width: 4), Expanded(child: Text(item.address, style: TextStyle(color: Colors.grey.shade600, fontSize: 13), overflow: TextOverflow.ellipsis))]),
-                const SizedBox(height: 4),
                 Row(
                   children: [
-                    if(item.phone.isNotEmpty) InkWell(onTap: () => _launchAction('tel', item.phone), child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(4)), child: Row(children: [const Icon(Icons.phone, size: 12, color: Colors.green), const SizedBox(width: 4), Text(item.phone, style: const TextStyle(fontSize: 12, color: Colors.green))]))),
-                    const SizedBox(width: 8),
-                    if(item.email.isNotEmpty) InkWell(onTap: () => _launchAction('mailto', item.email), child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)), child: const Row(children: [Icon(Icons.email, size: 12, color: Colors.blue), SizedBox(width: 4), Text("Email", style: TextStyle(fontSize: 12, color: Colors.blue))]))),
+                    if(item.shortName != null) 
+                      Container(margin: const EdgeInsets.only(right: 8), padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)), child: Text(item.shortName!, style: const TextStyle(fontSize: 10, color: Colors.blue))),
+                    Text("${item.country ?? ''} • ${item.currencyDefault}", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                   ],
-                )
+                ),
+                if(item.contactPerson != null)
+                   Padding(
+                     padding: const EdgeInsets.only(top: 4.0),
+                     child: Row(children: [const Icon(Icons.person, size: 12, color: Colors.grey), const SizedBox(width: 4), Text(item.contactPerson!, style: const TextStyle(fontSize: 12))]),
+                   )
               ],
             ),
-            trailing: PopupMenuButton(
-              onSelected: (val) {
-                if (val == 'edit') _showEditDialog(context, item, l10n);
-                if (val == 'delete') _confirmDelete(context, item, l10n);
-              },
-              itemBuilder: (ctx) => [
-                PopupMenuItem(value: 'edit', child: Row(children: [const Icon(Icons.edit, size: 18), const SizedBox(width: 8), Text(l10n.editSupplier)])),
-                PopupMenuItem(value: 'delete', child: Row(children: [const Icon(Icons.delete, size: 18, color: Colors.red), const SizedBox(width: 8), Text(l10n.deleteSupplier)])),
-              ],
-            ),
+            children: [
+               Padding(
+                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                 child: Column(
+                   children: [
+                     const Divider(),
+                     _infoRow(Icons.email, "Email", item.email),
+                     _infoRow(Icons.location_on, "Address", item.address ?? '--'),
+                     _infoRow(Icons.receipt, "Tax Code", item.taxCode ?? '--'),
+                     _infoRow(Icons.category, "Origin", item.originType ?? '--'),
+                     _infoRow(Icons.schedule, "Lead Time", "${item.leadTimeDays} days"),
+                     const SizedBox(height: 12),
+                     Row(
+                       mainAxisAlignment: MainAxisAlignment.end,
+                       children: [
+                         TextButton.icon(onPressed: () => _confirmDelete(context, item, l10n), icon: const Icon(Icons.delete, color: Colors.red, size: 18), label: Text(l10n.deleteSupplier, style: const TextStyle(color: Colors.red))),
+                         const SizedBox(width: 8),
+                         ElevatedButton.icon(onPressed: () => _showEditDialog(context, item, l10n), icon: const Icon(Icons.edit, size: 18), label: Text(l10n.editSupplier), style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white)),
+                       ],
+                     )
+                   ],
+                 ),
+               )
+            ],
           ),
         );
       },
     );
   }
 
-  // --- DIALOG ---
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: Colors.grey.shade400),
+          const SizedBox(width: 8),
+          SizedBox(width: 80, child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13))),
+          Expanded(child: Text(value, style: const TextStyle(color: Colors.black87, fontSize: 13))),
+        ],
+      ),
+    );
+  }
+
+  // --- DIALOG (CREATE / EDIT) ---
   void _showEditDialog(BuildContext context, Supplier? item, AppLocalizations l10n) {
+    // Controllers
     final nameCtrl = TextEditingController(text: item?.name ?? '');
+    final shortNameCtrl = TextEditingController(text: item?.shortName ?? '');
     final emailCtrl = TextEditingController(text: item?.email ?? '');
-    final phoneCtrl = TextEditingController(text: item?.phone ?? '');
+    final contactCtrl = TextEditingController(text: item?.contactPerson ?? '');
+    final taxCtrl = TextEditingController(text: item?.taxCode ?? '');
     final addressCtrl = TextEditingController(text: item?.address ?? '');
-    final noteCtrl = TextEditingController(text: item?.note ?? '');
+    final countryCtrl = TextEditingController(text: item?.country ?? '');
+    final leadTimeCtrl = TextEditingController(text: (item?.leadTimeDays ?? 7).toString());
+    
+    // Dropdown & Switch States
+    String selectedCurrency = item?.currencyDefault ?? 'VND';
+    String? selectedOrigin = item?.originType; // Nullable
+    bool isActive = item?.isActive ?? true;
+
     final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        titlePadding: const EdgeInsets.all(24),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-        title: Text(item == null ? l10n.addSupplier : l10n.editSupplier, style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
-        content: Form(
-          key: formKey,
-          child: SizedBox(
-            width: 500,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(controller: nameCtrl, decoration: _inputDeco(l10n.supplierName), validator: (v) => v!.isEmpty ? "Required" : null),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(child: TextFormField(controller: emailCtrl, decoration: _inputDeco(l10n.email))),
-                      const SizedBox(width: 12),
-                      Expanded(child: TextFormField(controller: phoneCtrl, decoration: _inputDeco(l10n.phone))),
-                    ],
+      barrierDismissible: false,
+      builder: (ctx) {
+        // StatefulBuilder required to update Switch and Dropdowns inside Dialog
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              titlePadding: const EdgeInsets.all(24),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+              title: Text(item == null ? l10n.addSupplier : l10n.editSupplier, style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
+              content: Form(
+                key: formKey,
+                child: SizedBox(
+                  width: 600, // Wider dialog for more fields
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Row 1: Name & ShortName
+                        Row(
+                          children: [
+                            Expanded(flex: 2, child: TextFormField(controller: nameCtrl, decoration: _inputDeco(l10n.supplierName), validator: (v) => v!.isEmpty ? "Required" : null)),
+                            const SizedBox(width: 12),
+                            Expanded(flex: 1, child: TextFormField(controller: shortNameCtrl, decoration: _inputDeco("Short Name (e.g. ABC)"))),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Row 2: Email & Contact Person
+                        Row(
+                          children: [
+                            Expanded(child: TextFormField(controller: emailCtrl, decoration: _inputDeco(l10n.email), validator: (v) => v!.isEmpty ? "Required" : null)),
+                            const SizedBox(width: 12),
+                            Expanded(child: TextFormField(controller: contactCtrl, decoration: _inputDeco("Contact Person"))),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Row 3: Tax Code, Country, Lead Time
+                        Row(
+                          children: [
+                            Expanded(flex: 2, child: TextFormField(controller: taxCtrl, decoration: _inputDeco("Tax Code"))),
+                            const SizedBox(width: 12),
+                            Expanded(flex: 1, child: TextFormField(controller: countryCtrl, decoration: _inputDeco("Country (VN)"))),
+                            const SizedBox(width: 12),
+                            Expanded(flex: 1, child: TextFormField(
+                              controller: leadTimeCtrl, 
+                              decoration: _inputDeco("Days"), 
+                              keyboardType: TextInputType.number,
+                              validator: (v) => int.tryParse(v!) == null ? "Invalid" : null,
+                            )),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Row 4: Origin & Currency (Dropdowns)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: selectedOrigin,
+                                decoration: _inputDeco("Origin Type"),
+                                items: _originOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                                onChanged: (val) => setState(() => selectedOrigin = val),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: selectedCurrency,
+                                decoration: _inputDeco("Currency"),
+                                items: _currencyOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                                onChanged: (val) => setState(() => selectedCurrency = val!),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Address
+                        TextFormField(controller: addressCtrl, decoration: _inputDeco(l10n.address), maxLines: 2),
+                        const SizedBox(height: 16),
+
+                        // Is Active Switch
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade200)),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text("Is Active Provider?", style: TextStyle(fontWeight: FontWeight.w500)),
+                              Switch(
+                                value: isActive, 
+                                onChanged: (val) => setState(() => isActive = val),
+                                activeColor: Colors.green,
+                              ),
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(controller: addressCtrl, decoration: _inputDeco(l10n.address)),
-                  const SizedBox(height: 16),
-                  TextFormField(controller: noteCtrl, decoration: _inputDeco(l10n.note), maxLines: 2),
-                ],
+                ),
               ),
-            ),
-          ),
-        ),
-        actionsPadding: const EdgeInsets.all(24),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel, style: const TextStyle(color: Colors.grey))),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                final newItem = Supplier(
-                  id: item?.id ?? 0,
-                  name: nameCtrl.text,
-                  email: emailCtrl.text,
-                  phone: phoneCtrl.text,
-                  address: addressCtrl.text,
-                  note: noteCtrl.text,
-                );
-                context.read<SupplierCubit>().saveSupplier(supplier: newItem, isEdit: item != null);
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(item == null ? l10n.successAdded : l10n.successUpdated), backgroundColor: Colors.green));
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
+              actionsPadding: const EdgeInsets.all(24),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel, style: const TextStyle(color: Colors.grey))),
+                ElevatedButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      final newItem = Supplier(
+                        id: item?.id ?? 0,
+                        name: nameCtrl.text,
+                        email: emailCtrl.text,
+                        shortName: shortNameCtrl.text.isEmpty ? null : shortNameCtrl.text,
+                        originType: selectedOrigin,
+                        country: countryCtrl.text.isEmpty ? null : countryCtrl.text,
+                        currencyDefault: selectedCurrency,
+                        taxCode: taxCtrl.text.isEmpty ? null : taxCtrl.text,
+                        contactPerson: contactCtrl.text.isEmpty ? null : contactCtrl.text,
+                        address: addressCtrl.text.isEmpty ? null : addressCtrl.text,
+                        leadTimeDays: int.tryParse(leadTimeCtrl.text) ?? 7,
+                        isActive: isActive,
+                      );
+                      
+                      context.read<SupplierCubit>().saveSupplier(supplier: newItem, isEdit: item != null);
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(item == null ? l10n.successAdded : l10n.successUpdated), backgroundColor: Colors.green));
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                  child: Text(l10n.save),
+                ),
+              ],
+            );
+          }
+        );
+      },
     );
   }
 
   InputDecoration _inputDeco(String label) {
     return InputDecoration(
       labelText: label,
+      labelStyle: const TextStyle(fontSize: 13),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
       filled: true,
       fillColor: Colors.grey.shade50,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      isDense: true,
     );
   }
 

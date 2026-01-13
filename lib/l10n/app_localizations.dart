@@ -515,7 +515,7 @@ abstract class AppLocalizations {
   /// No description provided for @yarnName.
   ///
   /// In en, this message translates to:
-  /// **'Yarn'**
+  /// **'Yarn Name'**
   String get yarnName;
 
   /// No description provided for @itemCode.
@@ -839,7 +839,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchMachine.
   ///
   /// In en, this message translates to:
-  /// **'Search machine name...'**
+  /// **'Search machine...'**
   String get searchMachine;
 
   /// No description provided for @addMachine.
@@ -1163,13 +1163,13 @@ abstract class AppLocalizations {
   /// No description provided for @width.
   ///
   /// In en, this message translates to:
-  /// **'Width'**
+  /// **'Width (mm)'**
   String get width;
 
   /// No description provided for @thickness.
   ///
   /// In en, this message translates to:
-  /// **'Thickness'**
+  /// **'Thickness (mm)'**
   String get thickness;
 
   /// No description provided for @strength.
@@ -1211,13 +1211,13 @@ abstract class AppLocalizations {
   /// No description provided for @weftDensity.
   ///
   /// In en, this message translates to:
-  /// **'Weft Density'**
+  /// **'Weft Density (pick/10cm)'**
   String get weftDensity;
 
   /// No description provided for @weight.
   ///
   /// In en, this message translates to:
-  /// **'Weight'**
+  /// **'Weight (g/m)'**
   String get weight;
 
   /// No description provided for @searchStandard.
@@ -1460,12 +1460,6 @@ abstract class AppLocalizations {
   /// **'New Ticket'**
   String get addTicket;
 
-  /// No description provided for @addInspection.
-  ///
-  /// In en, this message translates to:
-  /// **'Add QC'**
-  String get addInspection;
-
   /// No description provided for @stageName.
   ///
   /// In en, this message translates to:
@@ -1477,12 +1471,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Gross Weight'**
   String get gross;
-
-  /// No description provided for @length.
-  ///
-  /// In en, this message translates to:
-  /// **'Length (m)'**
-  String get length;
 
   /// No description provided for @density.
   ///
@@ -1598,6 +1586,12 @@ abstract class AppLocalizations {
   /// **'Scan the basket code here to select your own items'**
   String get scanBarcodeSubline;
 
+  /// No description provided for @addInspection.
+  ///
+  /// In en, this message translates to:
+  /// **'Add QC'**
+  String get addInspection;
+
   /// No description provided for @viewTicket.
   ///
   /// In en, this message translates to:
@@ -1657,6 +1651,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Net Weight (kg)'**
   String get netWeight;
+
+  /// No description provided for @length.
+  ///
+  /// In en, this message translates to:
+  /// **'Length (m)'**
+  String get length;
 
   /// No description provided for @knots.
   ///
@@ -1753,6 +1753,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No inspections recorded'**
   String get noInspectionsRecorded;
+
+  /// No description provided for @inspection.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspection'**
+  String get inspection;
+
+  /// No description provided for @measurements.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurements'**
+  String get measurements;
+
+  /// No description provided for @userManagementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'User Management'**
+  String get userManagementTitle;
+
+  /// No description provided for @searchUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Search users (name, email)...'**
+  String get searchUser;
+
+  /// No description provided for @noUserFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No users found.'**
+  String get noUserFound;
+
+  /// No description provided for @lastLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Login'**
+  String get lastLogin;
+
+  /// No description provided for @notLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Linked'**
+  String get notLinked;
+
+  /// No description provided for @superuser.
+  ///
+  /// In en, this message translates to:
+  /// **'SUPERUSER'**
+  String get superuser;
+
+  /// No description provided for @inactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get inactive;
+
+  /// No description provided for @never.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get never;
+
+  /// No description provided for @addUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Add User'**
+  String get addUser;
+
+  /// No description provided for @editUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit User'**
+  String get editUser;
+
+  /// No description provided for @addNewUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Add New User'**
+  String get addNewUser;
+
+  /// No description provided for @linkToEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to Employee'**
+  String get linkToEmployee;
+
+  /// No description provided for @linkEmployeeHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an employee to link with this account'**
+  String get linkEmployeeHelper;
+
+  /// No description provided for @noEmployeeLinkedOption.
+  ///
+  /// In en, this message translates to:
+  /// **'--- No Employee Linked ---'**
+  String get noEmployeeLinkedOption;
+
+  /// No description provided for @passwordRequiredNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Required for new user'**
+  String get passwordRequiredNew;
+
+  /// No description provided for @newPasswordPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'New Password (Leave blank to keep)'**
+  String get newPasswordPlaceholder;
+
+  /// No description provided for @role.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get role;
+
+  /// No description provided for @isActiveSwitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Is Active'**
+  String get isActiveSwitch;
+
+  /// No description provided for @isSuperuserSwitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Is Superuser'**
+  String get isSuperuserSwitch;
+
+  /// No description provided for @confirmDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Delete'**
+  String get confirmDeleteTitle;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @confirmDeleteUserMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete {name}?'**
+  String confirmDeleteUserMsg(Object name);
 }
 
 class _AppLocalizationsDelegate

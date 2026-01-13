@@ -14,7 +14,6 @@ class AuthAuthenticated extends AuthState {
   AuthAuthenticated(this.user);
 }
 class AuthError extends AuthState {
-  // Thay đổi: Bây giờ chúng ta truyền mã lỗi, thay vì chỉ truyền message
   final AuthErrorCode code; 
   final String? detailMessage;
 
@@ -29,25 +28,30 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> login(String username, String password) async {
     emit(AuthLoading());
     try {
+      // Repository sẽ thực hiện 2 bước: 
+      // 1. Lấy Token 
+      // 2. Gọi /users/me để lấy thông tin User (bao gồm employeeId)
       final user = await _repository.login(username, password);
+      
+      // User lúc này đã có employeeId
       emit(AuthAuthenticated(user));
     } on AuthException catch (e) {
-      // Bắt AuthException và truyền mã lỗi xuống UI
       emit(AuthError(e.code, detailMessage: e.detail));
     } catch (e) {
-      // Xử lý các lỗi khác không phải AuthException (Rất hiếm)
       emit(AuthError(AuthErrorCode.systemError, detailMessage: e.toString()));
     }
-  }
-
-  Future<void> checkAuthStatus() async {
-    // Logic kiểm tra token
-    // ...
-    emit(AuthInitial());
   }
 
   Future<void> logout() async {
     await _repository.logout();
     emit(AuthInitial());
+  }
+  
+  // Hàm tiện ích để lấy ID nhân viên hiện tại (nếu có)
+  int? get currentEmployeeId {
+    if (state is AuthAuthenticated) {
+      return (state as AuthAuthenticated).user.employeeId;
+    }
+    return null;
   }
 }

@@ -78,36 +78,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          l10n.dashboard,
-                          style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: _primaryColor),
-                        ),
-                        const SizedBox(height: 24),
-                        
-                        _buildStatCards(l10n),
-                        
-                        const SizedBox(height: 32),
-                        
-                        if (isDesktop)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(flex: 2, child: _buildProductionChart(l10n)),
-                              const SizedBox(width: 24),
-                              Expanded(flex: 1, child: _buildRecentActivityList(l10n)),
-                            ],
-                          )
-                        else
-                          Column(
-                            children: [
-                              _buildProductionChart(l10n),
-                              const SizedBox(height: 24),
-                              _buildRecentActivityList(l10n),
-                            ],
+                        // Chỉ hiển thị Dashboard Content khi ở route /dashboard
+                        // Nếu dùng ShellRoute (nested navigation), phần này sẽ được thay thế bằng `child`
+                        // Tuy nhiên với code hiện tại, ta giả định DashboardScreen là trang chủ
+                        if (currentPath == '/dashboard') ...[
+                          Text(
+                            l10n.dashboard,
+                            style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: _primaryColor),
                           ),
+                          const SizedBox(height: 24),
+                          
+                          _buildStatCards(l10n),
+                          
+                          const SizedBox(height: 32),
+                          
+                          if (isDesktop)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(flex: 2, child: _buildProductionChart(l10n)),
+                                const SizedBox(width: 24),
+                                Expanded(flex: 1, child: _buildRecentActivityList(l10n)),
+                              ],
+                            )
+                          else
+                            Column(
+                              children: [
+                                _buildProductionChart(l10n),
+                                const SizedBox(height: 24),
+                                _buildRecentActivityList(l10n),
+                              ],
+                            ),
+                        ]
+                        // Lưu ý: Nếu bạn dùng ShellRoute, nội dung của các trang con (như /users) 
+                        // sẽ được render bởi router, không phải nằm trong body của DashboardScreen này.
+                        // File này chủ yếu đóng vai trò là Layout (Shell).
                       ],
                     ),
                   ),
@@ -163,8 +171,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       initiallyExpanded: currentPath.startsWith('/production') || 
-                                       currentPath.startsWith('/machines') ||
-                                       currentPath.startsWith('/standards'),
+                                         currentPath.startsWith('/machines') ||
+                                         currentPath.startsWith('/standards'),
                       leading: const Icon(Icons.precision_manufacturing, color: Colors.white70),
                       title: Text(l10n.production, style: const TextStyle(color: Colors.white70)),
                       iconColor: Colors.white,
@@ -185,14 +193,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       initiallyExpanded: currentPath.startsWith('/inventory') || 
-                                       currentPath.startsWith('/materials') ||
-                                       currentPath.startsWith('/yarns') || 
-                                       currentPath.startsWith('/yarn-lots') ||
-                                       currentPath.startsWith('/suppliers') ||
-                                       currentPath.startsWith('/units') ||
-                                       currentPath.startsWith('/baskets') ||
-                                       currentPath.startsWith('/dye-colors')||
-                                        currentPath.startsWith('/products'),
+                                         currentPath.startsWith('/materials') ||
+                                         currentPath.startsWith('/yarns') || 
+                                         currentPath.startsWith('/yarn-lots') ||
+                                         currentPath.startsWith('/suppliers') ||
+                                         currentPath.startsWith('/units') ||
+                                         currentPath.startsWith('/baskets') ||
+                                         currentPath.startsWith('/dye-colors')||
+                                         currentPath.startsWith('/products'),
                       leading: const Icon(Icons.inventory_2, color: Colors.white70),
                       title: Text(l10n.inventory, style: const TextStyle(color: Colors.white70)),
                       iconColor: Colors.white,
@@ -229,6 +237,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         _buildSubMenuItem(context, Icons.badge, l10n.employeeTitle, '/employees', isMobile, currentPath),
                         _buildSubMenuItem(context, Icons.access_time, l10n.shiftTitle, '/shifts', isMobile, currentPath), // Ca làm việc
                         _buildSubMenuItem(context, Icons.calendar_month, l10n.scheduleTitle, '/schedules', isMobile, currentPath),
+                      ],
+                    ),
+                  ),
+
+                  // --- ADMINISTRATION GROUP (NEW) ---
+                  Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      initiallyExpanded: currentPath.startsWith('/users'),
+                      leading: const Icon(Icons.admin_panel_settings, color: Colors.white70),
+                      title: const Text("Administration", style: TextStyle(color: Colors.white70)),
+                      iconColor: Colors.white,
+                      collapsedIconColor: Colors.white70,
+                      childrenPadding: EdgeInsets.zero,
+                      children: [
+                        _buildSubMenuItem(context, Icons.manage_accounts, l10n.userManagementTitle, '/users', isMobile, currentPath),
                       ],
                     ),
                   ),

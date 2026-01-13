@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:production_app_frontend/features/auth/presentation/bloc/auth_cubit.dart';
+import 'package:production_app_frontend/features/hr/work_schedule/presentation/bloc/work_schedule_cubit.dart';
 import 'package:production_app_frontend/features/inventory/basket/doamain/baket_model.dart';
+import 'package:production_app_frontend/features/production/weaving/presentation/bloc/weaving_cubit.dart';
 import 'package:production_app_frontend/features/production/weaving/presentation/screens/weaving_inspection_dialog.dart';
 import 'package:production_app_frontend/l10n/app_localizations.dart';
 import '../../../weaving/domain/weaving_model.dart';
@@ -38,6 +42,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     context.read<YarnLotCubit>().loadYarnLots();
     context.read<EmployeeCubit>().loadEmployees();
     context.read<ShiftCubit>().loadShifts();
+    context.read<WorkScheduleCubit>().loadSchedules();
   }
 
   @override
@@ -200,6 +205,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
         if (!isActive) {
           _showAssignDialog(context, machine, lineCode, readyBaskets, l10n);
         } else {
+          context.read<WeavingCubit>().loadInspections(ticket.id);
           // Mở dialog kiểm tra/tháo rổ
           showDialog(
             context: context,
@@ -259,14 +265,16 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
 
    void _showReleaseDialog(BuildContext context, WeavingTicket ticket, AppLocalizations l10n) {
     final grossCtrl = TextEditingController();
-    final netCtrl = TextEditingController();
     final lengthCtrl = TextEditingController();
+    final knotCtrl = TextEditingController();
     int? employeeOutId;
     final formKey = GlobalKey<FormState>();
 
-    // Lấy list nhân viên
-    final empState = context.read<EmployeeCubit>().state;
-    List<Employee> employees = (empState is EmployeeLoaded) ? empState.employees : [];
+    final authState = context.read<AuthCubit>().state;
+    if (authState is AuthAuthenticated && authState.user.employeeId != null) {
+      // Tự động gán ID nhân viên
+      employeeOutId = authState.user.employeeId; 
+    }
 
     showDialog(
       context: context,
@@ -281,15 +289,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
               children: [
                 Text("${l10n.ticketCode}: ${ticket.code}", style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
-                
-                DropdownButtonFormField<int>(
-                  decoration: InputDecoration(labelText: l10n.employeeOut, border: const OutlineInputBorder()),
-                  items: employees.map((e) => DropdownMenuItem(value: e.id, child: Text(e.fullName))).toList(),
-                  onChanged: (v) => employeeOutId = v,
-                  validator: (v) => v == null ? l10n.required : null,
-                ),
-                const SizedBox(height: 16),
-                
                 Row(children: [
                   Expanded(child: TextFormField(
                     controller: grossCtrl, 
@@ -298,12 +297,21 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                     validator: (v) => v!.isEmpty ? l10n.required : null,
                   )),
                   const SizedBox(width: 12),
-                  Expanded(child: TextFormField(
-                    controller: netCtrl, 
-                    decoration: InputDecoration(labelText: l10n.netWeight, border: const OutlineInputBorder()),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => v!.isEmpty ? l10n.required : null,
-                  )),
+                  Expanded(
+                    child: TextFormField(
+                      controller: knotCtrl,
+                      decoration: InputDecoration(
+                        labelText: l10n.knots,
+                        border: const OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      validator: (v) =>
+                          v == null || v.isEmpty ? l10n.required : null,
+                    ),
+                  ),
                 ]),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -325,10 +333,10 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                 Navigator.pop(ctx);
                 context.read<MachineOperationCubit>().finishTicket(
                   ticket: ticket,
-                  employeeOutId: employeeOutId!,
+                  employeeOutId: employeeOutId,
                   grossWeight: double.parse(grossCtrl.text),
-                  netWeight: double.parse(netCtrl.text),
                   length: double.parse(lengthCtrl.text),
+                  numberOfKnots: int.parse(grossCtrl.text),
                 );
               }
             },
@@ -358,7 +366,11 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     List<Product> products = (productState is ProductLoaded) ? productState.products : [];
     List<Standard> allStandards = (standardState is StandardLoaded) ? standardState.standards : [];
     List<YarnLot> yarnLots = (yarnLotState is YarnLotLoaded) ? yarnLotState.yarnLots : [];
-    List<Employee> employees = (employeeState is EmployeeLoaded) ? employeeState.employees : [];
+    final authState = context.read<AuthCubit>().state;
+    if (authState is AuthAuthenticated && authState.user.employeeId != null) {
+      // Tự động gán ID nhân viên
+      selectedEmployeeId = authState.user.employeeId; 
+    }
 
     showDialog(
       context: context,
@@ -425,18 +437,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                           child: Text("${b.code} (${b.tareWeight}kg)"),
                         )).toList(),
                         onChanged: (val) => setStateDialog(() => selectedBasket = val),
-                        validator: (v) => v == null ? "Required" : null,
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // 2. CHỌN NGƯỜI ĐỨNG MÁY
-                      DropdownButtonFormField<int>(
-                        decoration: const InputDecoration(labelText: "Operator (Người đứng máy)", border: OutlineInputBorder()),
-                        items: employees.map((e) => DropdownMenuItem(
-                          value: e.id,
-                          child: Text("${e.id} - ${e.fullName}"),
-                        )).toList(),
-                        onChanged: (val) => selectedEmployeeId = val,
                         validator: (v) => v == null ? "Required" : null,
                       ),
                       const SizedBox(height: 16),

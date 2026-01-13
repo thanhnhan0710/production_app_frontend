@@ -4,7 +4,6 @@ class Machine {
   final int totalLines;
   final String purpose;
   final String status; // 'Running', 'Stopped', 'Maintenance'
-  final int supplierId;
 
   Machine({
     required this.id,
@@ -12,7 +11,6 @@ class Machine {
     required this.totalLines,
     required this.purpose,
     required this.status,
-    required this.supplierId,
   });
 
   factory Machine.fromJson(Map<String, dynamic> json) {
@@ -22,7 +20,6 @@ class Machine {
       totalLines: json['total_lines'] ?? 0,
       purpose: json['purpose'] ?? '',
       status: json['status'] ?? 'Stopped',
-      supplierId: json['supplier_id'] ?? 0,
     );
   }
 
@@ -32,7 +29,6 @@ class Machine {
       'total_lines': totalLines,
       'purpose': purpose,
       'status': status,
-      'supplier_id': supplierId,
     };
   }
 }

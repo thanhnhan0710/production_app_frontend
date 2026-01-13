@@ -201,7 +201,6 @@ class _MachineScreenState extends State<MachineScreen> {
                       DataColumn(label: Text(l10n.purpose.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.totalLines.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.status.toUpperCase(), style: _headerStyle)),
-                      DataColumn(label: Text(l10n.supplier.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.actions.toUpperCase(), style: _headerStyle)),
                     ],
                     rows: machines.map((item) {
@@ -211,7 +210,6 @@ class _MachineScreenState extends State<MachineScreen> {
                           DataCell(Text(item.purpose, overflow: TextOverflow.ellipsis)),
                           DataCell(Text("${item.totalLines}", style: const TextStyle(fontWeight: FontWeight.bold))),
                           DataCell(_buildStatusBadge(item.status, l10n)),
-                          DataCell(_SupplierNameBadge(supplierId: item.supplierId)),
                           DataCell(Row(
                             children: [
                               IconButton(icon: const Icon(Icons.edit_note, color: Colors.grey), onPressed: () => _showEditDialog(context, item, l10n)),
@@ -265,7 +263,6 @@ class _MachineScreenState extends State<MachineScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _buildStatusBadge(item.status, l10n, isChip: false),
-                    _SupplierNameBadge(supplierId: item.supplierId),
                   ],
                 )
               ],
@@ -293,14 +290,7 @@ class _MachineScreenState extends State<MachineScreen> {
     final linesCtrl = TextEditingController(text: item?.totalLines.toString() ?? '0');
     
     String selectedStatus = item?.status ?? 'Running';
-    int? selectedSupplierId = item?.supplierId;
-
-    // Auto select first supplier if new
-    final supplierState = context.read<SupplierCubit>().state;
-    if (item == null && supplierState is SupplierLoaded && supplierState.suppliers.isNotEmpty) {
-      selectedSupplierId = supplierState.suppliers.first.id;
-    }
-
+  
     final formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -332,20 +322,6 @@ class _MachineScreenState extends State<MachineScreen> {
                       onChanged: (val) => selectedStatus = val!,
                     )),
                   ]),
-                  const SizedBox(height: 16),
-                  // Dropdown Supplier
-                  BlocBuilder<SupplierCubit, SupplierState>(
-                    builder: (context, state) {
-                      List<Supplier> sups = (state is SupplierLoaded) ? state.suppliers : [];
-                      return DropdownButtonFormField<int>(
-                        value: selectedSupplierId,
-                        decoration: _inputDeco(l10n.supplier),
-                        items: sups.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
-                        onChanged: (val) => selectedSupplierId = val,
-                        validator: (v) => v == null ? "Required" : null,
-                      );
-                    },
-                  ),
                 ],
               ),
             ),
@@ -356,14 +332,13 @@ class _MachineScreenState extends State<MachineScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel, style: const TextStyle(color: Colors.grey))),
           ElevatedButton(
             onPressed: () {
-              if (formKey.currentState!.validate() && selectedSupplierId != null) {
+              if (formKey.currentState!.validate() ) {
                 final newItem = Machine(
                   id: item?.id ?? 0,
                   name: nameCtrl.text,
                   purpose: purposeCtrl.text,
                   totalLines: int.tryParse(linesCtrl.text) ?? 0,
                   status: selectedStatus,
-                  supplierId: selectedSupplierId!,
                 );
                 context.read<MachineCubit>().saveMachine(machine: newItem, isEdit: item != null);
                 Navigator.pop(ctx);
@@ -451,26 +426,6 @@ class _MachineScreenState extends State<MachineScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-// Widget Badge hiển thị tên Supplier
-class _SupplierNameBadge extends StatelessWidget {
-  final int supplierId;
-  const _SupplierNameBadge({required this.supplierId});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<SupplierCubit, SupplierState>(
-      builder: (context, state) {
-        String name = "---";
-        if (state is SupplierLoaded) {
-          final s = state.suppliers.where((x) => x.id == supplierId).firstOrNull;
-          if (s != null) name = s.name;
-        }
-        return Text(name, style: TextStyle(color: Colors.grey.shade700, fontSize: 13));
-      },
     );
   }
 }

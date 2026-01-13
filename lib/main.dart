@@ -3,6 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:production_app_frontend/features/auth/data/user_repository.dart';
+import 'package:production_app_frontend/features/auth/presentation/bloc/user_cubit.dart';
+import 'package:production_app_frontend/features/auth/presentation/screens/user_screen.dart';
 import 'package:production_app_frontend/features/hr/employee/presentation/screens/employee_screen.dart';
 import 'package:production_app_frontend/features/hr/shift/data/shift_repository.dart';
 import 'package:production_app_frontend/features/hr/shift/presentation/bloc/shift_cubit.dart';
@@ -107,7 +110,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => ProductCubit(ProductRepository())),
           BlocProvider(create: (context) => StandardCubit(StandardRepository())),
           BlocProvider(create: (context) => WorkScheduleCubit(WorkScheduleRepository())),
-
+          BlocProvider(create: (context) => UserCubit(UserRepository())),
           //Production
           BlocProvider(
             create: (context) => MachineOperationCubit(
@@ -194,6 +197,7 @@ class AppView extends StatelessWidget {
         GoRoute(path: '/standards', builder: (context, state) => const StandardScreen()),
         GoRoute(path: '/machine-operation',builder: (context, state) => const MachineOperationScreen(),),
         GoRoute(path: '/weaving', builder: (context, state) => const WeavingScreen()),
+        GoRoute(path: '/users', builder: (context, state) => const UserScreen()),
       ],
     );
 

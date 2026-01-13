@@ -69,7 +69,6 @@ flutter:
   # Cấu hình Assets
   assets:
     - assets/images/
-    - assets/icons/
 
   # Cấu hình đa ngôn ngữ tự động (nếu dùng cách generate chuẩn của Flutter)
   generate: true

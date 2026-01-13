@@ -36,21 +36,44 @@ class WeavingCubit extends Cubit<WeavingState> {
     }
   }
 
-  // Chọn 1 phiếu để xem chi tiết
   Future<void> selectTicket(WeavingTicket ticket) async {
+    List<WeavingTicket> currentTickets = [];
     if (state is WeavingLoaded) {
-      final currentTickets = (state as WeavingLoaded).tickets;
-      emit(WeavingLoading());
-      try {
-        final inspections = await _repo.getInspections(ticket.id);
-        emit(WeavingLoaded(
-          tickets: currentTickets,
-          selectedTicket: ticket,
-          inspections: inspections,
-        ));
-      } catch (e) {
-        emit(WeavingError(e.toString()));
-      }
+      currentTickets = (state as WeavingLoaded).tickets;
+    }
+    
+    emit(WeavingLoading());
+    try {
+      final inspections = await _repo.getInspections(ticket.id);
+      emit(WeavingLoaded(
+        tickets: currentTickets,
+        selectedTicket: ticket,
+        inspections: inspections,
+      ));
+    } catch (e) {
+      emit(WeavingError(e.toString()));
+    }
+  }
+  Future<void> loadInspections(int ticketId) async {
+    // Lưu lại danh sách ticket hiện tại để không bị mất dữ liệu dashboard
+    List<WeavingTicket> currentTickets = [];
+    WeavingTicket? currentSelected;
+    
+    if (state is WeavingLoaded) {
+      currentTickets = (state as WeavingLoaded).tickets;
+      currentSelected = (state as WeavingLoaded).selectedTicket;
+    }
+
+    emit(WeavingLoading());
+    try {
+      final inspections = await _repo.getInspections(ticketId);
+      emit(WeavingLoaded(
+        tickets: currentTickets,
+        selectedTicket: currentSelected,
+        inspections: inspections,
+      ));
+    } catch (e) {
+      emit(WeavingError("Không thể tải lịch sử kiểm tra: $e"));
     }
   }
 

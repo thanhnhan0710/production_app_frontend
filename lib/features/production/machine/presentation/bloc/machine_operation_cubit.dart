@@ -106,7 +106,6 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
         id: basket.id,
         code: basket.code,
         tareWeight: basket.tareWeight,
-        supplier: basket.supplier,
         status: "IN_USE",
         note: basket.note,
       );
@@ -133,8 +132,8 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
     required WeavingTicket ticket,
     required int employeeOutId,
     required double grossWeight,
-    required double netWeight,
-    required double length,
+    required double length, 
+    required int numberOfKnots,
   }) async {
     try {
       // 1. Cập nhật Ticket: Thêm timeOut và kết quả
@@ -155,9 +154,9 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
         timeOut: DateTime.now().toIso8601String(),
         employeeOutId: employeeOutId,
         grossWeight: grossWeight,
-        netWeight: netWeight,
         lengthMeters: length,
         numberOfKnots: ticket.numberOfKnots,
+        netWeight: 0,
       );
 
       await _weavingRepo.updateTicket(updatedTicket);
@@ -173,13 +172,11 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
           id: currentBasket.id,
           code: currentBasket.code,
           tareWeight: currentBasket.tareWeight,
-          supplier: currentBasket.supplier,
           status: "READY", // Trả rổ về trạng thái sẵn sàng
           note: currentBasket.note,
         );
         await _basketRepo.updateBasket(updatedBasket);
       }
-
       // 3. Reload dashboard
       loadDashboard();
     } catch (e) {

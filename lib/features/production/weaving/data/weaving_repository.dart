@@ -34,6 +34,7 @@ class WeavingRepository {
         'basket_id': ticket.basketId,
         'employee_in_id': ticket.employeeInId,
         'time_in': ticket.timeIn,
+        'number_of_knots': ticket.numberOfKnots,
       };
 
       print("Payload Create Ticket: $data");

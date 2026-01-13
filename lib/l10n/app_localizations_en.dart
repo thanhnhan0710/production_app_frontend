@@ -224,7 +224,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yarnTitle => 'Yarn Inventory';
 
   @override
-  String get yarnName => 'Yarn';
+  String get yarnName => 'Yarn Name';
 
   @override
   String get itemCode => 'Item Code';
@@ -394,7 +394,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get purpose => 'Purpose';
 
   @override
-  String get searchMachine => 'Search machine name...';
+  String get searchMachine => 'Search machine...';
 
   @override
   String get addMachine => 'Add Machine';
@@ -566,10 +566,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dyeColor => 'Dye Color';
 
   @override
-  String get width => 'Width';
+  String get width => 'Width (mm)';
 
   @override
-  String get thickness => 'Thickness';
+  String get thickness => 'Thickness (mm)';
 
   @override
   String get strength => 'Strength (daN)';
@@ -590,10 +590,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appearance => 'Appearance';
 
   @override
-  String get weftDensity => 'Weft Density';
+  String get weftDensity => 'Weft Density (pick/10cm)';
 
   @override
-  String get weight => 'Weight';
+  String get weight => 'Weight (g/m)';
 
   @override
   String get searchStandard => 'Search standard...';
@@ -721,16 +721,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addTicket => 'New Ticket';
 
   @override
-  String get addInspection => 'Add QC';
-
-  @override
   String get stageName => 'Stage';
 
   @override
   String get gross => 'Gross Weight';
-
-  @override
-  String get length => 'Length (m)';
 
   @override
   String get density => 'Density';
@@ -793,6 +787,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Scan the basket code here to select your own items';
 
   @override
+  String get addInspection => 'Add QC';
+
+  @override
   String get viewTicket => 'View Ticket';
 
   @override
@@ -821,6 +818,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get netWeight => 'Net Weight (kg)';
+
+  @override
+  String get length => 'Length (m)';
 
   @override
   String get knots => 'Knots';
@@ -870,4 +870,79 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noInspectionsRecorded => 'No inspections recorded';
+
+  @override
+  String get inspection => 'Inspection';
+
+  @override
+  String get measurements => 'Measurements';
+
+  @override
+  String get userManagementTitle => 'User Management';
+
+  @override
+  String get searchUser => 'Search users (name, email)...';
+
+  @override
+  String get noUserFound => 'No users found.';
+
+  @override
+  String get lastLogin => 'Last Login';
+
+  @override
+  String get notLinked => 'Not Linked';
+
+  @override
+  String get superuser => 'SUPERUSER';
+
+  @override
+  String get inactive => 'Inactive';
+
+  @override
+  String get never => 'Never';
+
+  @override
+  String get addUser => 'Add User';
+
+  @override
+  String get editUser => 'Edit User';
+
+  @override
+  String get addNewUser => 'Add New User';
+
+  @override
+  String get linkToEmployee => 'Link to Employee';
+
+  @override
+  String get linkEmployeeHelper =>
+      'Select an employee to link with this account';
+
+  @override
+  String get noEmployeeLinkedOption => '--- No Employee Linked ---';
+
+  @override
+  String get passwordRequiredNew => 'Required for new user';
+
+  @override
+  String get newPasswordPlaceholder => 'New Password (Leave blank to keep)';
+
+  @override
+  String get role => 'Role';
+
+  @override
+  String get isActiveSwitch => 'Is Active';
+
+  @override
+  String get isSuperuserSwitch => 'Is Superuser';
+
+  @override
+  String get confirmDeleteTitle => 'Confirm Delete';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String confirmDeleteUserMsg(Object name) {
+    return 'Are you sure you want to delete $name?';
+  }
 }

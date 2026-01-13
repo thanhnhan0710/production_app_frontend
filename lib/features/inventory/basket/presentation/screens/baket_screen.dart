@@ -194,7 +194,6 @@ class _BasketScreenState extends State<BasketScreen> {
                       DataColumn(label: Text(l10n.basketCode.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.status.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.tareWeight.toUpperCase(), style: _headerStyle)),
-                      DataColumn(label: Text(l10n.supplier.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.note.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.actions.toUpperCase(), style: _headerStyle)),
                     ],
@@ -204,7 +203,6 @@ class _BasketScreenState extends State<BasketScreen> {
                           DataCell(Text(item.code, style: const TextStyle(fontWeight: FontWeight.bold))),
                           DataCell(_buildStatusBadge(item.status, l10n)),
                           DataCell(Text("${item.tareWeight} kg")),
-                          DataCell(Text(item.supplier)),
                           DataCell(Text(item.note, overflow: TextOverflow.ellipsis)),
                           DataCell(Row(
                             children: [
@@ -253,7 +251,7 @@ class _BasketScreenState extends State<BasketScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Text("${l10n.supplier} • ${item.tareWeight} kg", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                Text("${item.tareWeight} kg", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 const SizedBox(height: 6),
                 _buildStatusBadge(item.status, l10n, isChip: false),
               ],
@@ -277,7 +275,6 @@ class _BasketScreenState extends State<BasketScreen> {
   // --- DIALOG ---
   void _showEditDialog(BuildContext context, Basket? item, AppLocalizations l10n) {
     final codeCtrl = TextEditingController(text: item?.code ?? '');
-    final supplierCtrl = TextEditingController(text: item?.supplier ?? '');
     final weightCtrl = TextEditingController(text: item?.tareWeight.toString() ?? '0');
     final noteCtrl = TextEditingController(text: item?.note ?? '');
     String selectedStatus = item?.status ?? 'READY';
@@ -305,8 +302,6 @@ class _BasketScreenState extends State<BasketScreen> {
                     Expanded(child: TextFormField(controller: weightCtrl, decoration: _inputDeco(l10n.tareWeight), keyboardType: TextInputType.number)),
                   ]),
                   const SizedBox(height: 16),
-                  TextFormField(controller: supplierCtrl, decoration: _inputDeco(l10n.supplier)),
-                  const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     value: selectedStatus,
                     decoration: _inputDeco(l10n.status),
@@ -330,7 +325,6 @@ class _BasketScreenState extends State<BasketScreen> {
                   id: item?.id ?? 0,
                   code: codeCtrl.text,
                   tareWeight: double.tryParse(weightCtrl.text) ?? 0,
-                  supplier: supplierCtrl.text,
                   status: selectedStatus,
                   note: noteCtrl.text,
                 );

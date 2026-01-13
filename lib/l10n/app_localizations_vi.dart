@@ -96,7 +96,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get viewAll => 'Xem tất cả';
 
   @override
-  String get departmentTitle => 'Bộ phận';
+  String get departmentTitle => 'Quản lý Bộ phận';
 
   @override
   String get deptName => 'Tên bộ phận';
@@ -225,7 +225,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get yarnTitle => 'Kho Sợi';
 
   @override
-  String get yarnName => 'Loại sợi';
+  String get yarnName => 'Tên sợi';
 
   @override
   String get itemCode => 'Mã sản phẩm';
@@ -395,7 +395,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get purpose => 'Mục đích sử dụng';
 
   @override
-  String get searchMachine => 'Tìm tên máy...';
+  String get searchMachine => 'Tìm máy...';
 
   @override
   String get addMachine => 'Thêm máy';
@@ -450,7 +450,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get noShiftFound => 'Không tìm thấy ca làm việc';
 
   @override
-  String get basketTitle => 'Rổ chứa / Pallet';
+  String get basketTitle => 'Rổ chứa';
 
   @override
   String get basketCode => 'Mã rổ';
@@ -567,10 +567,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dyeColor => 'Màu nhuộm';
 
   @override
-  String get width => 'Rộng';
+  String get width => 'Khổ (mm)';
 
   @override
-  String get thickness => 'Độ dày';
+  String get thickness => 'Độ dày (mm)';
 
   @override
   String get strength => 'Lực đứt (daN)';
@@ -591,10 +591,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get appearance => 'Ngoại quan';
 
   @override
-  String get weftDensity => 'Mật độ ngang';
+  String get weftDensity => 'Mật độ ngang (pick/10cm)';
 
   @override
-  String get weight => 'Trọng lượng';
+  String get weight => 'Trọng lượng (g/m)';
 
   @override
   String get searchStandard => 'Tìm tiêu chuẩn...';
@@ -722,16 +722,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get addTicket => 'Tạo phiếu mới';
 
   @override
-  String get addInspection => 'Kiểm tra QC';
-
-  @override
   String get stageName => 'Công đoạn';
 
   @override
   String get gross => 'Tổng trọng lượng';
-
-  @override
-  String get length => 'Chiều dài (m)';
 
   @override
   String get density => 'Mật độ sợi ngang';
@@ -793,6 +787,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get scanBarcodeSubline => 'Quét mã rổ tại đây để tự chọn';
 
   @override
+  String get addInspection => 'Thêm kiểm tra';
+
+  @override
   String get viewTicket => 'Xem phiếu';
 
   @override
@@ -821,6 +818,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get netWeight => 'Trọng lượng tịnh (kg)';
+
+  @override
+  String get length => 'Chiều dài (m)';
 
   @override
   String get knots => 'Số mối nối';
@@ -871,4 +871,79 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get noInspectionsRecorded => 'Chưa có dữ liệu kiểm tra';
+
+  @override
+  String get inspection => 'Kiểm tra chất lượng';
+
+  @override
+  String get measurements => 'Thông số đo đạc';
+
+  @override
+  String get userManagementTitle => 'Quản lý Tài khoản';
+
+  @override
+  String get searchUser => 'Tìm tài khoản (tên, email)...';
+
+  @override
+  String get noUserFound => 'Không tìm thấy tài khoản nào.';
+
+  @override
+  String get lastLogin => 'Đăng nhập cuối';
+
+  @override
+  String get notLinked => 'Chưa liên kết';
+
+  @override
+  String get superuser => 'SUPERUSER';
+
+  @override
+  String get inactive => 'Ngưng hoạt động';
+
+  @override
+  String get never => 'Chưa từng';
+
+  @override
+  String get addUser => 'Thêm tài khoản';
+
+  @override
+  String get editUser => 'Sửa tài khoản';
+
+  @override
+  String get addNewUser => 'Thêm tài khoản mới';
+
+  @override
+  String get linkToEmployee => 'Liên kết Nhân viên';
+
+  @override
+  String get linkEmployeeHelper =>
+      'Chọn nhân viên để liên kết với tài khoản này';
+
+  @override
+  String get noEmployeeLinkedOption => '--- Không liên kết ---';
+
+  @override
+  String get passwordRequiredNew => 'Bắt buộc đối với tài khoản mới';
+
+  @override
+  String get newPasswordPlaceholder => 'Mật khẩu mới (Để trống nếu giữ nguyên)';
+
+  @override
+  String get role => 'Vai trò';
+
+  @override
+  String get isActiveSwitch => 'Đang hoạt động';
+
+  @override
+  String get isSuperuserSwitch => 'Là Superuser';
+
+  @override
+  String get confirmDeleteTitle => 'Xác nhận xóa';
+
+  @override
+  String get delete => 'Xóa';
+
+  @override
+  String confirmDeleteUserMsg(Object name) {
+    return 'Bạn có chắc muốn xóa tài khoản $name?';
+  }
 }
