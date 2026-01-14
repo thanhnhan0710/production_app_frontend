@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import '../../../../core/network/api_client.dart';
 import '../domain/machine_model.dart';
 
@@ -35,6 +36,10 @@ class MachineRepository {
   Future<void> createMachine(Machine machine) async {
     try {
       await _dio.post('/api/v1/machines', data: machine.toJson());
+    } on DioException catch (e) {
+      // [QUAN TRỌNG] In ra lỗi chi tiết từ Server
+      debugPrint("❌ CREATE ERROR: ${e.response?.data}");
+      throw Exception(e.response?.data['detail'] ?? e.message);
     } catch (e) {
       throw Exception("Failed to create machine: $e");
     }
@@ -43,6 +48,11 @@ class MachineRepository {
   Future<void> updateMachine(Machine machine) async {
     try {
       await _dio.put('/api/v1/machines/${machine.id}', data: machine.toJson());
+    } on DioException catch (e) {
+      // [QUAN TRỌNG] In ra lỗi chi tiết từ Server
+      debugPrint("❌ UPDATE ERROR: ${e.response?.data}");
+      // Ném lỗi chứa message từ server để UI hiển thị
+      throw Exception(e.response?.data['detail'] ?? e.message); 
     } catch (e) {
       throw Exception("Failed to update machine: $e");
     }
@@ -51,6 +61,9 @@ class MachineRepository {
   Future<void> deleteMachine(int id) async {
     try {
       await _dio.delete('/api/v1/machines/$id');
+    } on DioException catch (e) {
+      debugPrint("❌ DELETE ERROR: ${e.response?.data}");
+      throw Exception(e.response?.data['detail'] ?? e.message);
     } catch (e) {
       throw Exception("Failed to delete machine: $e");
     }

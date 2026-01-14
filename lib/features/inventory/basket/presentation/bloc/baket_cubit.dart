@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:production_app_frontend/features/inventory/basket/data/baket_repository.dart';
-import 'package:production_app_frontend/features/inventory/basket/doamain/baket_model.dart';
+import 'package:production_app_frontend/features/inventory/basket/doamain/basket_model.dart';
 
 
 abstract class BasketState {}

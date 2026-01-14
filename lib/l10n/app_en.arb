@@ -43,7 +43,7 @@
   "editDept": "Edit Department",
   "deleteDept": "Delete Department",
   "confirmDelete": "Are you sure you want to delete {name}?",
-  
+   
   "employeeTitle": "Employees",
   "fullName": "Full Name",
   "email": "Email",
@@ -138,6 +138,7 @@
   "machineName": "Machine Name",
   "totalLines": "Total Lines",
   "purpose": "Purpose",
+  "area":"AREA",
   "searchMachine": "Search machine...",
   "addMachine": "Add Machine",
   "editMachine": "Edit Machine",
@@ -156,7 +157,7 @@
   "deleteShift": "Delete Shift",
   "confirmDeleteShift": "Delete shift {name}?",
   "noShiftFound": "No shifts found",
-   
+    
   "basketTitle": "Baskets",
   "basketCode": "Basket Code",
   "basketTitleVS2":"Basket",
@@ -326,5 +327,28 @@
   "isSuperuserSwitch": "Is Superuser",
   "confirmDeleteTitle": "Confirm Delete",
   "delete": "Delete",
-  "confirmDeleteUserMsg": "Are you sure you want to delete {name}?"
+  "confirmDeleteUserMsg": "Are you sure you want to delete {name}?",
+
+  "prodStatsTitle": "Production Statistics",
+  "exportExcel": "Export Excel",
+  "refreshData": "Refresh Data",
+  "recalculateToday": "Recalculate (Today)",
+  "searchProductHint": "Search product code, note...",
+  "filterToday": "Today",
+  "filterYesterday": "Yesterday",
+  "filter7Days": "Last 7 Days",
+  "filterThisMonth": "This Month",
+  "filterLastMonth": "Last Month",
+  "filterThisQuarter": "This Quarter",
+  "filterThisYear": "This Year",
+  "filterCustom": "Custom Date",
+  "selectDate": "Select Date",
+  "totalProduction": "TOTAL PRODUCTION",
+  "totalLength": "TOTAL LENGTH",
+  "itemCount": "ITEMS",
+  "noStatsData": "No data for this period",
+  "machines": "Machines",
+  "copySuccess": "Copied to clipboard!",
+  "exporting": "Creating Excel file...",
+  "exportError": "Export error: {error}"
 }

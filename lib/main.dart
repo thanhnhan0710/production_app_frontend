@@ -41,6 +41,9 @@ import 'package:production_app_frontend/features/production/standard/presentatio
 import 'package:production_app_frontend/features/production/weaving/data/weaving_repository.dart';
 import 'package:production_app_frontend/features/production/weaving/presentation/bloc/weaving_cubit.dart';
 import 'package:production_app_frontend/features/production/weaving/presentation/screens/weaving_screen.dart';
+import 'package:production_app_frontend/features/production/weaving_daily_production/data/weaving_production_repository.dart';
+import 'package:production_app_frontend/features/production/weaving_daily_production/presentation/bloc/weaving_production_cubit.dart';
+import 'package:production_app_frontend/features/production/weaving_daily_production/presentation/screens/weaving_production_screen.dart';
 
 // --- CORE & L10N ---
 import 'core/bloc/language_cubit.dart';
@@ -120,6 +123,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
           BlocProvider(create: (context) => WeavingCubit(WeavingRepository())),
+          BlocProvider(create: (context) => WeavingProductionCubit(WeavingProductionRepository())),
         ],
         child: const AppView(),
       ),
@@ -198,6 +202,7 @@ class AppView extends StatelessWidget {
         GoRoute(path: '/machine-operation',builder: (context, state) => const MachineOperationScreen(),),
         GoRoute(path: '/weaving', builder: (context, state) => const WeavingScreen()),
         GoRoute(path: '/users', builder: (context, state) => const UserScreen()),
+        GoRoute(path: '/weaving-productions', builder: (context, state) => const WeavingProductionScreen()),
       ],
     );
 

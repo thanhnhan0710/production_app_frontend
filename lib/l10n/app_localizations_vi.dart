@@ -395,6 +395,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get purpose => 'Mục đích sử dụng';
 
   @override
+  String get area => 'Khu vực';
+
+  @override
   String get searchMachine => 'Tìm máy...';
 
   @override
@@ -945,5 +948,73 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String confirmDeleteUserMsg(Object name) {
     return 'Bạn có chắc muốn xóa tài khoản $name?';
+  }
+
+  @override
+  String get prodStatsTitle => 'Thống Kê Sản Lượng';
+
+  @override
+  String get exportExcel => 'Xuất Excel';
+
+  @override
+  String get refreshData => 'Làm mới dữ liệu';
+
+  @override
+  String get recalculateToday => 'Tính toán lại (Hôm nay)';
+
+  @override
+  String get searchProductHint => 'Tìm theo mã sản phẩm, ghi chú...';
+
+  @override
+  String get filterToday => 'Hôm nay';
+
+  @override
+  String get filterYesterday => 'Hôm qua';
+
+  @override
+  String get filter7Days => '7 ngày qua';
+
+  @override
+  String get filterThisMonth => 'Tháng này';
+
+  @override
+  String get filterLastMonth => 'Tháng trước';
+
+  @override
+  String get filterThisQuarter => 'Quý này';
+
+  @override
+  String get filterThisYear => 'Năm nay';
+
+  @override
+  String get filterCustom => 'Tùy chọn ngày';
+
+  @override
+  String get selectDate => 'Chọn ngày';
+
+  @override
+  String get totalProduction => 'TỔNG SẢN LƯỢNG';
+
+  @override
+  String get totalLength => 'TỔNG CHIỀU DÀI';
+
+  @override
+  String get itemCount => 'SỐ MÃ';
+
+  @override
+  String get noStatsData => 'Không có dữ liệu cho giai đoạn này';
+
+  @override
+  String get machines => 'Máy';
+
+  @override
+  String get copySuccess => 'Đã sao chép vào bộ nhớ tạm!';
+
+  @override
+  String get exporting => 'Đang tạo file Excel...';
+
+  @override
+  String exportError(Object error) {
+    return 'Lỗi xuất file: $error';
   }
 }

@@ -394,6 +394,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get purpose => 'Purpose';
 
   @override
+  String get area => 'AREA';
+
+  @override
   String get searchMachine => 'Search machine...';
 
   @override
@@ -944,5 +947,73 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String confirmDeleteUserMsg(Object name) {
     return 'Are you sure you want to delete $name?';
+  }
+
+  @override
+  String get prodStatsTitle => 'Production Statistics';
+
+  @override
+  String get exportExcel => 'Export Excel';
+
+  @override
+  String get refreshData => 'Refresh Data';
+
+  @override
+  String get recalculateToday => 'Recalculate (Today)';
+
+  @override
+  String get searchProductHint => 'Search product code, note...';
+
+  @override
+  String get filterToday => 'Today';
+
+  @override
+  String get filterYesterday => 'Yesterday';
+
+  @override
+  String get filter7Days => 'Last 7 Days';
+
+  @override
+  String get filterThisMonth => 'This Month';
+
+  @override
+  String get filterLastMonth => 'Last Month';
+
+  @override
+  String get filterThisQuarter => 'This Quarter';
+
+  @override
+  String get filterThisYear => 'This Year';
+
+  @override
+  String get filterCustom => 'Custom Date';
+
+  @override
+  String get selectDate => 'Select Date';
+
+  @override
+  String get totalProduction => 'TOTAL PRODUCTION';
+
+  @override
+  String get totalLength => 'TOTAL LENGTH';
+
+  @override
+  String get itemCount => 'ITEMS';
+
+  @override
+  String get noStatsData => 'No data for this period';
+
+  @override
+  String get machines => 'Machines';
+
+  @override
+  String get copySuccess => 'Copied to clipboard!';
+
+  @override
+  String get exporting => 'Creating Excel file...';
+
+  @override
+  String exportError(Object error) {
+    return 'Export error: $error';
   }
 }

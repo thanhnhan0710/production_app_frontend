@@ -35,100 +35,106 @@ class _UserScreenState extends State<UserScreen> {
 
     return Scaffold(
       backgroundColor: _bgLight,
-      body: BlocConsumer<UserCubit, UserState>(
-        listener: (context, state) {
-          if (state is UserError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-            );
-          }
-        },
-        builder: (context, state) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // --- HEADER ---
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(10)),
-                          child: Icon(Icons.people_alt,
-                              color: _primaryColor, size: 24),
-                        ),
-                        const SizedBox(width: 16),
-                        Text(l10n.userManagementTitle,
-                            style: const TextStyle(
-                                fontSize: 22, fontWeight: FontWeight.bold)),
-                        const Spacer(),
-                        if (isDesktop)
-                          ElevatedButton.icon(
-                            onPressed: () => _showEditDialog(context, null, l10n),
-                            icon: const Icon(Icons.add, size: 18),
-                            label: Text(l10n.addUser.toUpperCase()),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _primaryColor,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 16),
-                            ),
+      // [TÍNH NĂNG COPY] Bọc toàn bộ body trong SelectionArea
+      // Widget này cho phép người dùng bôi đen và copy bất kỳ text nào bên trong nó
+      body: SelectionArea(
+        child: BlocConsumer<UserCubit, UserState>(
+          listener: (context, state) {
+            if (state is UserError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text(state.message), backgroundColor: Colors.red),
+              );
+            }
+          },
+          builder: (context, state) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // --- HEADER ---
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(10)),
+                            child: Icon(Icons.people_alt,
+                                color: _primaryColor, size: 24),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      decoration: BoxDecoration(
-                          color: _bgLight,
-                          borderRadius: BorderRadius.circular(8)),
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: l10n.searchUser,
-                          prefixIcon: const Icon(Icons.search),
-                          border: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        onSubmitted: (val) =>
-                            context.read<UserCubit>().searchUsers(val),
+                          const SizedBox(width: 16),
+                          Text(l10n.userManagementTitle,
+                              style: const TextStyle(
+                                  fontSize: 22, fontWeight: FontWeight.bold)),
+                          const Spacer(),
+                          if (isDesktop)
+                            ElevatedButton.icon(
+                              onPressed: () =>
+                                  _showEditDialog(context, null, l10n),
+                              icon: const Icon(Icons.add, size: 18),
+                              label: Text(l10n.addUser.toUpperCase()),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 16),
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 20),
+                      Container(
+                        decoration: BoxDecoration(
+                            color: _bgLight,
+                            borderRadius: BorderRadius.circular(8)),
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: l10n.searchUser,
+                            prefixIcon: const Icon(Icons.search),
+                            border: InputBorder.none,
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onSubmitted: (val) =>
+                              context.read<UserCubit>().searchUsers(val),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Divider(height: 1),
+                const Divider(height: 1),
 
-              // --- CONTENT ---
-              Expanded(
-                child: Builder(
-                  builder: (context) {
-                    if (state is UserLoading) {
-                      return Center(
-                          child: CircularProgressIndicator(
-                              color: _primaryColor));
-                    }
-                    if (state is UserLoaded) {
-                      if (state.users.isEmpty) {
-                        return Center(child: Text(l10n.noUserFound));
+                // --- CONTENT ---
+                Expanded(
+                  child: Builder(
+                    builder: (context) {
+                      if (state is UserLoading) {
+                        return Center(
+                            child: CircularProgressIndicator(
+                                color: _primaryColor));
                       }
-                      return isDesktop
-                          ? _buildDesktopTable(state.users, l10n)
-                          : _buildMobileList(state.users, l10n);
-                    }
-                    return const SizedBox();
-                  },
+                      if (state is UserLoaded) {
+                        if (state.users.isEmpty) {
+                          return Center(child: Text(l10n.noUserFound));
+                        }
+                        return isDesktop
+                            ? _buildDesktopTable(state.users, l10n)
+                            : _buildMobileList(state.users, l10n);
+                      }
+                      return const SizedBox();
+                    },
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
       floatingActionButton: !isDesktop
           ? FloatingActionButton(
@@ -149,7 +155,6 @@ class _UserScreenState extends State<UserScreen> {
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
             side: BorderSide(color: Colors.grey.shade200)),
-
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
@@ -164,7 +169,7 @@ class _UserScreenState extends State<UserScreen> {
                   columnSpacing: 24,
                   columns: [
                     DataColumn(
-                        label: Text(l10n.username.toUpperCase(), // Hoặc l10n.user
+                        label: Text(l10n.username.toUpperCase(),
                             style:
                                 const TextStyle(fontWeight: FontWeight.bold))),
                     DataColumn(
@@ -254,7 +259,8 @@ class _UserScreenState extends State<UserScreen> {
                       ),
 
                       // 4. Role
-                      DataCell(_buildRoleBadge(user.role, user.isSuperuser, l10n)),
+                      DataCell(
+                          _buildRoleBadge(user.role, user.isSuperuser, l10n)),
                       // 5. Status
                       DataCell(_buildStatusBadge(user.isActive, l10n)),
                       // 6. Last Login
@@ -270,10 +276,12 @@ class _UserScreenState extends State<UserScreen> {
                         children: [
                           IconButton(
                               icon: const Icon(Icons.edit, color: Colors.grey),
-                              onPressed: () => _showEditDialog(context, user, l10n)),
+                              onPressed: () =>
+                                  _showEditDialog(context, user, l10n)),
                           IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _confirmDelete(context, user, l10n)),
+                              onPressed: () =>
+                                  _confirmDelete(context, user, l10n)),
                         ],
                       )),
                     ]);
@@ -324,7 +332,8 @@ class _UserScreenState extends State<UserScreen> {
                                   fontWeight: FontWeight.bold, fontSize: 16)),
                           Row(
                             children: [
-                              _buildRoleBadge(user.role, user.isSuperuser, l10n),
+                              _buildRoleBadge(
+                                  user.role, user.isSuperuser, l10n),
                               const SizedBox(width: 8),
                               _buildStatusBadge(user.isActive, l10n),
                             ],
@@ -335,11 +344,14 @@ class _UserScreenState extends State<UserScreen> {
                     PopupMenuButton(
                       onSelected: (val) {
                         if (val == 'edit') _showEditDialog(context, user, l10n);
-                        if (val == 'delete') _confirmDelete(context, user, l10n);
+                        if (val == 'delete')
+                          // ignore: curly_braces_in_flow_control_structures
+                          _confirmDelete(context, user, l10n);
                       },
                       itemBuilder: (_) => [
-                         PopupMenuItem(value: 'edit', child: Text(l10n.editUser)), // "Edit User" -> Dùng context phù hợp
-                         PopupMenuItem(
+                        PopupMenuItem(
+                            value: 'edit', child: Text(l10n.editUser)),
+                        PopupMenuItem(
                             value: 'delete',
                             child: Text(l10n.delete,
                                 style: const TextStyle(color: Colors.red))),
@@ -414,7 +426,8 @@ class _UserScreenState extends State<UserScreen> {
             : Colors.red.withOpacity(0.1),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(isActive ? l10n.active.toUpperCase() : l10n.inactive.toUpperCase(),
+      child: Text(
+          isActive ? l10n.active.toUpperCase() : l10n.inactive.toUpperCase(),
           style: TextStyle(
               fontSize: 10,
               color: isActive ? Colors.green : Colors.red,
@@ -423,7 +436,8 @@ class _UserScreenState extends State<UserScreen> {
   }
 
   // --- DIALOG ---
-  void _showEditDialog(BuildContext context, User? user, AppLocalizations l10n) {
+  void _showEditDialog(
+      BuildContext context, User? user, AppLocalizations l10n) {
     final isEdit = user != null;
     final emailCtrl = TextEditingController(text: user?.email ?? '');
     final nameCtrl = TextEditingController(text: user?.fullName ?? '');
@@ -513,7 +527,8 @@ class _UserScreenState extends State<UserScreen> {
                               ...employees.map((emp) {
                                 return DropdownMenuItem<int?>(
                                   value: emp.id,
-                                  child: Text("${emp.fullName} (ID: ${emp.id})"),
+                                  child:
+                                      Text("${emp.fullName} (ID: ${emp.id})"),
                                 );
                               }),
                             ],

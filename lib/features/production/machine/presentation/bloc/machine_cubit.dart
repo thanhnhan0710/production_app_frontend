@@ -45,6 +45,9 @@ class MachineCubit extends Cubit<MachineState> {
 
   Future<void> saveMachine({required Machine machine, required bool isEdit}) async {
     try {
+      // [DEBUG] In dữ liệu gửi đi để kiểm tra xem Status/Area có đúng định dạng không
+      print("📤 Sending Data: ${machine.toJson()}");
+
       if (isEdit) {
         await _repo.updateMachine(machine);
       } else {
@@ -52,7 +55,11 @@ class MachineCubit extends Cubit<MachineState> {
       }
       loadMachines();
     } catch (e) {
-      emit(MachineError("Failed to save data: $e"));
+      // Log lỗi ra console
+      print("❌ Save Failed: $e");
+      
+      // Emit lỗi để hiện lên SnackBar (bỏ chữ "Exception:" cho đẹp)
+      emit(MachineError(e.toString().replaceAll("Exception: ", "")));
     }
   }
 

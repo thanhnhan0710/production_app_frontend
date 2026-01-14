@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:production_app_frontend/features/inventory/basket/data/baket_repository.dart';
-import 'package:production_app_frontend/features/inventory/basket/doamain/baket_model.dart';
+import 'package:production_app_frontend/features/inventory/basket/doamain/basket_model.dart';
 import '../../domain/machine_model.dart';
 import '../../data/machine_repository.dart';
 import '../../../weaving/domain/weaving_model.dart';

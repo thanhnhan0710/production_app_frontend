@@ -836,6 +836,12 @@ abstract class AppLocalizations {
   /// **'Purpose'**
   String get purpose;
 
+  /// No description provided for @area.
+  ///
+  /// In en, this message translates to:
+  /// **'AREA'**
+  String get area;
+
   /// No description provided for @searchMachine.
   ///
   /// In en, this message translates to:
@@ -1897,6 +1903,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to delete {name}?'**
   String confirmDeleteUserMsg(Object name);
+
+  /// No description provided for @prodStatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Production Statistics'**
+  String get prodStatsTitle;
+
+  /// No description provided for @exportExcel.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Excel'**
+  String get exportExcel;
+
+  /// No description provided for @refreshData.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Data'**
+  String get refreshData;
+
+  /// No description provided for @recalculateToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Recalculate (Today)'**
+  String get recalculateToday;
+
+  /// No description provided for @searchProductHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search product code, note...'**
+  String get searchProductHint;
+
+  /// No description provided for @filterToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get filterToday;
+
+  /// No description provided for @filterYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get filterYesterday;
+
+  /// No description provided for @filter7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 Days'**
+  String get filter7Days;
+
+  /// No description provided for @filterThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This Month'**
+  String get filterThisMonth;
+
+  /// No description provided for @filterLastMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Month'**
+  String get filterLastMonth;
+
+  /// No description provided for @filterThisQuarter.
+  ///
+  /// In en, this message translates to:
+  /// **'This Quarter'**
+  String get filterThisQuarter;
+
+  /// No description provided for @filterThisYear.
+  ///
+  /// In en, this message translates to:
+  /// **'This Year'**
+  String get filterThisYear;
+
+  /// No description provided for @filterCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Date'**
+  String get filterCustom;
+
+  /// No description provided for @selectDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Date'**
+  String get selectDate;
+
+  /// No description provided for @totalProduction.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL PRODUCTION'**
+  String get totalProduction;
+
+  /// No description provided for @totalLength.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL LENGTH'**
+  String get totalLength;
+
+  /// No description provided for @itemCount.
+  ///
+  /// In en, this message translates to:
+  /// **'ITEMS'**
+  String get itemCount;
+
+  /// No description provided for @noStatsData.
+  ///
+  /// In en, this message translates to:
+  /// **'No data for this period'**
+  String get noStatsData;
+
+  /// No description provided for @machines.
+  ///
+  /// In en, this message translates to:
+  /// **'Machines'**
+  String get machines;
+
+  /// No description provided for @copySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard!'**
+  String get copySuccess;
+
+  /// No description provided for @exporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating Excel file...'**
+  String get exporting;
+
+  /// No description provided for @exportError.
+  ///
+  /// In en, this message translates to:
+  /// **'Export error: {error}'**
+  String exportError(Object error);
 }
 
 class _AppLocalizationsDelegate

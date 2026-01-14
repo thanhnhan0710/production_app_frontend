@@ -20,11 +20,14 @@ class MachineScreen extends StatefulWidget {
 class _MachineScreenState extends State<MachineScreen> {
   final _searchController = TextEditingController();
   final Color _primaryColor = const Color(0xFF003366);
-  final Color _accentColor = const Color(0xFFC2185B); // Màu Hồng đậm cho Máy
+  final Color _accentColor = const Color(0xFFC2185B);
   final Color _bgLight = const Color(0xFFF5F7FA);
 
-  // Danh sách trạng thái cố định
-  final List<String> _statusOptions = ['Running', 'Stopped', 'Maintenance'];
+  // Danh sách trạng thái
+  final List<String> _statusOptions = ['Running', 'Stopped', 'Maintenance', 'Spinning'];
+
+  // [MỚI] Danh sách gợi ý khu vực dùng cho Dropdown
+  final List<String> _areaSuggestions = ['Khu A', 'Khu B', 'Khu C'];
 
   @override
   void initState() {
@@ -94,10 +97,10 @@ class _MachineScreenState extends State<MachineScreen> {
                     Row(
                       children: [
                          if (isDesktop) ...[
-                          _buildStatBadge(Icons.grid_view, "Total Machines", "$total", Colors.blue),
-                          const SizedBox(width: 16),
-                          const Spacer(),
-                        ],
+                           _buildStatBadge(Icons.grid_view, "Total Machines", "$total", Colors.blue),
+                           const SizedBox(width: 16),
+                           const Spacer(),
+                         ],
                         Expanded(
                           flex: isDesktop ? 0 : 1,
                           child: Container(
@@ -198,6 +201,7 @@ class _MachineScreenState extends State<MachineScreen> {
                     dataRowMaxHeight: 60,
                     columns: [
                       DataColumn(label: Text(l10n.machineName.toUpperCase(), style: _headerStyle)),
+                      DataColumn(label: Text(l10n.area.toUpperCase(), style: _headerStyle)), 
                       DataColumn(label: Text(l10n.purpose.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.totalLines.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.status.toUpperCase(), style: _headerStyle)),
@@ -207,6 +211,11 @@ class _MachineScreenState extends State<MachineScreen> {
                       return DataRow(
                         cells: [
                           DataCell(Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600))),
+                          DataCell(Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)),
+                            child: Text(item.area ?? '-', style: TextStyle(color: Colors.blue.shade800, fontSize: 12, fontWeight: FontWeight.bold)),
+                          )),
                           DataCell(Text(item.purpose, overflow: TextOverflow.ellipsis)),
                           DataCell(Text("${item.totalLines}", style: const TextStyle(fontWeight: FontWeight.bold))),
                           DataCell(_buildStatusBadge(item.status, l10n)),
@@ -252,19 +261,21 @@ class _MachineScreenState extends State<MachineScreen> {
               backgroundColor: Colors.pink.shade50,
               child: Icon(Icons.settings_input_component, color: Colors.pink.shade800, size: 20),
             ),
-            title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                if (item.area != null)
+                   Text(item.area!, style: TextStyle(fontSize: 12, color: Colors.blue.shade800, fontWeight: FontWeight.bold)),
+              ],
+            ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
                 Text(item.purpose, style: TextStyle(fontSize: 12, color: Colors.grey.shade600), maxLines: 1, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildStatusBadge(item.status, l10n, isChip: false),
-                  ],
-                )
+                const SizedBox(height: 8),
+                _buildStatusBadge(item.status, l10n, isChip: true),
               ],
             ),
             trailing: PopupMenuButton(
@@ -283,72 +294,130 @@ class _MachineScreenState extends State<MachineScreen> {
     );
   }
 
-  // --- DIALOG ---
+  // --- [ĐÃ CHỈNH SỬA] DIALOG VỚI DROPDOWN KHU VỰC ---
   void _showEditDialog(BuildContext context, Machine? item, AppLocalizations l10n) {
     final nameCtrl = TextEditingController(text: item?.name ?? '');
     final purposeCtrl = TextEditingController(text: item?.purpose ?? '');
     final linesCtrl = TextEditingController(text: item?.totalLines.toString() ?? '0');
     
-    String selectedStatus = item?.status ?? 'Running';
+    // 1. Xử lý Status (Chuẩn hóa)
+    String initialStatus = item?.status ?? 'Stopped';
+    if (!_statusOptions.contains(initialStatus)) {
+        if (initialStatus.toUpperCase() == 'RUNNING') {
+          initialStatus = 'Running';
+        // ignore: curly_braces_in_flow_control_structures
+        } else if (initialStatus.toUpperCase() == 'STOPPED') initialStatus = 'Stopped';
+        // ignore: curly_braces_in_flow_control_structures
+        else if (initialStatus.toUpperCase() == 'MAINTENANCE') initialStatus = 'Maintenance';
+        // ignore: curly_braces_in_flow_control_structures
+        else if (initialStatus.toUpperCase() == 'SPINNING') initialStatus = 'Spinning';
+        // ignore: curly_braces_in_flow_control_structures
+        else initialStatus = 'Stopped'; 
+    }
+    String selectedStatus = initialStatus;
+
+    // 2. Xử lý Area (Dropdown)
+    String? selectedArea = item?.area;
+    // Kiểm tra an toàn: Nếu area có trong DB nhưng không có trong danh sách cứng, 
+    // ta reset về null để người dùng chọn lại (hoặc có thể thêm logic add tạm vào list)
+    if (selectedArea != null && !_areaSuggestions.contains(selectedArea)) {
+        selectedArea = null; 
+    }
   
     final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        titlePadding: const EdgeInsets.all(24),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-        title: Text(item == null ? l10n.addMachine : l10n.editMachine, style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
-        content: Form(
-          key: formKey,
-          child: SizedBox(
-            width: 500,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(controller: nameCtrl, decoration: _inputDeco(l10n.machineName), validator: (v) => v!.isEmpty ? "Required" : null),
-                  const SizedBox(height: 16),
-                  TextFormField(controller: purposeCtrl, decoration: _inputDeco(l10n.purpose)),
-                  const SizedBox(height: 16),
-                  Row(children: [
-                    Expanded(child: TextFormField(controller: linesCtrl, decoration: _inputDeco(l10n.totalLines), keyboardType: TextInputType.number)),
-                    const SizedBox(width: 12),
-                    Expanded(child: DropdownButtonFormField<String>(
-                      value: selectedStatus,
-                      decoration: _inputDeco(l10n.status),
-                      items: _statusOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                      onChanged: (val) => selectedStatus = val!,
-                    )),
-                  ]),
-                ],
+      builder: (ctx) {
+        // [QUAN TRỌNG] Dùng StatefulBuilder để update state bên trong Dialog khi chọn Dropdown
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              titlePadding: const EdgeInsets.all(24),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+              title: Text(item == null ? l10n.addMachine : l10n.editMachine, style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
+              content: Form(
+                key: formKey,
+                child: SizedBox(
+                  width: 500,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                              Expanded(child: TextFormField(controller: nameCtrl, decoration: _inputDeco(l10n.machineName), validator: (v) => v!.isEmpty ? "Required" : null)),
+                              const SizedBox(width: 12),
+                              
+                              // [THAY ĐỔI] Dropdown cho Area
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: selectedArea,
+                                  decoration: _inputDeco("Area (Khu vực)"),
+                                  items: _areaSuggestions.map((area) => DropdownMenuItem(
+                                    value: area,
+                                    child: Text(area),
+                                  )).toList(),
+                                  onChanged: (val) {
+                                    // Update state cục bộ của Dialog
+                                    setStateDialog(() {
+                                      selectedArea = val;
+                                    });
+                                  },
+                                  validator: (v) => v == null ? "Required" : null, // Bắt buộc chọn
+                                ),
+                              ), 
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(controller: purposeCtrl, decoration: _inputDeco(l10n.purpose)),
+                        const SizedBox(height: 16),
+                        Row(children: [
+                          Expanded(child: TextFormField(controller: linesCtrl, decoration: _inputDeco(l10n.totalLines), keyboardType: TextInputType.number)),
+                          const SizedBox(width: 12),
+                          Expanded(child: DropdownButtonFormField<String>(
+                            value: selectedStatus,
+                            decoration: _inputDeco(l10n.status),
+                            items: _statusOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                            onChanged: (val) {
+                                setStateDialog(() {
+                                    selectedStatus = val!;
+                                });
+                            },
+                          )),
+                        ]),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
-        ),
-        actionsPadding: const EdgeInsets.all(24),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel, style: const TextStyle(color: Colors.grey))),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate() ) {
-                final newItem = Machine(
-                  id: item?.id ?? 0,
-                  name: nameCtrl.text,
-                  purpose: purposeCtrl.text,
-                  totalLines: int.tryParse(linesCtrl.text) ?? 0,
-                  status: selectedStatus,
-                );
-                context.read<MachineCubit>().saveMachine(machine: newItem, isEdit: item != null);
-                Navigator.pop(ctx);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
+              actionsPadding: const EdgeInsets.all(24),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel, style: const TextStyle(color: Colors.grey))),
+                ElevatedButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate() ) {
+                      final newItem = Machine(
+                        id: item?.id ?? 0,
+                        name: nameCtrl.text,
+                        purpose: purposeCtrl.text,
+                        totalLines: int.tryParse(linesCtrl.text) ?? 0,
+                        status: selectedStatus,
+                        area: selectedArea, // Lấy giá trị từ biến selectedArea
+                      );
+                      context.read<MachineCubit>().saveMachine(machine: newItem, isEdit: item != null);
+                      Navigator.pop(ctx);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                  child: Text(l10n.save),
+                ),
+              ],
+            );
+          }
+        );
+      },
     );
   }
 
@@ -379,20 +448,21 @@ class _MachineScreenState extends State<MachineScreen> {
     Color color;
     String label;
 
-    switch (status) {
-      case 'Running':
-        color = Colors.green;
+    final normalizedStatus = status.toUpperCase();
+
+    if (normalizedStatus == 'RUNNING') {
+        color = Colors.blue;
         label = l10n.running;
-        break;
-      case 'Stopped':
+    } else if (normalizedStatus == 'STOPPED') {
         color = Colors.red;
         label = l10n.stopped;
-        break;
-      case 'Maintenance':
+    } else if (normalizedStatus == 'MAINTENANCE') {
         color = Colors.orange;
         label = l10n.maintenance;
-        break;
-      default:
+    } else if (normalizedStatus == 'SPINNING') {
+        color = Colors.green;
+        label = "Spinning";
+    } else {
         color = Colors.grey;
         label = status;
     }

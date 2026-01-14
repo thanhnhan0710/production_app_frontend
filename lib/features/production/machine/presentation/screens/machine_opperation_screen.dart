@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:production_app_frontend/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:production_app_frontend/features/hr/work_schedule/presentation/bloc/work_schedule_cubit.dart';
-import 'package:production_app_frontend/features/inventory/basket/doamain/baket_model.dart';
+import 'package:production_app_frontend/features/inventory/basket/doamain/basket_model.dart';
 import 'package:production_app_frontend/features/production/weaving/presentation/bloc/weaving_cubit.dart';
 import 'package:production_app_frontend/features/production/weaving/presentation/screens/weaving_inspection_dialog.dart';
 import 'package:production_app_frontend/l10n/app_localizations.dart';
@@ -33,6 +33,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
   final Color _primaryColor = const Color(0xFF003366);
   final TextEditingController _machineSearchCtrl = TextEditingController();
   String _searchKeyword = "";
+
   @override
   void initState() {
     super.initState();
@@ -64,19 +65,21 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
       ),
       body: Column(
         children: [
-          // [YÊU CẦU 1] Thanh tìm kiếm máy
+          // [THANH TÌM KIẾM MÁY]
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             color: Colors.white,
             child: TextField(
               controller: _machineSearchCtrl,
+              style: const TextStyle(fontSize: 14),
               decoration: InputDecoration(
-                hintText: l10n.searchMachine, // "Tìm tên máy..."
-                prefixIcon: const Icon(Icons.search),
+                hintText: l10n.searchMachine,
+                prefixIcon: const Icon(Icons.search, size: 20),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 filled: true,
                 fillColor: Colors.grey.shade100,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                isDense: true,
               ),
               onChanged: (val) {
                 setState(() {
@@ -86,7 +89,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
             ),
           ),
 
-          // Grid Máy
+          // [DANH SÁCH MÁY THEO KHU VỰC]
           Expanded(
             child: BlocConsumer<MachineOperationCubit, MachineOpState>(
               listener: (context, state) {
@@ -100,7 +103,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                 }
                 
                 if (state is MachineOpLoaded) {
-                  // Lọc máy theo từ khóa
+                  // 1. Lọc máy theo từ khóa tìm kiếm
                   final filteredMachines = state.machines.where((m) => 
                     m.name.toLowerCase().contains(_searchKeyword) || 
                     m.status.toLowerCase().contains(_searchKeyword)
@@ -110,19 +113,74 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                     return Center(child: Text(l10n.noMachineFound));
                   }
 
-                  return GridView.builder(
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 400,
-                      mainAxisExtent: 300, // Tăng chiều cao thẻ một chút
-                      childAspectRatio: 1.1,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    itemCount: filteredMachines.length,
+                  // 2. Nhóm máy theo Khu vực (Area)
+                  final Map<String, List<Machine>> groupedMachines = {};
+                  for (var machine in filteredMachines) {
+                    // Nếu machine.area null thì gán là "Chưa phân khu" (hoặc lấy từ l10n)
+                    final areaName = (machine.area != null && machine.area!.isNotEmpty) 
+                        ? machine.area! 
+                        : "Unassigned Area"; // Hoặc l10n.unassignedArea
+
+                    if (!groupedMachines.containsKey(areaName)) {
+                      groupedMachines[areaName] = [];
+                    }
+                    groupedMachines[areaName]!.add(machine);
+                  }
+
+                  // Sắp xếp tên khu vực (A -> Z)
+                  final sortedAreas = groupedMachines.keys.toList()..sort();
+
+                  // 3. Hiển thị List các Khu vực
+                  return ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    itemCount: sortedAreas.length,
                     itemBuilder: (context, index) {
-                      final machine = filteredMachines[index];
-                      return _buildMachineCard(context, machine, state, l10n);
+                      final area = sortedAreas[index];
+                      final machinesInArea = groupedMachines[area]!;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // --- HEADER KHU VỰC ---
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
+                              border: Border(bottom: BorderSide(color: Colors.grey.shade400)),
+                            ),
+                            child: Text(
+                              area.toUpperCase(), // VD: KHU A
+                              style: TextStyle(
+                                color: _primaryColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                letterSpacing: 1.0
+                              ),
+                            ),
+                          ),
+                          
+                          // --- GRID MÁY TRONG KHU VỰC ---
+                          GridView.builder(
+                            padding: const EdgeInsets.all(8),
+                            shrinkWrap: true, // Quan trọng: để Grid nằm gọn trong List
+                            physics: const NeverScrollableScrollPhysics(), // Vô hiệu hóa scroll riêng của Grid
+                            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                              // [KÍCH THƯỚC CARD NHỎ]
+                              maxCrossAxisExtent: 160, 
+                              mainAxisExtent: 125,     
+                              childAspectRatio: 1.1,
+                              crossAxisSpacing: 8,     
+                              mainAxisSpacing: 8,
+                            ),
+                            itemCount: machinesInArea.length,
+                            itemBuilder: (context, index) {
+                              final machine = machinesInArea[index];
+                              return _buildMachineCard(context, machine, state, l10n);
+                            },
+                          ),
+                        ],
+                      );
                     },
                   );
                 }
@@ -138,51 +196,56 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
   Widget _buildMachineCard(BuildContext context, Machine machine, MachineOpLoaded state, AppLocalizations l10n) {
     final statusColor = _getMachineStatusColor(machine.status);
     return Card(
-      elevation: 4,
+      elevation: 2,
       color: _getMachineBgColor(machine.status),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: statusColor, width: 1.5),
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: statusColor, width: 1),
       ),
       child: Column(
         children: [
-          // Header
+          // Header (Tên máy + Trạng thái)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             decoration: BoxDecoration(
               color: statusColor,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.precision_manufacturing, color: Colors.white, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      machine.name,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                  ],
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.precision_manufacturing, color: Colors.white, size: 14),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          machine.name,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    machine.status,
-                    style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 11),
+                    machine.status.substring(0, machine.status.length > 3 ? 3 : machine.status.length).toUpperCase(),
+                    style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 9),
                   ),
                 )
               ],
             ),
           ),
 
-          // Lines
+          // Lines (2 slot bên dưới)
           Expanded(
             child: Row(
               children: [
@@ -206,16 +269,14 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
           _showAssignDialog(context, machine, lineCode, readyBaskets, l10n);
         } else {
           context.read<WeavingCubit>().loadInspections(ticket.id);
-          // Mở dialog kiểm tra/tháo rổ
           showDialog(
             context: context,
             barrierDismissible: false,
             builder: (ctx) => WeavingInspectionDialog(
               ticket: ticket,
-              // [YÊU CẦU 1 - Tháo rổ] Callback để mở dialog tháo rổ từ Inspection Dialog
               onRelease: () {
-                Navigator.pop(ctx); // Đóng Inspection Dialog
-                _showReleaseDialog(context, ticket, l10n); // Mở Release Dialog
+                Navigator.pop(ctx);
+                _showReleaseDialog(context, ticket, l10n);
               },
             ),
           );
@@ -223,39 +284,36 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
       },
       child: Container(
         color: isActive ? Colors.green.shade50 : Colors.transparent,
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(2),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("${l10n.line} $lineCode", style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
+            Text("Line$lineCode", style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 10)),
+            const SizedBox(height: 4),
             
             if (isActive) ...[
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.green, width: 2),
-                      boxShadow: [BoxShadow(color: Colors.green.withOpacity(0.2), blurRadius: 8)]
-                    ),
-                    child: const Icon(Icons.settings_backup_restore, color: Colors.green, size: 28),
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.green, width: 1.5),
+                ),
+                child: const Icon(Icons.settings_backup_restore, color: Colors.green, size: 16),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 2),
               Text(
-                ticket.basketCode ?? "Unknown",
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ticket.basketCode ?? "",
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
-              Text("#${ticket.code}", style: const TextStyle(fontSize: 10, color: Colors.grey)),
+              Text("#${ticket.code.substring(ticket.code.length > 4 ? ticket.code.length - 4 : 0)}", 
+                style: const TextStyle(fontSize: 8, color: Colors.grey)
+              ),
             ] else ...[
-              const Icon(Icons.add_circle_outline, color: Colors.grey, size: 40),
-              const SizedBox(height: 8),
-              Text(l10n.noActiveBasket, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              const Icon(Icons.add_circle_outline, color: Colors.grey, size: 20),
+              const SizedBox(height: 2),
             ]
           ],
         ),
@@ -272,7 +330,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
 
     final authState = context.read<AuthCubit>().state;
     if (authState is AuthAuthenticated && authState.user.employeeId != null) {
-      // Tự động gán ID nhân viên
       employeeOutId = authState.user.employeeId; 
     }
 
@@ -336,7 +393,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                   employeeOutId: employeeOutId,
                   grossWeight: double.parse(grossCtrl.text),
                   length: double.parse(lengthCtrl.text),
-                  numberOfKnots: int.parse(grossCtrl.text),
+                  numberOfKnots: int.parse(knotCtrl.text),
                 );
               }
             },
@@ -356,11 +413,13 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     int? selectedEmployeeId;
     
     final formKey = GlobalKey<FormState>();
-    final barcodeCtrl = TextEditingController(); // Controller cho ô quét mã
+    final barcodeCtrl = TextEditingController(); 
 
     final productState = context.read<ProductCubit>().state;
     final standardState = context.read<StandardCubit>().state;
     final yarnLotState = context.read<YarnLotCubit>().state;
+    
+    // ignore: unused_local_variable
     final employeeState = context.read<EmployeeCubit>().state;
 
     List<Product> products = (productState is ProductLoaded) ? productState.products : [];
@@ -368,7 +427,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     List<YarnLot> yarnLots = (yarnLotState is YarnLotLoaded) ? yarnLotState.yarnLots : [];
     final authState = context.read<AuthCubit>().state;
     if (authState is AuthAuthenticated && authState.user.employeeId != null) {
-      // Tự động gán ID nhân viên
       selectedEmployeeId = authState.user.employeeId; 
     }
 
@@ -391,7 +449,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
             if (foundBasket != null) {
               setStateDialog(() {
                 selectedBasket = foundBasket; // Tự động chọn vào Dropdown
-                barcodeCtrl.clear(); // Xóa ô quét để quét tiếp nếu cần
+                barcodeCtrl.clear(); 
               });
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Basket Found: ${foundBasket.code}"), backgroundColor: Colors.green));
             } else {
@@ -412,7 +470,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                       // --- Ô QUÉT MÃ VẠCH ---
                       TextFormField(
                         controller: barcodeCtrl,
-                        autofocus: true, // Tự động focus để quét ngay
+                        autofocus: true, 
                         decoration: InputDecoration(
                           labelText: l10n.scanBarcode,
                           prefixIcon: const Icon(Icons.qr_code_scanner, color: Colors.blue),
@@ -428,7 +486,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                       ),
                       const Divider(height: 30),
 
-                      // 1. CHỌN RỔ (Basket) - Sẽ tự điền nếu quét đúng
+                      // 1. CHỌN RỔ (Basket)
                       DropdownButtonFormField<Basket>(
                         value: selectedBasket,
                         decoration: InputDecoration(labelText: l10n.basketTitleVS2, border: const OutlineInputBorder()),
@@ -496,16 +554,16 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
               ElevatedButton(
                 onPressed: () {
                   if (formKey.currentState!.validate()) {
-                     Navigator.pop(ctx);
-                     context.read<MachineOperationCubit>().assignBasketToMachine(
-                       machineId: machine.id, 
-                       line: line, 
-                       basket: selectedBasket!,
-                       productId: selectedProductId!,
-                       standardId: selectedStandardId!,
-                       yarnLotId: selectedYarnLotId!,
-                       employeeId: selectedEmployeeId!,
-                     );
+                      Navigator.pop(ctx);
+                      context.read<MachineOperationCubit>().assignBasketToMachine(
+                        machineId: machine.id, 
+                        line: line, 
+                        basket: selectedBasket!,
+                        productId: selectedProductId!,
+                        standardId: selectedStandardId!,
+                        yarnLotId: selectedYarnLotId!,
+                        employeeId: selectedEmployeeId!,
+                      );
                   }
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white),
@@ -526,6 +584,8 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
         return Colors.grey;
       case 'STOPPED':
         return Colors.red;
+      case 'SPINNING':
+        return Colors.green;
       default:
         return Colors.blueGrey;
     }
@@ -538,6 +598,8 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
         return Colors.grey.shade200;
       case 'STOPPED':
         return Colors.red.shade100;
+      case 'SPINNING':
+        return Colors.green.shade50;
       default:
         return Colors.white;
     }

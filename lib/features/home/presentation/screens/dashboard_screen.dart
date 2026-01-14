@@ -172,18 +172,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: ExpansionTile(
                       initiallyExpanded: currentPath.startsWith('/production') || 
                                          currentPath.startsWith('/machines') ||
-                                         currentPath.startsWith('/standards'),
+                                         currentPath.startsWith('/standards') ||
+                                         currentPath.startsWith('/machine-operation')||
+                                         currentPath.startsWith('/weaving')||
+                                         currentPath.startsWith('/weaving-productions'),
+
                       leading: const Icon(Icons.precision_manufacturing, color: Colors.white70),
                       title: Text(l10n.production, style: const TextStyle(color: Colors.white70)),
                       iconColor: Colors.white,
                       collapsedIconColor: Colors.white70,
-                      childrenPadding: EdgeInsets.zero, // Reset padding mặc định của ExpansionTile
+                      childrenPadding: EdgeInsets.zero, 
                       children: [
-                        _buildSubMenuItem(context, Icons.dashboard_customize, "Overview", '/production', isMobile, currentPath),
+                        // Tổng quan
+                        _buildSubMenuItem(context, Icons.dashboard_customize, l10n.generalInfo, '/production', isMobile, currentPath),
+                        
+                        // Máy móc
                         _buildSubMenuItem(context, Icons.settings_input_component, l10n.machineTitle, '/machines', isMobile, currentPath),
+                        
+                        // Tiêu chuẩn
                         _buildSubMenuItem(context, Icons.assignment, l10n.standardTitle, '/standards', isMobile, currentPath),
-                        _buildSubMenuItem(context,Icons.precision_manufacturing, l10n.machineOperation,'/machine-operation',isMobile,currentPath,),
-                        _buildSubMenuItem(context, Icons.build, l10n.weavingTicketTitle, '/weaving', isMobile, currentPath),
+                        
+                        // Vận hành
+                        _buildSubMenuItem(context, Icons.precision_manufacturing, l10n.machineOperation, '/machine-operation', isMobile, currentPath),
+                        
+                        // Phiếu rổ (Đổi icon sang description cho hợp với "Phiếu")
+                        _buildSubMenuItem(context, Icons.description, l10n.weavingTicketTitle, '/weaving', isMobile, currentPath),
+                        
+                        // [CẬP NHẬT MỚI] Thống kê sản lượng
+                        // Icon: bar_chart (Biểu đồ)
+                        // Title: prodStatsTitle (Đa ngôn ngữ)
+                        _buildSubMenuItem(context, Icons.bar_chart, l10n.prodStatsTitle, '/weaving-productions', isMobile, currentPath),
                       ],
                     ),
                   ),

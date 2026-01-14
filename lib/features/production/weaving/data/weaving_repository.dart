@@ -26,8 +26,6 @@ class WeavingRepository {
         'product_id': ticket.productId,
         'standard_id': ticket.standardId,
         'machine_id': ticket.machineId,
-        // Ép kiểu về int nếu backend yêu cầu int, hoặc String nếu backend là String
-        // Ở đây để an toàn với Pydantic (tự ép kiểu), ta gửi đúng giá trị
         'machine_line': ticket.machineLine, 
         'yarn_load_date': ticket.yarnLoadDate, // YYYY-MM-DD
         'yarn_lot_id': ticket.yarnLotId,

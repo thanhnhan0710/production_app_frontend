@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:production_app_frontend/features/inventory/basket/doamain/baket_model.dart';
+import 'package:production_app_frontend/features/inventory/basket/doamain/basket_model.dart';
 import 'package:production_app_frontend/features/inventory/basket/presentation/bloc/baket_cubit.dart';
 import 'package:production_app_frontend/l10n/app_localizations.dart';
 import 'package:production_app_frontend/core/widgets/responsive_layout.dart';

@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:production_app_frontend/features/inventory/basket/doamain/baket_model.dart';
+import 'package:production_app_frontend/features/inventory/basket/doamain/basket_model.dart';
 import '../../../../core/network/api_client.dart';
 class BasketRepository {
   final Dio _dio = ApiClient().dio;
