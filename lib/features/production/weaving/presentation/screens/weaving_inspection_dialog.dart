@@ -100,7 +100,7 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Inspection: Ticket #${widget.ticket.code}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                          Text("Inspection: Ticket: ${widget.ticket.code}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                           Text("Machine ${widget.ticket.machineId} (Line ${widget.ticket.machineLine})", style: const TextStyle(color: Colors.white70, fontSize: 12)),
                         ],
                       ),

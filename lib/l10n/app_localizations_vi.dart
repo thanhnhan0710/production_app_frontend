@@ -210,6 +210,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get cancel => 'Hủy';
 
   @override
+  String get confirm => 'Xác nhận';
+
+  @override
+  String get close => 'Đóng';
+
+  @override
   String get actions => 'Hành động';
 
   @override
@@ -427,6 +433,79 @@ class AppLocalizationsVi extends AppLocalizations {
   String get maintenance => 'Bảo trì';
 
   @override
+  String get unassignedArea => 'Khu vực chung';
+
+  @override
+  String get statusRunning => 'Chạy máy';
+
+  @override
+  String get statusSpinning => 'Lên sợi';
+
+  @override
+  String get statusStopped => 'Dừng / Lỗi';
+
+  @override
+  String get statusMaintenance => 'Bảo trì';
+
+  @override
+  String get viewHistory => 'Xem lịch sử';
+
+  @override
+  String machineHistoryTitle(String name) {
+    return 'Lịch sử: $name';
+  }
+
+  @override
+  String get noHistoryData => 'Chưa có lịch sử hoạt động.';
+
+  @override
+  String reasonLabel(String reason) {
+    return 'Lý do: $reason';
+  }
+
+  @override
+  String durationFormatMin(String min) {
+    return '$min phút';
+  }
+
+  @override
+  String durationFormatHour(int hour, int min) {
+    return '${hour}h ${min}p';
+  }
+
+  @override
+  String get timeCurrent => 'Hiện tại';
+
+  @override
+  String changeStatusTitle(String status) {
+    return 'Đổi trạng thái: $status';
+  }
+
+  @override
+  String confirmStatusChangeMsg(String name, String status) {
+    return 'Bạn muốn chuyển máy $name sang $status?';
+  }
+
+  @override
+  String get reasonIssue => 'Lý do / Mô tả sự cố';
+
+  @override
+  String get enterReason =>
+      'Nhập lý do dừng máy... (VD: Đứt sợi, Hỏng motor...)';
+
+  @override
+  String get reasonRequired => 'Vui lòng nhập lý do';
+
+  @override
+  String get captureEvidence => 'Chụp ảnh hiện trường';
+
+  @override
+  String get openingCamera => 'Đang mở Camera...';
+
+  @override
+  String get cameraFeatureDev => 'Tính năng chụp ảnh đang phát triển';
+
+  @override
   String get shiftTitle => 'Ca làm việc';
 
   @override
@@ -483,6 +562,15 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get noBasketFound => 'Không tìm thấy rổ nào';
+
+  @override
+  String basketFound(String code) {
+    return 'Đã tìm thấy rổ: $code';
+  }
+
+  @override
+  String get basketNotFoundOrNotReady =>
+      'Không tìm thấy rổ hoặc rổ chưa sẵn sàng';
 
   @override
   String get stReady => 'Sẵn sàng';
@@ -826,7 +914,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get length => 'Chiều dài (m)';
 
   @override
-  String get knots => 'Số mối nối';
+  String get splice => 'Số mối nối';
 
   @override
   String get bow => 'Cong';

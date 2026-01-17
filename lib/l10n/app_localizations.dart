@@ -482,6 +482,18 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get cancel;
 
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
   /// No description provided for @actions.
   ///
   /// In en, this message translates to:
@@ -896,6 +908,126 @@ abstract class AppLocalizations {
   /// **'Maintenance'**
   String get maintenance;
 
+  /// No description provided for @unassignedArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned Area'**
+  String get unassignedArea;
+
+  /// No description provided for @statusRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get statusRunning;
+
+  /// No description provided for @statusSpinning.
+  ///
+  /// In en, this message translates to:
+  /// **'Spinning'**
+  String get statusSpinning;
+
+  /// No description provided for @statusStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get statusStopped;
+
+  /// No description provided for @statusMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get statusMaintenance;
+
+  /// No description provided for @viewHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'View History'**
+  String get viewHistory;
+
+  /// No description provided for @machineHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'History: {name}'**
+  String machineHistoryTitle(String name);
+
+  /// No description provided for @noHistoryData.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity history available.'**
+  String get noHistoryData;
+
+  /// No description provided for @reasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String reasonLabel(String reason);
+
+  /// No description provided for @durationFormatMin.
+  ///
+  /// In en, this message translates to:
+  /// **'{min} min'**
+  String durationFormatMin(String min);
+
+  /// No description provided for @durationFormatHour.
+  ///
+  /// In en, this message translates to:
+  /// **'{hour}h {min}m'**
+  String durationFormatHour(int hour, int min);
+
+  /// No description provided for @timeCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get timeCurrent;
+
+  /// No description provided for @changeStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Status: {status}'**
+  String changeStatusTitle(String status);
+
+  /// No description provided for @confirmStatusChangeMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you want to change machine {name} to {status}?'**
+  String confirmStatusChangeMsg(String name, String status);
+
+  /// No description provided for @reasonIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason / Issue Description'**
+  String get reasonIssue;
+
+  /// No description provided for @enterReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter reason (e.g. Broken thread, Motor failure...)'**
+  String get enterReason;
+
+  /// No description provided for @reasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a reason'**
+  String get reasonRequired;
+
+  /// No description provided for @captureEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture Evidence'**
+  String get captureEvidence;
+
+  /// No description provided for @openingCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening Camera...'**
+  String get openingCamera;
+
+  /// No description provided for @cameraFeatureDev.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera feature is under development'**
+  String get cameraFeatureDev;
+
   /// No description provided for @shiftTitle.
   ///
   /// In en, this message translates to:
@@ -1003,6 +1135,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No baskets found'**
   String get noBasketFound;
+
+  /// No description provided for @basketFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Basket Found: {code}'**
+  String basketFound(String code);
+
+  /// No description provided for @basketNotFoundOrNotReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Basket not found or NOT READY'**
+  String get basketNotFoundOrNotReady;
 
   /// No description provided for @stReady.
   ///
@@ -1664,11 +1808,11 @@ abstract class AppLocalizations {
   /// **'Length (m)'**
   String get length;
 
-  /// No description provided for @knots.
+  /// No description provided for @splice.
   ///
   /// In en, this message translates to:
-  /// **'Knots'**
-  String get knots;
+  /// **'Splice'**
+  String get splice;
 
   /// No description provided for @bow.
   ///

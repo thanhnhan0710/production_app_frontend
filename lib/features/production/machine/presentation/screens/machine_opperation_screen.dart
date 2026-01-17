@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dropdown_search/dropdown_search.dart'; 
 import 'package:production_app_frontend/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:production_app_frontend/features/hr/work_schedule/presentation/bloc/work_schedule_cubit.dart';
 import 'package:production_app_frontend/features/inventory/basket/doamain/basket_model.dart';
@@ -11,7 +12,6 @@ import '../../../weaving/domain/weaving_model.dart';
 import '../../domain/machine_model.dart';
 import '../bloc/machine_operation_cubit.dart';
 
-// Import các feature liên quan
 import 'package:production_app_frontend/features/inventory/product/domain/product_model.dart';
 import 'package:production_app_frontend/features/inventory/product/presentation/bloc/product_cubit.dart';
 import 'package:production_app_frontend/features/production/standard/domain/standard_model.dart';
@@ -21,6 +21,7 @@ import 'package:production_app_frontend/features/inventory/yarn_lot/presentation
 import 'package:production_app_frontend/features/hr/employee/domain/employee_model.dart';
 import 'package:production_app_frontend/features/hr/employee/presentation/bloc/employee_cubit.dart';
 import 'package:production_app_frontend/features/hr/shift/presentation/bloc/shift_cubit.dart';
+import 'package:production_app_frontend/features/production/machine/presentation/screens/machine_history_dialog.dart';
 
 class MachineOperationScreen extends StatefulWidget {
   const MachineOperationScreen({super.key});
@@ -59,13 +60,14 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: l10n.refreshData,
             onPressed: () => context.read<MachineOperationCubit>().loadDashboard(),
           )
         ],
       ),
       body: Column(
         children: [
-          // [THANH TÌM KIẾM MÁY]
+          // --- THANH TÌM KIẾM ---
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             color: Colors.white,
@@ -89,12 +91,14 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
             ),
           ),
 
-          // [DANH SÁCH MÁY THEO KHU VỰC]
+          // --- DANH SÁCH MÁY ---
           Expanded(
             child: BlocConsumer<MachineOperationCubit, MachineOpState>(
               listener: (context, state) {
                 if (state is MachineOpError) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(state.message), backgroundColor: Colors.red)
+                  );
                 }
               },
               builder: (context, state) {
@@ -103,7 +107,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                 }
                 
                 if (state is MachineOpLoaded) {
-                  // 1. Lọc máy theo từ khóa tìm kiếm
                   final filteredMachines = state.machines.where((m) => 
                     m.name.toLowerCase().contains(_searchKeyword) || 
                     m.status.toLowerCase().contains(_searchKeyword)
@@ -113,24 +116,18 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                     return Center(child: Text(l10n.noMachineFound));
                   }
 
-                  // 2. Nhóm máy theo Khu vực (Area)
                   final Map<String, List<Machine>> groupedMachines = {};
                   for (var machine in filteredMachines) {
-                    // Nếu machine.area null thì gán là "Chưa phân khu" (hoặc lấy từ l10n)
                     final areaName = (machine.area != null && machine.area!.isNotEmpty) 
                         ? machine.area! 
-                        : "Unassigned Area"; // Hoặc l10n.unassignedArea
-
+                        : l10n.unassignedArea;
                     if (!groupedMachines.containsKey(areaName)) {
                       groupedMachines[areaName] = [];
                     }
                     groupedMachines[areaName]!.add(machine);
                   }
-
-                  // Sắp xếp tên khu vực (A -> Z)
                   final sortedAreas = groupedMachines.keys.toList()..sort();
 
-                  // 3. Hiển thị List các Khu vực
                   return ListView.builder(
                     padding: const EdgeInsets.only(bottom: 20),
                     itemCount: sortedAreas.length,
@@ -141,37 +138,35 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // --- HEADER KHU VỰC ---
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade300,
                               border: Border(bottom: BorderSide(color: Colors.grey.shade400)),
                             ),
                             child: Text(
-                              area.toUpperCase(), // VD: KHU A
+                              area.toUpperCase(),
                               style: TextStyle(
-                                color: _primaryColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                                color: _primaryColor, 
+                                fontWeight: FontWeight.bold, 
+                                fontSize: 13, 
                                 letterSpacing: 1.0
                               ),
                             ),
                           ),
                           
-                          // --- GRID MÁY TRONG KHU VỰC ---
+                          // Grid Máy (Size nhỏ)
                           GridView.builder(
                             padding: const EdgeInsets.all(8),
-                            shrinkWrap: true, // Quan trọng: để Grid nằm gọn trong List
-                            physics: const NeverScrollableScrollPhysics(), // Vô hiệu hóa scroll riêng của Grid
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
                             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                              // [KÍCH THƯỚC CARD NHỎ]
-                              maxCrossAxisExtent: 160, 
-                              mainAxisExtent: 125,     
-                              childAspectRatio: 1.1,
-                              crossAxisSpacing: 8,     
-                              mainAxisSpacing: 8,
+                              maxCrossAxisExtent: 150, 
+                              mainAxisExtent: 150, 
+                              childAspectRatio: 1.0,
+                              crossAxisSpacing: 6,
+                              mainAxisSpacing: 6,
                             ),
                             itemCount: machinesInArea.length,
                             itemBuilder: (context, index) {
@@ -193,135 +188,491 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     );
   }
 
+  // --- WIDGET CARD MÁY (Đã khôi phục Icon Menu) ---
   Widget _buildMachineCard(BuildContext context, Machine machine, MachineOpLoaded state, AppLocalizations l10n) {
     final statusColor = _getMachineStatusColor(machine.status);
+    final bgColor = _getMachineBgColor(machine.status);
+    final displayStatus = _getLocalizedStatus(machine.status, l10n);
+
     return Card(
       elevation: 2,
-      color: _getMachineBgColor(machine.status),
+      color: bgColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         side: BorderSide(color: statusColor, width: 1),
       ),
-      child: Column(
-        children: [
-          // Header (Tên máy + Trạng thái)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-            decoration: BoxDecoration(
-              color: statusColor,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      const Icon(Icons.precision_manufacturing, color: Colors.white, size: 14),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          machine.name,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    machine.status.substring(0, machine.status.length > 3 ? 3 : machine.status.length).toUpperCase(),
-                    style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 9),
-                  ),
-                )
-              ],
-            ),
-          ),
-
-          // Lines (2 slot bên dưới)
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(child: _buildLineSlot(context, machine, "1", state.activeTickets["${machine.id}_1"], state.readyBaskets, l10n)),
-                Container(width: 1, color: Colors.grey.shade300),
-                Expanded(child: _buildLineSlot(context, machine, "2", state.activeTickets["${machine.id}_2"], state.readyBaskets, l10n)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLineSlot(BuildContext context, Machine machine, String lineCode, WeavingTicket? ticket, List<Basket> readyBaskets, AppLocalizations l10n) {
-    final bool isActive = ticket != null;
-
-    return InkWell(
-      onTap: () {
-        if (!isActive) {
-          _showAssignDialog(context, machine, lineCode, readyBaskets, l10n);
-        } else {
-          context.read<WeavingCubit>().loadInspections(ticket.id);
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (ctx) => WeavingInspectionDialog(
-              ticket: ticket,
-              onRelease: () {
-                Navigator.pop(ctx);
-                _showReleaseDialog(context, ticket, l10n);
-              },
-            ),
-          );
-        }
-      },
-      child: Container(
-        color: isActive ? Colors.green.shade50 : Colors.transparent,
-        padding: const EdgeInsets.all(2),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("Line$lineCode", style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 10)),
-            const SizedBox(height: 4),
-            
-            if (isActive) ...[
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.green, width: 1.5),
-                ),
-                child: const Icon(Icons.settings_backup_restore, color: Colors.green, size: 16),
+            // HEADER
+            Container(
+              height: 30,
+              padding: const EdgeInsets.fromLTRB(6, 0, 0, 0),
+              decoration: BoxDecoration(color: statusColor),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        const Icon(Icons.precision_manufacturing, color: Colors.white, size: 14),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            machine.name,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // MENU 3 CHẤM (Đã thêm lại Icon)
+                  Theme(
+                    data: Theme.of(context).copyWith(
+                      cardColor: Colors.white, 
+                      iconTheme: const IconThemeData(color: Colors.white)
+                    ),
+                    child: PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert, size: 16),
+                      padding: EdgeInsets.zero,
+                      onSelected: (value) {
+                        if (value == 'HISTORY') {
+                           showDialog(
+                             context: context,
+                             builder: (ctx) => MachineHistoryDialog(machine: machine),
+                           );
+                        } else {
+                           _showStatusDialog(context, machine, value, l10n);
+                        }
+                      },
+                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                        PopupMenuItem<String>(
+                          value: 'RUNNING', 
+                          child: Row(children: [const Icon(Icons.play_arrow, color: Colors.blue), const SizedBox(width: 8), Text(l10n.statusRunning)])
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'SPINNING', 
+                          child: Row(children: [const Icon(Icons.loop, color: Colors.purple), const SizedBox(width: 8), Text(l10n.statusSpinning)])
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'STOPPED', 
+                          child: Row(children: [const Icon(Icons.stop, color: Colors.red), const SizedBox(width: 8), Text(l10n.statusStopped)])
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'MAINTENANCE', 
+                          child: Row(children: [const Icon(Icons.build, color: Colors.orange), const SizedBox(width: 8), Text(l10n.statusMaintenance)])
+                        ),
+                        const PopupMenuDivider(),
+                        PopupMenuItem<String>(
+                          value: 'HISTORY', 
+                          child: Row(children: [const Icon(Icons.history, color: Colors.black87), const SizedBox(width: 8), Text(l10n.viewHistory)])
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 2),
-              Text(
-                ticket.basketCode ?? "",
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
+            ),
+
+            // STATUS LABEL
+            Container(
+              height: 20,
+              width: double.infinity,
+              color: statusColor.withOpacity(0.15),
+              alignment: Alignment.center,
+              child: Text(
+                displayStatus.toUpperCase(),
+                style: TextStyle(color: statusColor, fontSize: 9, fontWeight: FontWeight.bold),
               ),
-              Text("#${ticket.code.substring(ticket.code.length > 4 ? ticket.code.length - 4 : 0)}", 
-                style: const TextStyle(fontSize: 8, color: Colors.grey)
+            ),
+
+            // LINES
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(child: _buildLineSlot(context, machine, "1", state.activeTickets["${machine.id}_1"], state.readyBaskets, l10n)),
+                  Container(width: 1, color: Colors.grey.shade300),
+                  Expanded(child: _buildLineSlot(context, machine, "2", state.activeTickets["${machine.id}_2"], state.readyBaskets, l10n)),
+                ],
               ),
-            ] else ...[
-              const Icon(Icons.add_circle_outline, color: Colors.grey, size: 20),
-              const SizedBox(height: 2),
-            ]
+            ),
           ],
         ),
       ),
     );
   }
 
-   void _showReleaseDialog(BuildContext context, WeavingTicket ticket, AppLocalizations l10n) {
+  // --- WIDGET SLOT TRỤC (Có biểu tượng Sửa) ---
+  Widget _buildLineSlot(BuildContext context, Machine machine, String lineCode, WeavingTicket? ticket, List<Basket> readyBaskets, AppLocalizations l10n) {
+    final bool isActive = ticket != null;
+
+    return Container(
+      color: isActive ? Colors.green.shade50 : Colors.transparent,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: InkWell(
+              onTap: () {
+                if (!isActive) {
+                  _showAssignOrEditDialog(context, machine, lineCode, readyBaskets, l10n);
+                } else {
+                  context.read<WeavingCubit>().loadInspections(ticket.id);
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (ctx) => WeavingInspectionDialog(
+                      ticket: ticket,
+                      onRelease: () {
+                        Navigator.pop(ctx);
+                        _showReleaseDialog(context, ticket, l10n);
+                      },
+                    ),
+                  );
+                }
+              },
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "${l10n.line}$lineCode", 
+                    style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 10)
+                  ),
+                  const SizedBox(height: 2),
+                  
+                  if (isActive) ...[
+                    const Icon(Icons.settings_backup_restore, color: Colors.green, size: 16),
+                    const SizedBox(height: 2),
+                    Text(
+                      ticket.basketCode ?? "",
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      "#${ticket.code.substring(ticket.code.length > 4 ? ticket.code.length - 4 : 0)}", 
+                      style: const TextStyle(fontSize: 9, color: Colors.grey)
+                    ),
+                  ] else ...[
+                    Icon(Icons.add_circle_outline, color: Colors.grey.shade400, size: 24),
+                  ]
+                ],
+              ),
+            ),
+          ),
+
+          if (isActive)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Tooltip(
+                message: l10n.editTicket,
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () {
+                    _showAssignOrEditDialog(context, machine, lineCode, readyBaskets, l10n, existingTicket: ticket);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    child: Icon(Icons.edit, size: 12, color: Colors.blue.shade700),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // --- DIALOG ĐỔI TRẠNG THÁI ---
+  void _showStatusDialog(BuildContext context, Machine machine, String newStatus, AppLocalizations l10n) {
+    final reasonCtrl = TextEditingController();
+    bool isIssue = newStatus == 'STOPPED' || newStatus == 'MAINTENANCE';
+    final formKey = GlobalKey<FormState>();
+    final localizedNewStatus = _getLocalizedStatus(newStatus, l10n);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          l10n.changeStatusTitle(localizedNewStatus), 
+          style: TextStyle(color: _getMachineStatusColor(newStatus), fontSize: 18)
+        ),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l10n.confirmStatusChangeMsg(machine.name, localizedNewStatus)),
+              if (isIssue) ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: reasonCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.reasonIssue,
+                    hintText: l10n.enterReason,
+                    border: const OutlineInputBorder(),
+                  ),
+                  validator: (v) => v!.isEmpty ? l10n.reasonRequired : null,
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.cameraFeatureDev)));
+                  },
+                  icon: const Icon(Icons.camera_alt),
+                  label: Text(l10n.captureEvidence),
+                )
+              ]
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+          ElevatedButton(
+            onPressed: () {
+              if (isIssue && !formKey.currentState!.validate()) return;
+              context.read<MachineOperationCubit>().updateMachineStatus(
+                machineId: machine.id, 
+                status: newStatus,
+                reason: reasonCtrl.text
+              );
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: _getMachineStatusColor(newStatus), foregroundColor: Colors.white),
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- DIALOG GÁN MỚI / SỬA PHIẾU (SEARCHABLE) ---
+  void _showAssignOrEditDialog(
+    BuildContext context, 
+    Machine machine, 
+    String line, 
+    List<Basket> readyBaskets, 
+    AppLocalizations l10n, 
+    {WeavingTicket? existingTicket}
+  ) {
+    final bool isEditing = existingTicket != null;
+
+    final productState = context.read<ProductCubit>().state;
+    final standardState = context.read<StandardCubit>().state;
+    final yarnLotState = context.read<YarnLotCubit>().state;
+    
+    List<Product> products = (productState is ProductLoaded) ? productState.products : [];
+    List<Standard> allStandards = (standardState is StandardLoaded) ? standardState.standards : [];
+    List<YarnLot> yarnLots = (yarnLotState is YarnLotLoaded) ? yarnLotState.yarnLots : [];
+
+    // Init Values
+    Basket? selectedBasket;
+    int? selectedProductId = isEditing ? existingTicket.productId : null;
+    int? selectedStandardId = isEditing ? existingTicket.standardId : null;
+    int? selectedYarnLotId = isEditing ? existingTicket.yarnLotId : null;
+    int? selectedEmployeeId;
+
+    final authState = context.read<AuthCubit>().state;
+    if (authState is AuthAuthenticated && authState.user.employeeId != null) {
+      selectedEmployeeId = authState.user.employeeId;
+    }
+
+    List<Basket> displayBaskets = List.from(readyBaskets);
+    if (isEditing) {
+       final currentBasket = Basket(
+         id: existingTicket.basketId, 
+         code: existingTicket.basketCode ?? "Unknown", 
+         tareWeight: 0, 
+         status: "IN_USE",
+         note: ""
+       );
+       displayBaskets.insert(0, currentBasket);
+       selectedBasket = currentBasket;
+    }
+
+    final formKey = GlobalKey<FormState>();
+    final barcodeCtrl = TextEditingController(); 
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          
+          List<Standard> filteredStandards = [];
+          if (selectedProductId != null) {
+            filteredStandards = allStandards.where((s) => s.productId == selectedProductId).toList();
+          }
+
+          void onScanBarcode(String code) {
+            if (code.isEmpty) return;
+            final foundBasket = displayBaskets.where((b) => b.code.toLowerCase() == code.toLowerCase()).firstOrNull;
+            if (foundBasket != null) {
+              setStateDialog(() {
+                selectedBasket = foundBasket;
+                barcodeCtrl.clear();
+              });
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.basketFound(foundBasket.code)), backgroundColor: Colors.green));
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.basketNotFoundOrNotReady), backgroundColor: Colors.red));
+            }
+          }
+
+          return AlertDialog(
+            title: Text(isEditing 
+              ? "${l10n.editTicket}: ${machine.name}" 
+              : "${l10n.assignBasket}: ${machine.name} - ${l10n.line} $line"),
+            content: Form(
+              key: formKey,
+              child: SizedBox(
+                width: 500,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!isEditing || (isEditing && selectedBasket == null))
+                      TextFormField(
+                        controller: barcodeCtrl,
+                        autofocus: !isEditing,
+                        decoration: InputDecoration(
+                          labelText: l10n.scanBarcode,
+                          prefixIcon: const Icon(Icons.qr_code_scanner, color: Colors.blue),
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.check_circle, color: Colors.green),
+                            onPressed: () => onScanBarcode(barcodeCtrl.text),
+                          ),
+                          helperText: l10n.scanBarcodeSubline
+                        ),
+                        onFieldSubmitted: (value) => onScanBarcode(value),
+                      ),
+                      const SizedBox(height: 16),
+
+                      DropdownSearch<Basket>(
+                        items: (filter, loadProps) => displayBaskets,
+                        itemAsString: (Basket b) => "${b.code} (${b.tareWeight}kg) - ${b.status}",
+                        selectedItem: selectedBasket,
+                        compareFn: (i, s) => i.id == s.id,
+                        popupProps: PopupProps.menu(
+                          showSearchBox: true,
+                          searchFieldProps: TextFieldProps(decoration: InputDecoration(hintText: l10n.searchBasket)),
+                        ),
+                        decoratorProps: DropDownDecoratorProps(
+                          decoration: InputDecoration(labelText: l10n.basketTitleVS2, border: const OutlineInputBorder()),
+                        ),
+                        onChanged: (val) => setStateDialog(() => selectedBasket = val),
+                        validator: (v) => v == null ? l10n.required : null,
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      DropdownSearch<Product>(
+                        items: (filter, loadProps) => products,
+                        itemAsString: (Product p) => p.itemCode,
+                        selectedItem: selectedProductId != null 
+                            ? products.where((p) => p.id == selectedProductId).firstOrNull 
+                            : null,
+                        compareFn: (i, s) => i.id == s.id,
+                        popupProps: PopupProps.menu(
+                          showSearchBox: true,
+                          searchFieldProps: TextFieldProps(decoration: InputDecoration(hintText: l10n.searchProductHint)),
+                        ),
+                        decoratorProps: DropDownDecoratorProps(
+                          decoration: InputDecoration(labelText: l10n.productTitle, border: const OutlineInputBorder()),
+                        ),
+                        onChanged: (val) {
+                          setStateDialog(() {
+                            selectedProductId = val?.id;
+                            selectedStandardId = null;
+                          });
+                        },
+                        validator: (v) => v == null ? l10n.required : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      DropdownSearch<Standard>(
+                        items: (filter, loadProps) => filteredStandards,
+                        itemAsString: (Standard s) => "W:${s.widthMm} | T:${s.thicknessMm} (${s.colorName ?? 'N/A'})",
+                        selectedItem: selectedStandardId != null 
+                            ? filteredStandards.where((s) => s.id == selectedStandardId).firstOrNull 
+                            : null,
+                        compareFn: (i, s) => i.id == s.id,
+                        popupProps: const PopupProps.menu(showSearchBox: true),
+                        decoratorProps: DropDownDecoratorProps(
+                          decoration: InputDecoration(
+                            labelText: l10n.standardTitle,
+                            border: const OutlineInputBorder(),
+                            helperText: selectedProductId == null ? l10n.selectProductBefore : null,
+                          ),
+                        ),
+                        enabled: selectedProductId != null,
+                        onChanged: (val) => selectedStandardId = val?.id,
+                        validator: (v) => v == null ? l10n.required : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      DropdownSearch<YarnLot>(
+                        items: (filter, loadProps) => yarnLots,
+                        itemAsString: (YarnLot y) => "${y.lotCode} (${y.totalKg}kg)",
+                        selectedItem: selectedYarnLotId != null 
+                            ? yarnLots.where((y) => y.id == selectedYarnLotId).firstOrNull 
+                            : null,
+                        compareFn: (i, s) => i.id == s.id,
+                        popupProps: PopupProps.menu(
+                          showSearchBox: true,
+                          searchFieldProps: TextFieldProps(decoration: InputDecoration(hintText: l10n.searchYarnLot)),
+                        ),
+                        decoratorProps: DropDownDecoratorProps(
+                          decoration: InputDecoration(labelText: l10n.yarnLotTitle, border: const OutlineInputBorder()),
+                        ),
+                        onChanged: (val) => selectedYarnLotId = val?.id,
+                        validator: (v) => v == null ? l10n.required : null,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+              ElevatedButton(
+                onPressed: () {
+                  if (formKey.currentState!.validate()) {
+                      Navigator.pop(ctx);
+                      
+                      if (isEditing) {
+                        context.read<MachineOperationCubit>().updateTicketInfo(
+                          ticketId: existingTicket.id,
+                          productId: selectedProductId!,
+                          standardId: selectedStandardId!,
+                          yarnLotId: selectedYarnLotId!,
+                          basketId: selectedBasket?.id ?? existingTicket.basketId,
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.saveSuccess), backgroundColor: Colors.green));
+                      } else {
+                        context.read<MachineOperationCubit>().assignBasketToMachine(
+                          machineId: machine.id, 
+                          line: line, 
+                          basket: selectedBasket!,
+                          productId: selectedProductId!,
+                          standardId: selectedStandardId!,
+                          yarnLotId: selectedYarnLotId!,
+                          employeeId: selectedEmployeeId!,
+                        );
+                      }
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white),
+                child: Text(isEditing ? l10n.save : l10n.assignBasket),
+              ),
+            ],
+          );
+        }
+      ),
+    );
+  }
+
+  // --- DIALOG KẾT THÚC PHIẾU ---
+  void _showReleaseDialog(BuildContext context, WeavingTicket ticket, AppLocalizations l10n) {
     final grossCtrl = TextEditingController();
     final lengthCtrl = TextEditingController();
     final knotCtrl = TextEditingController();
@@ -358,15 +709,14 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                     child: TextFormField(
                       controller: knotCtrl,
                       decoration: InputDecoration(
-                        labelText: l10n.knots,
+                        labelText: l10n.splice,
                         border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
                       ],
-                      validator: (v) =>
-                          v == null || v.isEmpty ? l10n.required : null,
+                      validator: (v) => v == null || v.isEmpty ? l10n.required : null,
                     ),
                   ),
                 ]),
@@ -404,204 +754,33 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     );
   }
 
-  // --- DIALOG GÁN RỔ (TÍCH HỢP QUÉT MÃ VẠCH) ---
-  void _showAssignDialog(BuildContext context, Machine machine, String line, List<Basket> readyBaskets, AppLocalizations l10n) {
-    Basket? selectedBasket;
-    int? selectedProductId;
-    int? selectedStandardId;
-    int? selectedYarnLotId;
-    int? selectedEmployeeId;
-    
-    final formKey = GlobalKey<FormState>();
-    final barcodeCtrl = TextEditingController(); 
-
-    final productState = context.read<ProductCubit>().state;
-    final standardState = context.read<StandardCubit>().state;
-    final yarnLotState = context.read<YarnLotCubit>().state;
-    
-    // ignore: unused_local_variable
-    final employeeState = context.read<EmployeeCubit>().state;
-
-    List<Product> products = (productState is ProductLoaded) ? productState.products : [];
-    List<Standard> allStandards = (standardState is StandardLoaded) ? standardState.standards : [];
-    List<YarnLot> yarnLots = (yarnLotState is YarnLotLoaded) ? yarnLotState.yarnLots : [];
-    final authState = context.read<AuthCubit>().state;
-    if (authState is AuthAuthenticated && authState.user.employeeId != null) {
-      selectedEmployeeId = authState.user.employeeId; 
-    }
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setStateDialog) {
-          
-          List<Standard> filteredStandards = [];
-          if (selectedProductId != null) {
-            filteredStandards = allStandards.where((s) => s.productId == selectedProductId).toList();
-          }
-
-          // Hàm xử lý khi quét mã xong
-          void onScanBarcode(String code) {
-            if (code.isEmpty) return;
-            // Tìm rổ có mã khớp trong danh sách READY
-            final foundBasket = readyBaskets.where((b) => b.code.toLowerCase() == code.toLowerCase()).firstOrNull;
-            
-            if (foundBasket != null) {
-              setStateDialog(() {
-                selectedBasket = foundBasket; // Tự động chọn vào Dropdown
-                barcodeCtrl.clear(); 
-              });
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Basket Found: ${foundBasket.code}"), backgroundColor: Colors.green));
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Basket not found or NOT READY"), backgroundColor: Colors.red));
-            }
-          }
-
-          return AlertDialog(
-            title: Text("${l10n.assignBasket} - ${machine.name} Line $line"),
-            content: Form(
-              key: formKey,
-              child: SizedBox(
-                width: 500, 
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // --- Ô QUÉT MÃ VẠCH ---
-                      TextFormField(
-                        controller: barcodeCtrl,
-                        autofocus: true, 
-                        decoration: InputDecoration(
-                          labelText: l10n.scanBarcode,
-                          prefixIcon: const Icon(Icons.qr_code_scanner, color: Colors.blue),
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.check_circle, color: Colors.green),
-                            onPressed: () => onScanBarcode(barcodeCtrl.text),
-                          ),
-                          helperText: l10n.scanBarcodeSubline
-                        ),
-                        // Khi máy quét nhập xong và nhấn Enter
-                        onFieldSubmitted: (value) => onScanBarcode(value),
-                      ),
-                      const Divider(height: 30),
-
-                      // 1. CHỌN RỔ (Basket)
-                      DropdownButtonFormField<Basket>(
-                        value: selectedBasket,
-                        decoration: InputDecoration(labelText: l10n.basketTitleVS2, border: const OutlineInputBorder()),
-                        items: readyBaskets.map((b) => DropdownMenuItem(
-                          value: b,
-                          child: Text("${b.code} (${b.tareWeight}kg)"),
-                        )).toList(),
-                        onChanged: (val) => setStateDialog(() => selectedBasket = val),
-                        validator: (v) => v == null ? "Required" : null,
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // 3. CHỌN SẢN PHẨM
-                      DropdownButtonFormField<int>(
-                        decoration: InputDecoration(labelText: l10n.productTitle, border: const OutlineInputBorder()),
-                        items: products.map((p) => DropdownMenuItem(
-                          value: p.id, 
-                          child: Text(p.itemCode)
-                        )).toList(),
-                        onChanged: (val) {
-                          setStateDialog(() {
-                            selectedProductId = val;
-                            selectedStandardId = null;
-                          });
-                        },
-                        validator: (v) => v == null ? "Required" : null,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 4. CHỌN TIÊU CHUẨN
-                      DropdownButtonFormField<int>(
-                        value: selectedStandardId,
-                        decoration: InputDecoration(
-                          labelText: l10n.standardTitle, 
-                          border: const OutlineInputBorder(),
-                          enabled: selectedProductId != null, 
-                          helperText: selectedProductId == null ? l10n.selectProductBefore: null
-                        ),
-                        items: filteredStandards.map((s) => DropdownMenuItem(
-                          value: s.id, 
-                          child: Text("W:${s.widthMm} x T:${s.thicknessMm} (${s.colorName ?? 'N/A'})")
-                        )).toList(),
-                        onChanged: (val) => selectedStandardId = val,
-                        validator: (v) => v == null ? "Required" : null,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 5. CHỌN LÔ SỢI
-                      DropdownButtonFormField<int>(
-                        decoration: InputDecoration(labelText: l10n.yarnLotTitle, border: const OutlineInputBorder()),
-                        items: yarnLots.map((y) => DropdownMenuItem(
-                          value: y.id, 
-                          child: Text("${y.lotCode} (${y.totalKg}kg)")
-                        )).toList(),
-                        onChanged: (val) => selectedYarnLotId = val,
-                        validator: (v) => v == null ? "Required" : null,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
-              ElevatedButton(
-                onPressed: () {
-                  if (formKey.currentState!.validate()) {
-                      Navigator.pop(ctx);
-                      context.read<MachineOperationCubit>().assignBasketToMachine(
-                        machineId: machine.id, 
-                        line: line, 
-                        basket: selectedBasket!,
-                        productId: selectedProductId!,
-                        standardId: selectedStandardId!,
-                        yarnLotId: selectedYarnLotId!,
-                        employeeId: selectedEmployeeId!,
-                      );
-                  }
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white),
-                child: Text(l10n.save),
-              ),
-            ],
-          );
-        }
-      ),
-    );
-  }
-
   Color _getMachineStatusColor(String status) {
     switch (status.toUpperCase()) {
-      case 'RUNNING':
-        return Colors.blue;
-      case 'MAINTENANCE':
-        return Colors.grey;
-      case 'STOPPED':
-        return Colors.red;
-      case 'SPINNING':
-        return Colors.green;
-      default:
-        return Colors.blueGrey;
+      case 'RUNNING': return Colors.blue;
+      case 'MAINTENANCE': return Colors.orange;
+      case 'STOPPED': return Colors.red;
+      case 'SPINNING': return Colors.purple;
+      default: return Colors.blueGrey;
     }
   }
+
   Color _getMachineBgColor(String status) {
     switch (status.toUpperCase()) {
-      case 'RUNNING':
-        return Colors.green.shade50;
-      case 'MAINTENANCE':
-        return Colors.grey.shade200;
-      case 'STOPPED':
-        return Colors.red.shade100;
-      case 'SPINNING':
-        return Colors.green.shade50;
-      default:
-        return Colors.white;
+      case 'RUNNING': return Colors.green.shade50;
+      case 'MAINTENANCE': return Colors.orange.shade50;
+      case 'STOPPED': return Colors.red.shade50;
+      case 'SPINNING': return Colors.purple.shade50;
+      default: return Colors.white;
+    }
+  }
+
+  String _getLocalizedStatus(String status, AppLocalizations l10n) {
+    switch (status.toUpperCase()) {
+      case 'RUNNING': return l10n.statusRunning;
+      case 'STOPPED': return l10n.statusStopped;
+      case 'MAINTENANCE': return l10n.statusMaintenance;
+      case 'SPINNING': return l10n.statusSpinning;
+      default: return status;
     }
   }
 }

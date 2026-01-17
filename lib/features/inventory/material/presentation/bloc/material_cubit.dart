@@ -2,35 +2,30 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/material_repository.dart';
 import '../../domain/material_model.dart';
 
-// [FIX] Đổi tên MaterialState -> InventoryMaterialState để tránh trùng với Flutter
-abstract class InventoryMaterialState {}
-
-class InventoryMaterialInitial extends InventoryMaterialState {}
-
-class InventoryMaterialLoading extends InventoryMaterialState {}
-
-class InventoryMaterialLoaded extends InventoryMaterialState {
-  final List<InventoryMaterial> materials;
-  InventoryMaterialLoaded(this.materials);
+abstract class MaterialState {}
+class MaterialInitial extends MaterialState {}
+class MaterialLoading extends MaterialState {}
+class MaterialLoaded extends MaterialState {
+  final List<MaterialModel> materials;
+  MaterialLoaded(this.materials);
 }
-
-class InventoryMaterialError extends InventoryMaterialState {
+class MaterialError extends MaterialState {
   final String message;
-  InventoryMaterialError(this.message);
+  MaterialError(this.message);
 }
 
-class MaterialCubit extends Cubit<InventoryMaterialState> {
+class MaterialCubit extends Cubit<MaterialState> {
   final MaterialRepository _repo;
 
-  MaterialCubit(this._repo) : super(InventoryMaterialInitial());
+  MaterialCubit(this._repo) : super(MaterialInitial());
 
   Future<void> loadMaterials() async {
-    emit(InventoryMaterialLoading());
+    emit(MaterialLoading());
     try {
       final list = await _repo.getMaterials();
-      emit(InventoryMaterialLoaded(list));
+      emit(MaterialLoaded(list));
     } catch (e) {
-      emit(InventoryMaterialError(e.toString()));
+      emit(MaterialError(e.toString()));
     }
   }
 
@@ -39,25 +34,27 @@ class MaterialCubit extends Cubit<InventoryMaterialState> {
       loadMaterials();
       return;
     }
-    emit(InventoryMaterialLoading());
+    emit(MaterialLoading());
     try {
       final list = await _repo.searchMaterials(keyword);
-      emit(InventoryMaterialLoaded(list));
+      emit(MaterialLoaded(list));
     } catch (e) {
-      emit(InventoryMaterialError(e.toString()));
+      emit(MaterialError(e.toString()));
     }
   }
 
-  Future<void> saveMaterial({required InventoryMaterial item, required bool isEdit}) async {
+  Future<void> saveMaterial({required MaterialModel material, required bool isEdit}) async {
     try {
+      print("📤 Sending Material Data: ${material.toJson()}");
       if (isEdit) {
-        await _repo.updateMaterial(item);
+        await _repo.updateMaterial(material);
       } else {
-        await _repo.createMaterial(item);
+        await _repo.createMaterial(material);
       }
       loadMaterials();
     } catch (e) {
-      emit(InventoryMaterialError("Failed to save data: $e"));
+      print("❌ Save Failed: $e");
+      emit(MaterialError(e.toString().replaceAll("Exception: ", "")));
     }
   }
 
@@ -66,7 +63,7 @@ class MaterialCubit extends Cubit<InventoryMaterialState> {
       await _repo.deleteMaterial(id);
       loadMaterials();
     } catch (e) {
-      emit(InventoryMaterialError("Failed to delete data: $e"));
+      emit(MaterialError("Failed to delete data: $e"));
     }
   }
 }

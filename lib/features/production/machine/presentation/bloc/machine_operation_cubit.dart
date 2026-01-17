@@ -7,7 +7,7 @@ import '../../data/machine_repository.dart';
 import '../../../weaving/domain/weaving_model.dart';
 import '../../../weaving/data/weaving_repository.dart';
 
-// State
+// --- STATE ---
 abstract class MachineOpState {}
 class MachineOpInitial extends MachineOpState {}
 class MachineOpLoading extends MachineOpState {}
@@ -27,7 +27,7 @@ class MachineOpError extends MachineOpState {
   MachineOpError(this.message);
 }
 
-// Cubit
+// --- CUBIT ---
 class MachineOperationCubit extends Cubit<MachineOpState> {
   final MachineRepository _machineRepo;
   final WeavingRepository _weavingRepo;
@@ -35,6 +35,7 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
 
   MachineOperationCubit(this._machineRepo, this._weavingRepo, this._basketRepo) : super(MachineOpInitial());
 
+  // --- LOAD DASHBOARD ---
   Future<void> loadDashboard() async {
     emit(MachineOpLoading());
     try {
@@ -44,7 +45,7 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
       final readyBaskets = allBaskets.where((b) => b.status == 'READY').toList();
 
       final allTickets = await _weavingRepo.getTickets();
-      // Lọc các ticket chưa có timeOut (đang chạy)
+      // Lọc các ticket đang chạy (chưa có timeOut)
       final activeTicketsList = allTickets.where((t) => t.timeOut == null).toList();
 
       final Map<String, WeavingTicket> activeMap = {};
@@ -63,7 +64,7 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
     }
   }
 
-  // [CẬP NHẬT QUAN TRỌNG] Thêm tham số employeeId vào hàm này
+  // --- GÁN RỔ CHO MÁY ---
   Future<void> assignBasketToMachine({
     required int machineId,
     required String line,
@@ -71,7 +72,7 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
     required int productId,
     required int standardId,
     required int yarnLotId,
-    required int employeeId, // <--- Tham số này phải có
+    required int employeeId, 
   }) async {
     try {
       final String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -92,10 +93,7 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
         netWeight: 0,
         lengthMeters: 0,
         numberOfKnots: 0,
-        
-        // Sử dụng ID nhân viên được truyền vào
         employeeInId: employeeId, 
-        
         employeeOutId: null,
         timeOut: null,
       );
@@ -118,17 +116,59 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
     }
   }
 
-  // Hàm kết thúc phiếu (Tháo rổ) - Placeholder để sau này phát triển
-  Future<void> releaseBasket(WeavingTicket ticket) async {
+  // --- [FIX LỖI] CẬP NHẬT THÔNG TIN PHIẾU ĐANG CHẠY ---
+  // Hàm này dùng để sửa khi người dùng chọn sai thông tin (Sản phẩm, lô sợi...)
+  Future<void> updateTicketInfo({
+    required int ticketId,
+    required int productId,
+    required int standardId,
+    required int yarnLotId,
+    required int basketId,
+  }) async {
     try {
-       // Logic tháo rổ sẽ code sau
-       loadDashboard();
+      // 1. Lấy thông tin phiếu cũ từ API hoặc Cache
+      final tickets = await _weavingRepo.getTickets();
+      final oldTicket = tickets.firstWhere((t) => t.id == ticketId);
+
+      // 2. Tạo object mới (giữ nguyên thông tin cũ, chỉ thay đổi thông tin mới chọn)
+      final updatedTicket = WeavingTicket(
+        id: oldTicket.id,
+        code: oldTicket.code,
+        machineId: oldTicket.machineId,
+        machineLine: oldTicket.machineLine,
+        timeIn: oldTicket.timeIn,
+        employeeInId: oldTicket.employeeInId,
+        yarnLoadDate: oldTicket.yarnLoadDate,
+        
+        // --- THÔNG TIN MỚI ---
+        productId: productId,
+        standardId: standardId,
+        yarnLotId: yarnLotId,
+        basketId: basketId,
+        // --------------------
+
+        timeOut: oldTicket.timeOut,
+        employeeOutId: oldTicket.employeeOutId,
+        grossWeight: oldTicket.grossWeight,
+        netWeight: oldTicket.netWeight,
+        lengthMeters: oldTicket.lengthMeters,
+        numberOfKnots: oldTicket.numberOfKnots,
+        basketCode: oldTicket.basketCode, 
+      );
+
+      // 3. Gọi API Update
+      await _weavingRepo.updateTicket(updatedTicket);
+      
+      // 4. Reload Dashboard
+      loadDashboard();
     } catch (e) {
-      emit(MachineOpError("Lỗi tháo rổ: $e"));
+      emit(MachineOpError("Lỗi cập nhật phiếu: $e"));
+      loadDashboard();
     }
   }
 
-   Future<void> finishTicket({
+  // --- KẾT THÚC PHIẾU ---
+  Future<void> finishTicket({
     required WeavingTicket ticket,
     required int employeeOutId,
     required double grossWeight,
@@ -136,7 +176,7 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
     required int numberOfKnots,
   }) async {
     try {
-      // 1. Cập nhật Ticket: Thêm timeOut và kết quả
+      // 1. Cập nhật Ticket
       final updatedTicket = WeavingTicket(
         id: ticket.id,
         code: ticket.code,
@@ -149,21 +189,17 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
         basketId: ticket.basketId,
         timeIn: ticket.timeIn,
         employeeInId: ticket.employeeInId,
-        
-        // Cập nhật thông tin ra
         timeOut: DateTime.now().toIso8601String(),
         employeeOutId: employeeOutId,
         grossWeight: grossWeight,
         lengthMeters: length,
-        numberOfKnots: ticket.numberOfKnots,
-        netWeight: 0,
+        numberOfKnots: numberOfKnots, 
+        netWeight: 0, 
       );
 
       await _weavingRepo.updateTicket(updatedTicket);
 
-      // 2. Cập nhật Rổ -> HOLDING (Chờ nhập kho thành phẩm) hoặc READY (Nếu xong luôn)
-      // Ở đây ta set thành READY để máy khác có thể dùng lại ngay (tùy quy trình)
-      // Hoặc set thành HOLDING
+      // 2. Cập nhật Rổ -> READY
       final basketList = await _basketRepo.getBaskets();
       final currentBasket = basketList.where((b) => b.id == ticket.basketId).firstOrNull;
       
@@ -172,16 +208,56 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
           id: currentBasket.id,
           code: currentBasket.code,
           tareWeight: currentBasket.tareWeight,
-          status: "READY", // Trả rổ về trạng thái sẵn sàng
+          status: "READY", 
           note: currentBasket.note,
         );
         await _basketRepo.updateBasket(updatedBasket);
       }
-      // 3. Reload dashboard
+      
       loadDashboard();
     } catch (e) {
       emit(MachineOpError("Lỗi kết thúc phiếu: $e"));
       loadDashboard();
+    }
+  }
+
+  // --- CẬP NHẬT TRẠNG THÁI MÁY ---
+  Future<void> updateMachineStatus({
+    required int machineId,
+    required String status,
+    String? reason,
+    String? imageUrl, 
+  }) async {
+    try {
+      // 1. Gọi API cập nhật Database
+      await _machineRepo.updateMachineStatus(
+        machineId, 
+        status, 
+        reason: reason,
+        imageUrl: imageUrl, 
+      );
+      
+      // 2. Cập nhật State cục bộ
+      if (state is MachineOpLoaded) {
+        final currentMachines = (state as MachineOpLoaded).machines;
+        final index = currentMachines.indexWhere((m) => m.id == machineId);
+        
+        if (index != -1) {
+          final updatedMachines = List<Machine>.from(currentMachines);
+          updatedMachines[index] = updatedMachines[index].copyWith(
+            status: status,
+          );
+
+          emit(MachineOpLoaded(
+            machines: updatedMachines,
+            activeTickets: (state as MachineOpLoaded).activeTickets,
+            readyBaskets: (state as MachineOpLoaded).readyBaskets,
+          ));
+        }
+      }
+    } catch (e) {
+      emit(MachineOpError("Lỗi cập nhật trạng thái: $e"));
+      loadDashboard(); 
     }
   }
 }

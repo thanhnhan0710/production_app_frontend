@@ -209,6 +209,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cancel => 'Cancel';
 
   @override
+  String get confirm => 'Confirm';
+
+  @override
+  String get close => 'Close';
+
+  @override
   String get actions => 'Actions';
 
   @override
@@ -426,6 +432,79 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maintenance => 'Maintenance';
 
   @override
+  String get unassignedArea => 'Unassigned Area';
+
+  @override
+  String get statusRunning => 'Running';
+
+  @override
+  String get statusSpinning => 'Spinning';
+
+  @override
+  String get statusStopped => 'Stopped';
+
+  @override
+  String get statusMaintenance => 'Maintenance';
+
+  @override
+  String get viewHistory => 'View History';
+
+  @override
+  String machineHistoryTitle(String name) {
+    return 'History: $name';
+  }
+
+  @override
+  String get noHistoryData => 'No activity history available.';
+
+  @override
+  String reasonLabel(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String durationFormatMin(String min) {
+    return '$min min';
+  }
+
+  @override
+  String durationFormatHour(int hour, int min) {
+    return '${hour}h ${min}m';
+  }
+
+  @override
+  String get timeCurrent => 'Now';
+
+  @override
+  String changeStatusTitle(String status) {
+    return 'Change Status: $status';
+  }
+
+  @override
+  String confirmStatusChangeMsg(String name, String status) {
+    return 'Do you want to change machine $name to $status?';
+  }
+
+  @override
+  String get reasonIssue => 'Reason / Issue Description';
+
+  @override
+  String get enterReason =>
+      'Enter reason (e.g. Broken thread, Motor failure...)';
+
+  @override
+  String get reasonRequired => 'Please enter a reason';
+
+  @override
+  String get captureEvidence => 'Capture Evidence';
+
+  @override
+  String get openingCamera => 'Opening Camera...';
+
+  @override
+  String get cameraFeatureDev => 'Camera feature is under development';
+
+  @override
   String get shiftTitle => 'Work Shifts';
 
   @override
@@ -482,6 +561,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noBasketFound => 'No baskets found';
+
+  @override
+  String basketFound(String code) {
+    return 'Basket Found: $code';
+  }
+
+  @override
+  String get basketNotFoundOrNotReady => 'Basket not found or NOT READY';
 
   @override
   String get stReady => 'Ready';
@@ -826,7 +913,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get length => 'Length (m)';
 
   @override
-  String get knots => 'Knots';
+  String get splice => 'Splice';
 
   @override
   String get bow => 'Bow';

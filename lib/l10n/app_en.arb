@@ -74,6 +74,8 @@
   "contact": "Contact",
   "save": "Save",
   "cancel": "Cancel",
+  "confirm": "Confirm",
+  "close": "Close",
   "actions": "Actions",
   "successAdded": "Added successfully",
   "successUpdated": "Updated successfully",
@@ -148,6 +150,76 @@
   "running": "Running",
   "stopped": "Stopped",
   "maintenance": "Maintenance",
+  "unassignedArea": "Unassigned Area",
+
+  "statusRunning": "Running",
+  "statusSpinning": "Spinning",
+  "statusStopped": "Stopped",
+  "statusMaintenance": "Maintenance",
+  "viewHistory": "View History",
+  "machineHistoryTitle": "History: {name}",
+  "@machineHistoryTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noHistoryData": "No activity history available.",
+  "reasonLabel": "Reason: {reason}",
+  "@reasonLabel": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "durationFormatMin": "{min} min",
+  "@durationFormatMin": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      }
+    }
+  },
+  "durationFormatHour": "{hour}h {min}m",
+  "@durationFormatHour": {
+    "placeholders": {
+      "hour": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "timeCurrent": "Now",
+  
+  "changeStatusTitle": "Change Status: {status}",
+  "@changeStatusTitle": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmStatusChangeMsg": "Do you want to change machine {name} to {status}?",
+  "@confirmStatusChangeMsg": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "reasonIssue": "Reason / Issue Description",
+  "enterReason": "Enter reason (e.g. Broken thread, Motor failure...)",
+  "reasonRequired": "Please enter a reason",
+  "captureEvidence": "Capture Evidence",
+  "openingCamera": "Opening Camera...",
+  "cameraFeatureDev": "Camera feature is under development",
 
   "shiftTitle": "Work Shifts",
   "shiftName": "Shift Name",
@@ -168,6 +240,15 @@
   "deleteBasket": "Delete Basket",
   "confirmDeleteBasket": "Delete basket {code}?",
   "noBasketFound": "No baskets found",
+  "basketFound": "Basket Found: {code}",
+  "@basketFound": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "basketNotFoundOrNotReady": "Basket not found or NOT READY",
   "stReady": "Ready",
   "stInUse": "In Use",
   "stHolding": "Holding",
@@ -285,7 +366,7 @@
   "grossWeight": "Gross Weight (kg)",
   "netWeight": "Net Weight (kg)",
   "length": "Length (m)",
-  "knots":"Knots",
+  "splice":"Splice",
   "bow":"Bow",
   "employeeOut": "Receiver / Operator Out",
   "ticketDetails": "Ticket Details",

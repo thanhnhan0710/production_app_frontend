@@ -386,7 +386,7 @@ class _WeavingScreenState extends State<WeavingScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("TICKET #${ticket.code}", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _primaryColor)),
+                Text("TICKET :${ticket.code}", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _primaryColor)),
                 Row(
                   children: [
                     ElevatedButton.icon(
@@ -510,7 +510,7 @@ class _WeavingScreenState extends State<WeavingScreen> {
                _infoRow("Gross Weight", Text("${ticket.grossWeight} kg")),
                _infoRow("Net Weight", Text("${ticket.netWeight} kg", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold))),
                _infoRow("Length", Text("${ticket.lengthMeters} m")),
-               _infoRow("Knots", Text("${ticket.numberOfKnots}")),
+               _infoRow("Splice", Text("${ticket.numberOfKnots}")),
             ]),
 
             const SizedBox(height: 24),
@@ -903,7 +903,7 @@ class _WeavingScreenState extends State<WeavingScreen> {
                        const SizedBox(width: 12),
                        Expanded(child: TextFormField(controller: lenCtrl, decoration: _inputDeco(l10n.length))),
                        const SizedBox(width: 12),
-                       Expanded(child: TextFormField(controller: knotCtrl, decoration: _inputDeco(l10n.knots))),
+                       Expanded(child: TextFormField(controller: knotCtrl, decoration: _inputDeco(l10n.splice))),
                      ]),
                   ]
                 ],

@@ -1,15 +1,17 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import '../../../../core/network/api_client.dart';
 import '../domain/material_model.dart';
 
 class MaterialRepository {
   final Dio _dio = ApiClient().dio;
 
-  Future<List<InventoryMaterial>> getMaterials() async {
+  // --- GET ALL ---
+  Future<List<MaterialModel>> getMaterials() async {
     try {
       final response = await _dio.get('/api/v1/materials');
       if (response.data is List) {
-        return (response.data as List).map((e) => InventoryMaterial.fromJson(e)).toList();
+        return (response.data as List).map((e) => MaterialModel.fromJson(e)).toList();
       }
       return [];
     } catch (e) {
@@ -17,14 +19,15 @@ class MaterialRepository {
     }
   }
 
-  Future<List<InventoryMaterial>> searchMaterials(String keyword) async {
+  // --- SEARCH ---
+  Future<List<MaterialModel>> searchMaterials(String keyword) async {
     try {
       final response = await _dio.get(
-        '/api/v1/materials/search',
+        '/api/v1/materials', // Dùng chung endpoint GET nhưng thêm params
         queryParameters: {'keyword': keyword, 'skip': 0, 'limit': 100},
       );
       if (response.data is List) {
-        return (response.data as List).map((e) => InventoryMaterial.fromJson(e)).toList();
+        return (response.data as List).map((e) => MaterialModel.fromJson(e)).toList();
       }
       return [];
     } catch (e) {
@@ -32,25 +35,37 @@ class MaterialRepository {
     }
   }
 
-  Future<void> createMaterial(InventoryMaterial item) async {
+  // --- CREATE ---
+  Future<void> createMaterial(MaterialModel material) async {
     try {
-      await _dio.post('/api/v1/materials', data: item.toJson());
+      await _dio.post('/api/v1/materials', data: material.toJson());
+    } on DioException catch (e) {
+      debugPrint("❌ CREATE ERROR: ${e.response?.data}");
+      throw Exception(e.response?.data['detail'] ?? e.message);
     } catch (e) {
       throw Exception("Failed to create material: $e");
     }
   }
 
-  Future<void> updateMaterial(InventoryMaterial item) async {
+  // --- UPDATE ---
+  Future<void> updateMaterial(MaterialModel material) async {
     try {
-      await _dio.put('/api/v1/materials/${item.id}', data: item.toJson());
+      await _dio.put('/api/v1/materials/${material.id}', data: material.toJson());
+    } on DioException catch (e) {
+      debugPrint("❌ UPDATE ERROR: ${e.response?.data}");
+      throw Exception(e.response?.data['detail'] ?? e.message);
     } catch (e) {
       throw Exception("Failed to update material: $e");
     }
   }
 
+  // --- DELETE ---
   Future<void> deleteMaterial(int id) async {
     try {
       await _dio.delete('/api/v1/materials/$id');
+    } on DioException catch (e) {
+      debugPrint("❌ DELETE ERROR: ${e.response?.data}");
+      throw Exception(e.response?.data['detail'] ?? e.message);
     } catch (e) {
       throw Exception("Failed to delete material: $e");
     }
