@@ -1,4 +1,5 @@
 {
+  "@@locale": "en",
   "loginTitle": "Login",
   "username": "Username",
   "password": "Password",
@@ -19,7 +20,8 @@
   "errorRequired": "This field is required",
   "errorLoginFailed": "Login failed. Please check your credentials.",
   "errorNetwork": "Network error. Please check your connection.",
-  "errorGeneric": "A system error occurred.",
+  "errorGeneric": "A system error occurred",
+
   "dashboard": "Dashboard",
   "production": "Production",
   "inventory": "Inventory",
@@ -35,6 +37,18 @@
   "recentActivities": "Recent Activities",
   "viewAll": "View All",
 
+  "save": "Save",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "close": "Close",
+  "delete": "Delete",
+  "actions": "Actions",
+  "required": "Required",
+  "successAdded": "Added successfully",
+  "successUpdated": "Updated successfully",
+  "successDeleted": "Deleted successfully",
+  "contact": "Contact",
+
   "departmentTitle": "Departments",
   "deptName": "Department Name",
   "deptDesc": "Description",
@@ -43,7 +57,14 @@
   "editDept": "Edit Department",
   "deleteDept": "Delete Department",
   "confirmDelete": "Are you sure you want to delete {name}?",
-   
+  "@confirmDelete": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+    
   "employeeTitle": "Employees",
   "fullName": "Full Name",
   "email": "Email",
@@ -57,6 +78,13 @@
   "editEmployee": "Edit Employee",
   "deleteEmployee": "Delete Employee",
   "confirmDeleteEmployee": "Delete employee {name}?",
+  "@confirmDeleteEmployee": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "selectDept": "Select Department",
   "totalDepartments": "Total Departments",
   "status": "Status",
@@ -70,16 +98,13 @@
   "editSupplier": "Edit Supplier",
   "deleteSupplier": "Delete Supplier",
   "confirmDeleteSupplier": "Are you sure you want to delete {name}?",
-
-  "contact": "Contact",
-  "save": "Save",
-  "cancel": "Cancel",
-  "confirm": "Confirm",
-  "close": "Close",
-  "actions": "Actions",
-  "successAdded": "Added successfully",
-  "successUpdated": "Updated successfully",
-  "successDeleted": "Deleted successfully",
+  "@confirmDeleteSupplier": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
 
   "yarnTitle": "Yarn Inventory",
   "yarnName": "Yarn Name",
@@ -93,6 +118,13 @@
   "editYarn": "Edit Yarn",
   "deleteYarn": "Delete Yarn",
   "confirmDeleteYarn": "Delete yarn {name}?",
+  "@confirmDeleteYarn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "selectSupplier": "Select Supplier",
   "noYarnFound": "No yarn items found",
 
@@ -110,22 +142,51 @@
   "editYarnLot": "Edit Yarn Lot",
   "deleteYarnLot": "Delete Yarn Lot",
   "confirmDeleteYarnLot": "Delete yarn lot {code}?",
+  "@confirmDeleteYarnLot": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "selectYarn": "Select Yarn",
   "selectEmployee": "Select Employee",
 
   "materialTitle": "Materials",
+  "materialMaster": "Materials Master",
+  "materialBreadcrumb": "Inventory > Materials",
   "materialName": "Material Name",
+  "materialCode": "Material Code",
+  "materialType": "Type",
   "quantity": "Quantity",
   "unit": "Unit",
   "importedBy": "Imported By",
   "searchMaterial": "Search material...",
+  "searchMaterialHint": "Search Code, Name...",
+  "totalMaterials": "Total Materials",
   "addMaterial": "Add Material",
   "editMaterial": "Edit Material",
   "deleteMaterial": "Delete Material",
   "confirmDeleteMaterial": "Delete material {name}?",
+  "@confirmDeleteMaterial": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "noMaterialFound": "No materials found",
   "selectImporter": "Select Importer",
   "selectUnit": "Select Unit",
+  "hsCode": "HS Code",
+  "denier": "Denier",
+  "denierHint": "Denier (e.g 1000D)",
+  "filament": "Filament",
+  "minStock": "Min Stock",
+  "uomBasePurchase": "UOM Purchase (Base)",
+  "uomProduction": "UOM Production",
+  "uomBP": "UOM (B/P)",
+  "specs": "Specs",
 
   "unitTitle": "Units of Measurement",
   "unitName": "Unit Name",
@@ -134,6 +195,13 @@
   "editUnit": "Edit Unit",
   "deleteUnit": "Delete Unit",
   "confirmDeleteUnit": "Delete unit {name}?",
+  "@confirmDeleteUnit": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "noUnitFound": "No units found",
 
   "machineTitle": "Machines",
@@ -146,6 +214,13 @@
   "editMachine": "Edit Machine",
   "deleteMachine": "Delete Machine",
   "confirmDeleteMachine": "Delete machine {name}?",
+  "@confirmDeleteMachine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "noMachineFound": "No machines found",
   "running": "Running",
   "stopped": "Stopped",
@@ -194,7 +269,7 @@
     }
   },
   "timeCurrent": "Now",
-  
+   
   "changeStatusTitle": "Change Status: {status}",
   "@changeStatusTitle": {
     "placeholders": {
@@ -228,8 +303,15 @@
   "editShift": "Edit Shift",
   "deleteShift": "Delete Shift",
   "confirmDeleteShift": "Delete shift {name}?",
+  "@confirmDeleteShift": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "noShiftFound": "No shifts found",
-    
+     
   "basketTitle": "Baskets",
   "basketCode": "Basket Code",
   "basketTitleVS2":"Basket",
@@ -239,6 +321,13 @@
   "editBasket": "Edit Basket",
   "deleteBasket": "Delete Basket",
   "confirmDeleteBasket": "Delete basket {code}?",
+  "@confirmDeleteBasket": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "noBasketFound": "No baskets found",
   "basketFound": "Basket Found: {code}",
   "@basketFound": {
@@ -262,6 +351,13 @@
   "editColor": "Edit Color",
   "deleteColor": "Delete Color",
   "confirmDeleteColor": "Delete color {name}?",
+  "@confirmDeleteColor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "noColorFound": "No colors found",
   "invalidHex": "Invalid Hex Code (e.g., #FF0000)",
 
@@ -272,6 +368,13 @@
   "editProduct": "Edit Product",
   "deleteProduct": "Delete Product",
   "confirmDeleteProduct": "Delete product {code}?",
+  "@confirmDeleteProduct": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "noProductFound": "No products found",
   "uploadImage": "Upload Image",
 
@@ -294,8 +397,14 @@
   "editStandard": "Edit Standard",
   "deleteStandard": "Delete Standard",
   "confirmDeleteStandard": "Delete standard {code}?",
+  "@confirmDeleteStandard": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "noStandardFound": "No standards found",
-  "specs": "Specifications",
 
   "scheduleTitle": "Work Schedules",
   "workDate": "Work Date",
@@ -308,6 +417,16 @@
   "editSchedule": "Edit Schedule",
   "deleteSchedule": "Delete Schedule",
   "confirmDeleteSchedule": "Delete schedule for {name} on {date}?",
+  "@confirmDeleteSchedule": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "noScheduleFound": "No schedules found",
   "filterDate": "Filter by Date",
   "errorDuplicateSchedule": "Conflict: This employee already has a shift on this date.",
@@ -340,6 +459,13 @@
   "noTicketSelected": "Select a ticket to view details",
   "deleteTicket": "Delete Ticket",
   "confirmDeleteTicket": "Delete ticket {code}?",
+  "@confirmDeleteTicket": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "deleteInspection": "Delete Inspection",
   "machineAndMaterial":"Machine & Material",
   "generalInfo": "General Info",
@@ -374,7 +500,6 @@
   "newInspection": "New Inspection",
   "confirmReleaseTitle": "Confirm Finish",
   "confirmReleaseMsg": "Are you sure you want to finish this ticket and release the basket?",
-  "required": "Required",
   "saveSuccess": "Saved successfully",
 
   "noTicketsFoundForThisDate": "No tickets found for this date",
@@ -407,8 +532,14 @@
   "isActiveSwitch": "Is Active",
   "isSuperuserSwitch": "Is Superuser",
   "confirmDeleteTitle": "Confirm Delete",
-  "delete": "Delete",
   "confirmDeleteUserMsg": "Are you sure you want to delete {name}?",
+  "@confirmDeleteUserMsg": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
 
   "prodStatsTitle": "Production Statistics",
   "exportExcel": "Export Excel",
@@ -431,5 +562,12 @@
   "machines": "Machines",
   "copySuccess": "Copied to clipboard!",
   "exporting": "Creating Excel file...",
-  "exportError": "Export error: {error}"
+  "exportError": "Export error: {error}",
+  "@exportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  }
 }

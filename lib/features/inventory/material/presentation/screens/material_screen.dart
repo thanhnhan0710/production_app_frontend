@@ -8,7 +8,8 @@ import '../bloc/material_cubit.dart';
 
 // [QUAN TRỌNG] Import Unit Feature để dùng cho Dropdown
 import 'package:production_app_frontend/features/inventory/unit/presentation/bloc/unit_cubit.dart';
-import 'package:production_app_frontend/features/inventory/unit/domain/unit_model.dart' as inventory; // Giả định đường dẫn
+// ignore: unused_import
+import 'package:production_app_frontend/features/inventory/unit/domain/unit_model.dart' as inventory;
 
 class MaterialScreen extends StatefulWidget {
   const MaterialScreen({super.key});
@@ -31,7 +32,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
     super.initState();
     context.read<MaterialCubit>().loadMaterials();
     // Load danh sách đơn vị tính để dùng cho Dialog
-    context.read<UnitCubit>().loadUnits(); 
+    context.read<UnitCubit>().loadUnits();
   }
 
   @override
@@ -66,13 +67,12 @@ class _MaterialScreenState extends State<MaterialScreen> {
                           child: Icon(Icons.category, color: Colors.purple.shade800, size: 24),
                         ),
                         const SizedBox(width: 16),
-                        const Column(
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Bạn có thể thay bằng l10n.materialTitle
-                            Text("Materials Master", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
-                            SizedBox(height: 2),
-                            Text("Inventory > Materials", style: TextStyle(fontSize: 13, color: Colors.grey)),
+                            Text(l10n.materialMaster, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+                            const SizedBox(height: 2),
+                            Text(l10n.materialBreadcrumb, style: const TextStyle(fontSize: 13, color: Colors.grey)),
                           ],
                         ),
                         const Spacer(),
@@ -80,7 +80,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
                           ElevatedButton.icon(
                             onPressed: () => _showEditDialog(context, null, l10n),
                             icon: const Icon(Icons.add, size: 18),
-                            label: const Text("ADD"), // Fixed undefined l10n.add
+                            label: Text(l10n.addMaterial.toUpperCase()),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _primaryColor,
                               foregroundColor: Colors.white,
@@ -96,7 +96,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
                     Row(
                       children: [
                         if (isDesktop) ...[
-                          _buildStatBadge(Icons.grid_view, "Total Materials", "$total", Colors.blue),
+                          _buildStatBadge(Icons.grid_view, l10n.totalMaterials, "$total", Colors.blue),
                           const SizedBox(width: 16),
                           const Spacer(),
                         ],
@@ -109,7 +109,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
                               controller: _searchController,
                               textInputAction: TextInputAction.search,
                               decoration: InputDecoration(
-                                hintText: "Search Code, Name...", // l10n.searchMaterial
+                                hintText: l10n.searchMaterialHint,
                                 hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
                                 prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
                                 border: InputBorder.none,
@@ -141,7 +141,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
                 child: Builder(
                   builder: (context) {
                     if (state is MaterialLoading) return Center(child: CircularProgressIndicator(color: _primaryColor));
-                    if (state is MaterialError) return Center(child: Text("Error: ${state.message}", style: const TextStyle(color: Colors.red)));
+                    if (state is MaterialError) return Center(child: Text("${l10n.errorGeneric}: ${state.message}", style: const TextStyle(color: Colors.red)));
                     if (state is MaterialLoaded) {
                       if (state.materials.isEmpty) {
                         return Center(
@@ -150,7 +150,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
                             children: [
                               Icon(Icons.inventory_2_outlined, size: 60, color: Colors.grey.shade300),
                               const SizedBox(height: 16),
-                              const Text("No materials found", style: TextStyle(color: Colors.grey)),
+                              Text(l10n.noMaterialFound, style: const TextStyle(color: Colors.grey)),
                             ],
                           ),
                         );
@@ -199,14 +199,14 @@ class _MaterialScreenState extends State<MaterialScreen> {
                     dataRowMinHeight: 60,
                     dataRowMaxHeight: 60,
                     columns: [
-                      _buildColHeader("Code"), // l10n.code
-                      _buildColHeader("Name"), // l10n.name
-                      _buildColHeader("Type"), // l10n.type
-                      _buildColHeader("Specs"), // l10n.specifications (Denier/Filament)
-                      _buildColHeader("HS Code"), 
-                      _buildColHeader("Min Stock"),
-                      _buildColHeader("UOM (B/P)"), // Base / Production
-                      _buildColHeader("Actions"),
+                      _buildColHeader(l10n.materialCode),
+                      _buildColHeader(l10n.materialName),
+                      _buildColHeader(l10n.materialType),
+                      _buildColHeader(l10n.specs),
+                      _buildColHeader(l10n.hsCode),
+                      _buildColHeader(l10n.minStock),
+                      _buildColHeader(l10n.uomBP),
+                      _buildColHeader(l10n.actions),
                     ],
                     rows: materials.map((item) {
                       return DataRow(
@@ -335,11 +335,11 @@ class _MaterialScreenState extends State<MaterialScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               titlePadding: const EdgeInsets.all(24),
               contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-              title: Text(item == null ? "Add Material" : "Edit Material", style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
+              title: Text(item == null ? l10n.addMaterial : l10n.editMaterial, style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
               content: Form(
                 key: formKey,
                 child: SizedBox(
-                  width: 600, // Rộng hơn một chút vì nhiều trường
+                  width: 600, 
                   child: SingleChildScrollView(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -347,9 +347,9 @@ class _MaterialScreenState extends State<MaterialScreen> {
                         // Row 1: Code & Name
                         Row(
                           children: [
-                            Expanded(child: TextFormField(controller: codeCtrl, decoration: _inputDeco("Material Code *"), validator: (v) => v!.isEmpty ? "Required" : null)),
+                            Expanded(child: TextFormField(controller: codeCtrl, decoration: _inputDeco("${l10n.materialCode} *"), validator: (v) => v!.isEmpty ? l10n.required : null)),
                             const SizedBox(width: 12),
-                            Expanded(flex: 2, child: TextFormField(controller: nameCtrl, decoration: _inputDeco("Material Name *"), validator: (v) => v!.isEmpty ? "Required" : null)),
+                            Expanded(flex: 2, child: TextFormField(controller: nameCtrl, decoration: _inputDeco("${l10n.materialName} *"), validator: (v) => v!.isEmpty ? l10n.required : null)),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -360,58 +360,61 @@ class _MaterialScreenState extends State<MaterialScreen> {
                             Expanded(
                               child: DropdownButtonFormField<String>(
                                 value: _typeOptions.contains(selectedType) ? selectedType : null,
-                                decoration: _inputDeco("Type"),
+                                decoration: _inputDeco(l10n.materialType),
                                 items: _typeOptions.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
                                 onChanged: (val) => setStateDialog(() => selectedType = val),
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Expanded(child: TextFormField(controller: hsCtrl, decoration: _inputDeco("HS Code"))),
+                            Expanded(child: TextFormField(controller: hsCtrl, decoration: _inputDeco(l10n.hsCode))),
                           ],
                         ),
                         const SizedBox(height: 16),
 
-                        // Row 3: Specs (Denier & Filament) & Min Stock
+                        // Row 3: Specs & Min Stock
                         Row(
                           children: [
-                            Expanded(child: TextFormField(controller: denierCtrl, decoration: _inputDeco("Denier (e.g 1000D)"))),
+                            Expanded(child: TextFormField(controller: denierCtrl, decoration: _inputDeco(l10n.denierHint))),
                             const SizedBox(width: 12),
-                            Expanded(child: TextFormField(controller: filamentCtrl, decoration: _inputDeco("Filament"), keyboardType: TextInputType.number)),
+                            Expanded(child: TextFormField(controller: filamentCtrl, decoration: _inputDeco(l10n.filament), keyboardType: TextInputType.number)),
                             const SizedBox(width: 12),
-                            Expanded(child: TextFormField(controller: minStockCtrl, decoration: _inputDeco("Min Stock"), keyboardType: TextInputType.number)),
+                            Expanded(child: TextFormField(controller: minStockCtrl, decoration: _inputDeco(l10n.minStock), keyboardType: TextInputType.number)),
                           ],
                         ),
                         const SizedBox(height: 16),
 
                         // Row 4: Units (Base & Production)
-                        // Cần lấy danh sách Units từ UnitCubit
                         BlocBuilder<UnitCubit, UnitState>(
                           builder: (context, unitState) {
                             List<dynamic> units = [];
                             if (unitState is UnitLoaded) units = unitState.units;
 
-                            // Helper để build dropdown items
-                            List<DropdownMenuItem<int>> unitItems = units.map((u) => DropdownMenuItem(value: u.unitId as int, child: Text(u.unitName))).toList();
+                            List<DropdownMenuItem<int>> unitItems = units.map((u) {
+                                return DropdownMenuItem<int>(
+                                  value: u.id as int, 
+                                  child: Text(u.name), 
+                                );
+                            }).toList();
 
                             return Row(
                               children: [
                                 Expanded(
                                   child: DropdownButtonFormField<int>(
                                     value: selectedUomBase == 0 ? null : selectedUomBase,
-                                    decoration: _inputDeco("UOM Purchase (Base) *"),
+                                    decoration: _inputDeco("${l10n.uomBasePurchase} *"),
                                     items: unitItems,
                                     onChanged: (val) => setStateDialog(() => selectedUomBase = val),
-                                    validator: (v) => v == null ? "Required" : null,
+                                    validator: (v) => v == null ? l10n.required : null,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: DropdownButtonFormField<int>(
                                     value: selectedUomProd == 0 ? null : selectedUomProd,
-                                    decoration: _inputDeco("UOM Production *"),
+                                    decoration: _inputDeco("${l10n.uomProduction} *"),
                                     items: unitItems,
                                     onChanged: (val) => setStateDialog(() => selectedUomProd = val),
-                                    validator: (v) => v == null ? "Required" : null,
+                                    validator: (v) => v == null ? l10n.required : null,
                                   ),
                                 ),
                               ],
@@ -440,7 +443,6 @@ class _MaterialScreenState extends State<MaterialScreen> {
                         minStockLevel: double.tryParse(minStockCtrl.text) ?? 0.0,
                         uomBaseId: selectedUomBase!,
                         uomProductionId: selectedUomProd!,
-                        // Không cần truyền Object uomBase/uomProduction vì Backend sẽ tự resolve khi trả về
                       );
                       context.read<MaterialCubit>().saveMaterial(material: newItem, isEdit: item != null);
                       Navigator.pop(ctx);
@@ -484,7 +486,6 @@ class _MaterialScreenState extends State<MaterialScreen> {
   Widget _buildTypeBadge(String? type, {bool isChip = false}) {
     if (type == null || type.isEmpty) return const SizedBox();
     
-    // Màu sắc ngẫu nhiên hoặc cố định theo loại
     Color bg = Colors.grey.shade100;
     Color text = Colors.black87;
 
@@ -523,8 +524,8 @@ class _MaterialScreenState extends State<MaterialScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l10n.delete), // "Delete Material"
-        content: Text("Are you sure you want to delete ${item.materialCode}?"),
+        title: Text(l10n.delete), 
+        content: Text(l10n.confirmDeleteMaterial(item.materialCode)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
           ElevatedButton(

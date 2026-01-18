@@ -50,7 +50,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorNetwork => 'Network error. Please check your connection.';
 
   @override
-  String get errorGeneric => 'A system error occurred.';
+  String get errorGeneric => 'A system error occurred';
 
   @override
   String get dashboard => 'Dashboard';
@@ -95,6 +95,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewAll => 'View All';
 
   @override
+  String get save => 'Save';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get actions => 'Actions';
+
+  @override
+  String get required => 'Required';
+
+  @override
+  String get successAdded => 'Added successfully';
+
+  @override
+  String get successUpdated => 'Updated successfully';
+
+  @override
+  String get successDeleted => 'Deleted successfully';
+
+  @override
+  String get contact => 'Contact';
+
+  @override
   String get departmentTitle => 'Departments';
 
   @override
@@ -116,7 +149,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteDept => 'Delete Department';
 
   @override
-  String confirmDelete(Object name) {
+  String confirmDelete(String name) {
     return 'Are you sure you want to delete $name?';
   }
 
@@ -157,7 +190,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteEmployee => 'Delete Employee';
 
   @override
-  String confirmDeleteEmployee(Object name) {
+  String confirmDeleteEmployee(String name) {
     return 'Delete employee $name?';
   }
 
@@ -195,36 +228,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteSupplier => 'Delete Supplier';
 
   @override
-  String confirmDeleteSupplier(Object name) {
+  String confirmDeleteSupplier(String name) {
     return 'Are you sure you want to delete $name?';
   }
-
-  @override
-  String get contact => 'Contact';
-
-  @override
-  String get save => 'Save';
-
-  @override
-  String get cancel => 'Cancel';
-
-  @override
-  String get confirm => 'Confirm';
-
-  @override
-  String get close => 'Close';
-
-  @override
-  String get actions => 'Actions';
-
-  @override
-  String get successAdded => 'Added successfully';
-
-  @override
-  String get successUpdated => 'Updated successfully';
-
-  @override
-  String get successDeleted => 'Deleted successfully';
 
   @override
   String get yarnTitle => 'Yarn Inventory';
@@ -260,7 +266,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteYarn => 'Delete Yarn';
 
   @override
-  String confirmDeleteYarn(Object name) {
+  String confirmDeleteYarn(String name) {
     return 'Delete yarn $name?';
   }
 
@@ -310,7 +316,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteYarnLot => 'Delete Yarn Lot';
 
   @override
-  String confirmDeleteYarnLot(Object code) {
+  String confirmDeleteYarnLot(String code) {
     return 'Delete yarn lot $code?';
   }
 
@@ -324,7 +330,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get materialTitle => 'Materials';
 
   @override
+  String get materialMaster => 'Materials Master';
+
+  @override
+  String get materialBreadcrumb => 'Inventory > Materials';
+
+  @override
   String get materialName => 'Material Name';
+
+  @override
+  String get materialCode => 'Material Code';
+
+  @override
+  String get materialType => 'Type';
 
   @override
   String get quantity => 'Quantity';
@@ -339,6 +357,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchMaterial => 'Search material...';
 
   @override
+  String get searchMaterialHint => 'Search Code, Name...';
+
+  @override
+  String get totalMaterials => 'Total Materials';
+
+  @override
   String get addMaterial => 'Add Material';
 
   @override
@@ -348,7 +372,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteMaterial => 'Delete Material';
 
   @override
-  String confirmDeleteMaterial(Object name) {
+  String confirmDeleteMaterial(String name) {
     return 'Delete material $name?';
   }
 
@@ -360,6 +384,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectUnit => 'Select Unit';
+
+  @override
+  String get hsCode => 'HS Code';
+
+  @override
+  String get denier => 'Denier';
+
+  @override
+  String get denierHint => 'Denier (e.g 1000D)';
+
+  @override
+  String get filament => 'Filament';
+
+  @override
+  String get minStock => 'Min Stock';
+
+  @override
+  String get uomBasePurchase => 'UOM Purchase (Base)';
+
+  @override
+  String get uomProduction => 'UOM Production';
+
+  @override
+  String get uomBP => 'UOM (B/P)';
+
+  @override
+  String get specs => 'Specs';
 
   @override
   String get unitTitle => 'Units of Measurement';
@@ -380,7 +431,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteUnit => 'Delete Unit';
 
   @override
-  String confirmDeleteUnit(Object name) {
+  String confirmDeleteUnit(String name) {
     return 'Delete unit $name?';
   }
 
@@ -415,7 +466,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteMachine => 'Delete Machine';
 
   @override
-  String confirmDeleteMachine(Object name) {
+  String confirmDeleteMachine(String name) {
     return 'Delete machine $name?';
   }
 
@@ -523,7 +574,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteShift => 'Delete Shift';
 
   @override
-  String confirmDeleteShift(Object name) {
+  String confirmDeleteShift(String name) {
     return 'Delete shift $name?';
   }
 
@@ -555,7 +606,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteBasket => 'Delete Basket';
 
   @override
-  String confirmDeleteBasket(Object code) {
+  String confirmDeleteBasket(String code) {
     return 'Delete basket $code?';
   }
 
@@ -604,7 +655,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteColor => 'Delete Color';
 
   @override
-  String confirmDeleteColor(Object name) {
+  String confirmDeleteColor(String name) {
     return 'Delete color $name?';
   }
 
@@ -633,7 +684,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteProduct => 'Delete Product';
 
   @override
-  String confirmDeleteProduct(Object code) {
+  String confirmDeleteProduct(String code) {
     return 'Delete product $code?';
   }
 
@@ -698,15 +749,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteStandard => 'Delete Standard';
 
   @override
-  String confirmDeleteStandard(Object code) {
+  String confirmDeleteStandard(String code) {
     return 'Delete standard $code?';
   }
 
   @override
   String get noStandardFound => 'No standards found';
-
-  @override
-  String get specs => 'Specifications';
 
   @override
   String get scheduleTitle => 'Work Schedules';
@@ -739,7 +787,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteSchedule => 'Delete Schedule';
 
   @override
-  String confirmDeleteSchedule(Object date, Object name) {
+  String confirmDeleteSchedule(String name, String date) {
     return 'Delete schedule for $name on $date?';
   }
 
@@ -835,7 +883,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteTicket => 'Delete Ticket';
 
   @override
-  String confirmDeleteTicket(Object code) {
+  String confirmDeleteTicket(String code) {
     return 'Delete ticket $code?';
   }
 
@@ -938,9 +986,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to finish this ticket and release the basket?';
 
   @override
-  String get required => 'Required';
-
-  @override
   String get saveSuccess => 'Saved successfully';
 
   @override
@@ -1029,10 +1074,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirmDeleteTitle => 'Confirm Delete';
 
   @override
-  String get delete => 'Delete';
-
-  @override
-  String confirmDeleteUserMsg(Object name) {
+  String confirmDeleteUserMsg(String name) {
     return 'Are you sure you want to delete $name?';
   }
 
@@ -1100,7 +1142,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exporting => 'Creating Excel file...';
 
   @override
-  String exportError(Object error) {
+  String exportError(String error) {
     return 'Export error: $error';
   }
 }

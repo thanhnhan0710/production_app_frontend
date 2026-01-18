@@ -51,7 +51,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get errorNetwork => 'Lỗi kết nối. Vui lòng kiểm tra mạng hoặc Server.';
 
   @override
-  String get errorGeneric => 'Đã xảy ra lỗi hệ thống.';
+  String get errorGeneric => 'Đã xảy ra lỗi hệ thống';
 
   @override
   String get dashboard => 'Tổng quan';
@@ -96,6 +96,39 @@ class AppLocalizationsVi extends AppLocalizations {
   String get viewAll => 'Xem tất cả';
 
   @override
+  String get save => 'Lưu';
+
+  @override
+  String get cancel => 'Hủy';
+
+  @override
+  String get confirm => 'Xác nhận';
+
+  @override
+  String get close => 'Đóng';
+
+  @override
+  String get delete => 'Xóa';
+
+  @override
+  String get actions => 'Hành động';
+
+  @override
+  String get required => 'Bắt buộc';
+
+  @override
+  String get successAdded => 'Thêm thành công';
+
+  @override
+  String get successUpdated => 'Cập nhật thành công';
+
+  @override
+  String get successDeleted => 'Xóa thành công';
+
+  @override
+  String get contact => 'Liên hệ';
+
+  @override
   String get departmentTitle => 'Quản lý Bộ phận';
 
   @override
@@ -117,7 +150,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteDept => 'Xóa bộ phận';
 
   @override
-  String confirmDelete(Object name) {
+  String confirmDelete(String name) {
     return 'Bạn có chắc muốn xóa bộ phận $name không?';
   }
 
@@ -158,7 +191,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteEmployee => 'Xóa nhân viên';
 
   @override
-  String confirmDeleteEmployee(Object name) {
+  String confirmDeleteEmployee(String name) {
     return 'Xóa nhân viên $name?';
   }
 
@@ -196,36 +229,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteSupplier => 'Xóa nhà cung cấp';
 
   @override
-  String confirmDeleteSupplier(Object name) {
+  String confirmDeleteSupplier(String name) {
     return 'Bạn có chắc muốn xóa $name không?';
   }
-
-  @override
-  String get contact => 'Liên hệ';
-
-  @override
-  String get save => 'Lưu';
-
-  @override
-  String get cancel => 'Hủy';
-
-  @override
-  String get confirm => 'Xác nhận';
-
-  @override
-  String get close => 'Đóng';
-
-  @override
-  String get actions => 'Hành động';
-
-  @override
-  String get successAdded => 'Thêm thành công';
-
-  @override
-  String get successUpdated => 'Cập nhật thành công';
-
-  @override
-  String get successDeleted => 'Xóa thành công';
 
   @override
   String get yarnTitle => 'Kho Sợi';
@@ -261,7 +267,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteYarn => 'Xóa sợi';
 
   @override
-  String confirmDeleteYarn(Object name) {
+  String confirmDeleteYarn(String name) {
     return 'Xóa sợi $name?';
   }
 
@@ -311,7 +317,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteYarnLot => 'Xóa lô sợi';
 
   @override
-  String confirmDeleteYarnLot(Object code) {
+  String confirmDeleteYarnLot(String code) {
     return 'Xóa lô $code?';
   }
 
@@ -325,7 +331,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get materialTitle => 'Nguyên vật liệu';
 
   @override
+  String get materialMaster => 'Danh mục Vật tư';
+
+  @override
+  String get materialBreadcrumb => 'Kho vận > Vật tư';
+
+  @override
   String get materialName => 'Tên vật liệu';
+
+  @override
+  String get materialCode => 'Mã vật liệu';
+
+  @override
+  String get materialType => 'Loại';
 
   @override
   String get quantity => 'Số lượng';
@@ -340,6 +358,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get searchMaterial => 'Tìm vật liệu...';
 
   @override
+  String get searchMaterialHint => 'Tìm Mã, Tên...';
+
+  @override
+  String get totalMaterials => 'Tổng vật tư';
+
+  @override
   String get addMaterial => 'Thêm vật liệu';
 
   @override
@@ -349,7 +373,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteMaterial => 'Xóa vật liệu';
 
   @override
-  String confirmDeleteMaterial(Object name) {
+  String confirmDeleteMaterial(String name) {
     return 'Xóa vật liệu $name?';
   }
 
@@ -361,6 +385,33 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get selectUnit => 'Chọn đơn vị';
+
+  @override
+  String get hsCode => 'Mã HS';
+
+  @override
+  String get denier => 'Denier';
+
+  @override
+  String get denierHint => 'Denier (VD: 1000D)';
+
+  @override
+  String get filament => 'Số sợi (Filament)';
+
+  @override
+  String get minStock => 'Tồn tối thiểu';
+
+  @override
+  String get uomBasePurchase => 'ĐVT Mua (Gốc)';
+
+  @override
+  String get uomProduction => 'ĐVT Sản xuất';
+
+  @override
+  String get uomBP => 'ĐVT (Mua/SX)';
+
+  @override
+  String get specs => 'Thông số kỹ thuật';
 
   @override
   String get unitTitle => 'Đơn vị tính';
@@ -381,7 +432,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteUnit => 'Xóa đơn vị';
 
   @override
-  String confirmDeleteUnit(Object name) {
+  String confirmDeleteUnit(String name) {
     return 'Xóa đơn vị $name?';
   }
 
@@ -416,7 +467,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteMachine => 'Xóa máy';
 
   @override
-  String confirmDeleteMachine(Object name) {
+  String confirmDeleteMachine(String name) {
     return 'Xóa máy $name?';
   }
 
@@ -524,7 +575,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteShift => 'Xóa ca';
 
   @override
-  String confirmDeleteShift(Object name) {
+  String confirmDeleteShift(String name) {
     return 'Xóa ca $name?';
   }
 
@@ -556,7 +607,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteBasket => 'Xóa rổ';
 
   @override
-  String confirmDeleteBasket(Object code) {
+  String confirmDeleteBasket(String code) {
     return 'Xóa rổ $code?';
   }
 
@@ -606,7 +657,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteColor => 'Xóa màu';
 
   @override
-  String confirmDeleteColor(Object name) {
+  String confirmDeleteColor(String name) {
     return 'Xóa màu $name?';
   }
 
@@ -635,7 +686,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteProduct => 'Xóa sản phẩm';
 
   @override
-  String confirmDeleteProduct(Object code) {
+  String confirmDeleteProduct(String code) {
     return 'Xóa sản phẩm $code?';
   }
 
@@ -700,15 +751,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteStandard => 'Xóa tiêu chuẩn';
 
   @override
-  String confirmDeleteStandard(Object code) {
+  String confirmDeleteStandard(String code) {
     return 'Xóa tiêu chuẩn $code?';
   }
 
   @override
   String get noStandardFound => 'Không tìm thấy tiêu chuẩn';
-
-  @override
-  String get specs => 'Thông số kỹ thuật';
 
   @override
   String get scheduleTitle => 'Lịch làm việc';
@@ -741,7 +789,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteSchedule => 'Xóa lịch';
 
   @override
-  String confirmDeleteSchedule(Object date, Object name) {
+  String confirmDeleteSchedule(String name, String date) {
     return 'Xóa lịch của $name ngày $date?';
   }
 
@@ -837,7 +885,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteTicket => 'Xóa phiếu';
 
   @override
-  String confirmDeleteTicket(Object code) {
+  String confirmDeleteTicket(String code) {
     return 'Xóa phiếu $code?';
   }
 
@@ -939,9 +987,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bạn có chắc muốn kết thúc phiếu này và tháo rổ ra không?';
 
   @override
-  String get required => 'Bắt buộc';
-
-  @override
   String get saveSuccess => 'Lưu thành công';
 
   @override
@@ -1031,10 +1076,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get confirmDeleteTitle => 'Xác nhận xóa';
 
   @override
-  String get delete => 'Xóa';
-
-  @override
-  String confirmDeleteUserMsg(Object name) {
+  String confirmDeleteUserMsg(String name) {
     return 'Bạn có chắc muốn xóa tài khoản $name?';
   }
 
@@ -1102,7 +1144,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get exporting => 'Đang tạo file Excel...';
 
   @override
-  String exportError(Object error) {
+  String exportError(String error) {
     return 'Lỗi xuất file: $error';
   }
 }

@@ -1,16 +1,5 @@
-class Unit {
-  final int id;
-  final String name;
 
-  Unit({required this.id, required this.name});
-
-  factory Unit.fromJson(Map<String, dynamic> json) {
-    return Unit(
-      id: json['unit_id'] ?? 0,
-      name: json['unit_name'] ?? '',
-    );
-  }
-}
+import 'package:production_app_frontend/features/inventory/unit/domain/unit_model.dart';
 
 class MaterialModel {
   final int id;
@@ -27,8 +16,8 @@ class MaterialModel {
   final int uomProductionId;
 
   // Object dùng để hiển thị tên đơn vị (Nested object từ API)
-  final Unit? uomBase;
-  final Unit? uomProduction;
+  final ProductUnit? uomBase;
+  final ProductUnit? uomProduction;
 
   MaterialModel({
     required this.id,
@@ -56,8 +45,8 @@ class MaterialModel {
     double? minStockLevel,
     int? uomBaseId,
     int? uomProductionId,
-    Unit? uomBase,
-    Unit? uomProduction,
+    ProductUnit? uomBase,
+    ProductUnit? uomProduction,
   }) {
     return MaterialModel(
       id: id ?? this.id,
@@ -91,8 +80,8 @@ class MaterialModel {
       uomProductionId: json['uom_production_id'] ?? (json['uom_production']?['unit_id'] ?? 0),
       
       // Parse nested objects
-      uomBase: json['uom_base'] != null ? Unit.fromJson(json['uom_base']) : null,
-      uomProduction: json['uom_production'] != null ? Unit.fromJson(json['uom_production']) : null,
+      uomBase: json['uom_base'] != null ? ProductUnit.fromJson(json['uom_base']) : null,
+      uomProduction: json['uom_production'] != null ? ProductUnit.fromJson(json['uom_production']) : null,
     );
   }
 

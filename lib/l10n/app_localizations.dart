@@ -179,7 +179,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorGeneric.
   ///
   /// In en, this message translates to:
-  /// **'A system error occurred.'**
+  /// **'A system error occurred'**
   String get errorGeneric;
 
   /// No description provided for @dashboard.
@@ -266,6 +266,72 @@ abstract class AppLocalizations {
   /// **'View All'**
   String get viewAll;
 
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get actions;
+
+  /// No description provided for @required.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get required;
+
+  /// No description provided for @successAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added successfully'**
+  String get successAdded;
+
+  /// No description provided for @successUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated successfully'**
+  String get successUpdated;
+
+  /// No description provided for @successDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted successfully'**
+  String get successDeleted;
+
+  /// No description provided for @contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get contact;
+
   /// No description provided for @departmentTitle.
   ///
   /// In en, this message translates to:
@@ -312,7 +378,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Are you sure you want to delete {name}?'**
-  String confirmDelete(Object name);
+  String confirmDelete(String name);
 
   /// No description provided for @employeeTitle.
   ///
@@ -390,7 +456,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Delete employee {name}?'**
-  String confirmDeleteEmployee(Object name);
+  String confirmDeleteEmployee(String name);
 
   /// No description provided for @selectDept.
   ///
@@ -462,61 +528,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Are you sure you want to delete {name}?'**
-  String confirmDeleteSupplier(Object name);
-
-  /// No description provided for @contact.
-  ///
-  /// In en, this message translates to:
-  /// **'Contact'**
-  String get contact;
-
-  /// No description provided for @save.
-  ///
-  /// In en, this message translates to:
-  /// **'Save'**
-  String get save;
-
-  /// No description provided for @cancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get cancel;
-
-  /// No description provided for @confirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm'**
-  String get confirm;
-
-  /// No description provided for @close.
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get close;
-
-  /// No description provided for @actions.
-  ///
-  /// In en, this message translates to:
-  /// **'Actions'**
-  String get actions;
-
-  /// No description provided for @successAdded.
-  ///
-  /// In en, this message translates to:
-  /// **'Added successfully'**
-  String get successAdded;
-
-  /// No description provided for @successUpdated.
-  ///
-  /// In en, this message translates to:
-  /// **'Updated successfully'**
-  String get successUpdated;
-
-  /// No description provided for @successDeleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Deleted successfully'**
-  String get successDeleted;
+  String confirmDeleteSupplier(String name);
 
   /// No description provided for @yarnTitle.
   ///
@@ -588,7 +600,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Delete yarn {name}?'**
-  String confirmDeleteYarn(Object name);
+  String confirmDeleteYarn(String name);
 
   /// No description provided for @selectSupplier.
   ///
@@ -684,7 +696,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Delete yarn lot {code}?'**
-  String confirmDeleteYarnLot(Object code);
+  String confirmDeleteYarnLot(String code);
 
   /// No description provided for @selectYarn.
   ///
@@ -704,11 +716,35 @@ abstract class AppLocalizations {
   /// **'Materials'**
   String get materialTitle;
 
+  /// No description provided for @materialMaster.
+  ///
+  /// In en, this message translates to:
+  /// **'Materials Master'**
+  String get materialMaster;
+
+  /// No description provided for @materialBreadcrumb.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory > Materials'**
+  String get materialBreadcrumb;
+
   /// No description provided for @materialName.
   ///
   /// In en, this message translates to:
   /// **'Material Name'**
   String get materialName;
+
+  /// No description provided for @materialCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Material Code'**
+  String get materialCode;
+
+  /// No description provided for @materialType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get materialType;
 
   /// No description provided for @quantity.
   ///
@@ -734,6 +770,18 @@ abstract class AppLocalizations {
   /// **'Search material...'**
   String get searchMaterial;
 
+  /// No description provided for @searchMaterialHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Code, Name...'**
+  String get searchMaterialHint;
+
+  /// No description provided for @totalMaterials.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Materials'**
+  String get totalMaterials;
+
   /// No description provided for @addMaterial.
   ///
   /// In en, this message translates to:
@@ -756,7 +804,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Delete material {name}?'**
-  String confirmDeleteMaterial(Object name);
+  String confirmDeleteMaterial(String name);
 
   /// No description provided for @noMaterialFound.
   ///
@@ -775,6 +823,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select Unit'**
   String get selectUnit;
+
+  /// No description provided for @hsCode.
+  ///
+  /// In en, this message translates to:
+  /// **'HS Code'**
+  String get hsCode;
+
+  /// No description provided for @denier.
+  ///
+  /// In en, this message translates to:
+  /// **'Denier'**
+  String get denier;
+
+  /// No description provided for @denierHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Denier (e.g 1000D)'**
+  String get denierHint;
+
+  /// No description provided for @filament.
+  ///
+  /// In en, this message translates to:
+  /// **'Filament'**
+  String get filament;
+
+  /// No description provided for @minStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Min Stock'**
+  String get minStock;
+
+  /// No description provided for @uomBasePurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'UOM Purchase (Base)'**
+  String get uomBasePurchase;
+
+  /// No description provided for @uomProduction.
+  ///
+  /// In en, this message translates to:
+  /// **'UOM Production'**
+  String get uomProduction;
+
+  /// No description provided for @uomBP.
+  ///
+  /// In en, this message translates to:
+  /// **'UOM (B/P)'**
+  String get uomBP;
+
+  /// No description provided for @specs.
+  ///
+  /// In en, this message translates to:
+  /// **'Specs'**
+  String get specs;
 
   /// No description provided for @unitTitle.
   ///
@@ -816,7 +918,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Delete unit {name}?'**
-  String confirmDeleteUnit(Object name);
+  String confirmDeleteUnit(String name);
 
   /// No description provided for @noUnitFound.
   ///
@@ -882,7 +984,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Delete machine {name}?'**
-  String confirmDeleteMachine(Object name);
+  String confirmDeleteMachine(String name);
 
   /// No description provided for @noMachineFound.
   ///
@@ -1068,7 +1170,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Delete shift {name}?'**
-  String confirmDeleteShift(Object name);
+  String confirmDeleteShift(String name);
 
   /// No description provided for @noShiftFound.
   ///
@@ -1128,7 +1230,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Delete basket {code}?'**
-  String confirmDeleteBasket(Object code);
+  String confirmDeleteBasket(String code);
 
   /// No description provided for @noBasketFound.
   ///
@@ -1218,7 +1320,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Delete color {name}?'**
-  String confirmDeleteColor(Object name);
+  String confirmDeleteColor(String name);
 
   /// No description provided for @noColorFound.
   ///
@@ -1272,7 +1374,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Delete product {code}?'**
-  String confirmDeleteProduct(Object code);
+  String confirmDeleteProduct(String code);
 
   /// No description provided for @noProductFound.
   ///
@@ -1398,19 +1500,13 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Delete standard {code}?'**
-  String confirmDeleteStandard(Object code);
+  String confirmDeleteStandard(String code);
 
   /// No description provided for @noStandardFound.
   ///
   /// In en, this message translates to:
   /// **'No standards found'**
   String get noStandardFound;
-
-  /// No description provided for @specs.
-  ///
-  /// In en, this message translates to:
-  /// **'Specifications'**
-  String get specs;
 
   /// No description provided for @scheduleTitle.
   ///
@@ -1476,7 +1572,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Delete schedule for {name} on {date}?'**
-  String confirmDeleteSchedule(Object date, Object name);
+  String confirmDeleteSchedule(String name, String date);
 
   /// No description provided for @noScheduleFound.
   ///
@@ -1662,7 +1758,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Delete ticket {code}?'**
-  String confirmDeleteTicket(Object code);
+  String confirmDeleteTicket(String code);
 
   /// No description provided for @deleteInspection.
   ///
@@ -1856,12 +1952,6 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to finish this ticket and release the basket?'**
   String get confirmReleaseMsg;
 
-  /// No description provided for @required.
-  ///
-  /// In en, this message translates to:
-  /// **'Required'**
-  String get required;
-
   /// No description provided for @saveSuccess.
   ///
   /// In en, this message translates to:
@@ -2036,17 +2126,11 @@ abstract class AppLocalizations {
   /// **'Confirm Delete'**
   String get confirmDeleteTitle;
 
-  /// No description provided for @delete.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get delete;
-
   /// No description provided for @confirmDeleteUserMsg.
   ///
   /// In en, this message translates to:
   /// **'Are you sure you want to delete {name}?'**
-  String confirmDeleteUserMsg(Object name);
+  String confirmDeleteUserMsg(String name);
 
   /// No description provided for @prodStatsTitle.
   ///
@@ -2178,7 +2262,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Export error: {error}'**
-  String exportError(Object error);
+  String exportError(String error);
 }
 
 class _AppLocalizationsDelegate
