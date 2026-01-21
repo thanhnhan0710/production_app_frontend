@@ -8,6 +8,9 @@ class Supplier {
   final String? country;  // VN, KR, CN...
   final String currencyDefault; // 'VND' hoặc 'USD'
   
+  // === CẬP NHẬT MỚI ===
+  final String paymentTerm; // 'Net 30', 'T/T', 'L/C'...
+  
   final String? taxCode;      // Mã số thuế
   final String? contactPerson; // Người liên hệ
   final String? address;
@@ -22,7 +25,8 @@ class Supplier {
     this.shortName,
     this.originType,
     this.country,
-    this.currencyDefault = 'VND', // Mặc định phía Client
+    this.currencyDefault = 'VND',
+    this.paymentTerm = 'Net 30', // Default phía Client
     this.taxCode,
     this.contactPerson,
     this.address,
@@ -36,7 +40,7 @@ class Supplier {
       // Lưu ý: Key phải khớp chính xác với field trong Pydantic Schema (snake_case)
       id: json['supplier_id'] ?? 0,
       name: json['supplier_name'] ?? '',
-      email: json['email'] ?? '', // Đã sửa thành bắt buộc
+      email: json['email'] ?? '', 
       
       shortName: json['short_name'],
       originType: json['origin_type'],
@@ -44,6 +48,7 @@ class Supplier {
       
       // Xử lý giá trị mặc định nếu null
       currencyDefault: json['currency_default'] ?? 'VND',
+      paymentTerm: json['payment_term'] ?? 'Net 30', // Mapping field mới
       
       taxCode: json['tax_code'],
       contactPerson: json['contact_person'],
@@ -63,12 +68,12 @@ class Supplier {
       'origin_type': originType,
       'country': country,
       'currency_default': currencyDefault,
+      'payment_term': paymentTerm, // Gửi field mới lên BE
       'tax_code': taxCode,
       'contact_person': contactPerson,
       'address': address,
       'lead_time_days': leadTimeDays,
       'is_active': isActive,
-      // Không gửi 'supplier_id' khi Create, nhưng có thể cần khi Update
     };
   }
 }

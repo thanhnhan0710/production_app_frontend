@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dropdown_search/dropdown_search.dart'; 
+// Thư viện quét mã (mobile_scanner: ^5.1.0)
+import 'package:mobile_scanner/mobile_scanner.dart'; 
+
 import 'package:production_app_frontend/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:production_app_frontend/features/hr/work_schedule/presentation/bloc/work_schedule_cubit.dart';
 import 'package:production_app_frontend/features/inventory/basket/doamain/basket_model.dart';
@@ -188,7 +191,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     );
   }
 
-  // --- WIDGET CARD MÁY (Đã khôi phục Icon Menu) ---
+  // --- WIDGET CARD MÁY ---
   Widget _buildMachineCard(BuildContext context, Machine machine, MachineOpLoaded state, AppLocalizations l10n) {
     final statusColor = _getMachineStatusColor(machine.status);
     final bgColor = _getMachineBgColor(machine.status);
@@ -227,7 +230,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                       ],
                     ),
                   ),
-                  // MENU 3 CHẤM (Đã thêm lại Icon)
+                  // MENU 3 CHẤM
                   Theme(
                     data: Theme.of(context).copyWith(
                       cardColor: Colors.white, 
@@ -303,7 +306,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     );
   }
 
-  // --- WIDGET SLOT TRỤC (Có biểu tượng Sửa) ---
+  // --- WIDGET SLOT TRỤC ---
   Widget _buildLineSlot(BuildContext context, Machine machine, String lineCode, WeavingTicket? ticket, List<Basket> readyBaskets, AppLocalizations l10n) {
     final bool isActive = ticket != null;
 
@@ -447,7 +450,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     );
   }
 
-  // --- DIALOG GÁN MỚI / SỬA PHIẾU (SEARCHABLE) ---
+  // --- DIALOG GÁN MỚI / SỬA PHIẾU (Đã thêm chức năng Scan Camera) ---
   void _showAssignOrEditDialog(
     BuildContext context, 
     Machine machine, 
@@ -518,6 +521,20 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
             }
           }
 
+          // Hàm mở Camera Scanner
+          Future<void> openCameraScanner() async {
+            // Mở màn hình scan
+            final result = await Navigator.push<String>(
+              context,
+              MaterialPageRoute(builder: (context) => const SimpleBarcodeScanner()),
+            );
+
+            if (result != null && result.isNotEmpty) {
+              barcodeCtrl.text = result;
+              onScanBarcode(result);
+            }
+          }
+
           return AlertDialog(
             title: Text(isEditing 
               ? "${l10n.editTicket}: ${machine.name}" 
@@ -531,21 +548,49 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (!isEditing || (isEditing && selectedBasket == null))
-                      TextFormField(
-                        controller: barcodeCtrl,
-                        autofocus: !isEditing,
-                        decoration: InputDecoration(
-                          labelText: l10n.scanBarcode,
-                          prefixIcon: const Icon(Icons.qr_code_scanner, color: Colors.blue),
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.check_circle, color: Colors.green),
-                            onPressed: () => onScanBarcode(barcodeCtrl.text),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: barcodeCtrl,
+                              autofocus: !isEditing,
+                              decoration: InputDecoration(
+                                labelText: l10n.scanBarcode,
+                                hintText: "Nhập thủ công hoặc quét...",
+                                prefixIcon: IconButton(
+                                  icon: const Icon(Icons.qr_code_scanner, color: Colors.blue),
+                                  onPressed: openCameraScanner, // Bấm vào icon để mở Camera
+                                  tooltip: "Mở Camera",
+                                ),
+                                border: const OutlineInputBorder(),
+                                suffixIcon: IconButton(
+                                  icon: const Icon(Icons.check_circle, color: Colors.green),
+                                  onPressed: () => onScanBarcode(barcodeCtrl.text),
+                                ),
+                                helperText: l10n.scanBarcodeSubline
+                              ),
+                              onFieldSubmitted: (value) => onScanBarcode(value),
+                            ),
                           ),
-                          helperText: l10n.scanBarcodeSubline
-                        ),
-                        onFieldSubmitted: (value) => onScanBarcode(value),
+                          const SizedBox(width: 8),
+                          // Nút Camera lớn bên cạnh cho dễ bấm
+                          InkWell(
+                            onTap: openCameraScanner,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              height: 56, // Chiều cao chuẩn của TextField
+                              width: 56,
+                              decoration: BoxDecoration(
+                                color: _primaryColor,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Icon(Icons.camera_alt, color: Colors.white),
+                            ),
+                          )
+                        ],
                       ),
+                      
                       const SizedBox(height: 16),
 
                       DropdownSearch<Basket>(
@@ -782,5 +827,123 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
       case 'SPINNING': return l10n.statusSpinning;
       default: return status;
     }
+  }
+}
+
+class SimpleBarcodeScanner extends StatefulWidget {
+  const SimpleBarcodeScanner({super.key});
+
+  @override
+  State<SimpleBarcodeScanner> createState() => _SimpleBarcodeScannerState();
+}
+
+class _SimpleBarcodeScannerState extends State<SimpleBarcodeScanner> {
+  // Cấu hình: TẮT autoStart để tránh bị trình duyệt chặn
+  final MobileScannerController controller = MobileScannerController(
+    detectionSpeed: DetectionSpeed.normal,
+    facing: CameraFacing.back,
+    torchEnabled: false,
+    autoStart: false, // QUAN TRỌNG: Phải để false trên Web
+  );
+
+  bool _isScanned = false;
+  bool _isCameraStarted = false; // Biến kiểm tra xem đã bấm nút chưa
+
+  Future<void> _startCamera() async {
+    try {
+      await controller.start();
+      if (mounted) {
+        setState(() {
+          _isCameraStarted = true;
+        });
+      }
+    } catch (e) {
+      debugPrint("Lỗi khởi động: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Không mở được Camera: $e")),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(title: const Text("Quét mã Barcode")),
+      body: Stack(
+        children: [
+          // 1. NẾU CAMERA CHƯA START -> HIỆN NÚT BẤM
+          if (!_isCameraStarted)
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.camera_alt, size: 80, color: Colors.grey),
+                  const SizedBox(height: 20),
+                  const Text(
+                    "Trình duyệt yêu cầu bạn\ncấp quyền thủ công",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: _startCamera, // Bấm vào đây mới gọi lệnh start
+                    icon: const Icon(Icons.power_settings_new),
+                    label: const Text("Bấm để mở Camera"),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          // 2. NẾU ĐÃ START -> HIỆN SCANNER
+          else
+            MobileScanner(
+              controller: controller,
+              onDetect: (capture) {
+                if (_isScanned) return;
+                final List<Barcode> barcodes = capture.barcodes;
+                for (final barcode in barcodes) {
+                  if (barcode.rawValue != null) {
+                    setState(() => _isScanned = true);
+                    Navigator.pop(context, barcode.rawValue);
+                    break;
+                  }
+                }
+              },
+              errorBuilder: (context, error, child) {
+                return Center(
+                  child: Text(
+                    "Lỗi: ${error.errorCode}",
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                );
+              },
+            ),
+
+          // 3. KHUNG VIỀN ĐỎ (Chỉ hiện khi camera đã bật)
+          if (_isCameraStarted)
+            Center(
+              child: Container(
+                width: 250,
+                height: 250,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.red, width: 2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 }

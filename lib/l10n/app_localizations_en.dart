@@ -110,6 +110,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get delete => 'Delete';
 
   @override
+  String get edit => 'Edit';
+
+  @override
+  String get remove => 'Remove';
+
+  @override
   String get actions => 'Actions';
 
   @override
@@ -126,6 +132,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contact => 'Contact';
+
+  @override
+  String get processing => 'Processing...';
+
+  @override
+  String get note => 'Note';
 
   @override
   String get departmentTitle => 'Departments';
@@ -175,9 +187,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get department => 'Department';
 
   @override
-  String get note => 'Note';
-
-  @override
   String get searchEmployee => 'Search employee...';
 
   @override
@@ -207,6 +216,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get active => 'Active';
 
   @override
+  String get inactive => 'Inactive';
+
+  @override
   String get members => 'Members';
 
   @override
@@ -231,6 +243,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String confirmDeleteSupplier(String name) {
     return 'Are you sure you want to delete $name?';
   }
+
+  @override
+  String get paymentTerm => 'Payment Term';
+
+  @override
+  String get taxCode => 'Tax Code';
+
+  @override
+  String get leadTime => 'Lead Time';
+
+  @override
+  String get days => 'Days';
+
+  @override
+  String get contactPerson => 'Contact Person';
+
+  @override
+  String get shortName => 'Short Name';
+
+  @override
+  String get currency => 'Currency';
+
+  @override
+  String get originType => 'Origin Type';
+
+  @override
+  String get isActiveProvider => 'Is Active Provider?';
 
   @override
   String get yarnTitle => 'Yarn Inventory';
@@ -451,7 +490,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get purpose => 'Purpose';
 
   @override
-  String get area => 'AREA';
+  String get area => 'Area';
 
   @override
   String get searchMachine => 'Search machine...';
@@ -591,6 +630,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get basketTitleVS2 => 'Basket';
 
   @override
+  String get basketBreadcrumb => 'Inventory > Baskets';
+
+  @override
+  String get totalBaskets => 'Total Baskets';
+
+  @override
   String get tareWeight => 'Tare Weight (kg)';
 
   @override
@@ -632,6 +677,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stDamaged => 'Damaged';
+
+  @override
+  String get errorTareWeightInvalid => 'Tare weight must be greater than 0';
 
   @override
   String get dyeColorTitle => 'Dye Colors';
@@ -1031,9 +1079,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get superuser => 'SUPERUSER';
 
   @override
-  String get inactive => 'Inactive';
-
-  @override
   String get never => 'Never';
 
   @override
@@ -1145,4 +1190,282 @@ class AppLocalizationsEn extends AppLocalizations {
   String exportError(String error) {
     return 'Export error: $error';
   }
+
+  @override
+  String get purchaseOrderTitle => 'Purchase Orders';
+
+  @override
+  String get purchaseOrderSubtitle => 'Manage procurement and suppliers';
+
+  @override
+  String get createPO => 'CREATE PO';
+
+  @override
+  String get searchPO => 'Search PO Number...';
+
+  @override
+  String get poNumber => 'PO Number';
+
+  @override
+  String get vendor => 'Vendor';
+
+  @override
+  String get orderDate => 'Order Date';
+
+  @override
+  String get eta => 'Expected Arrival (ETA)';
+
+  @override
+  String get incoterm => 'Incoterm';
+
+  @override
+  String get exchangeRate => 'Exchange Rate';
+
+  @override
+  String get totalAmount => 'Total Amount';
+
+  @override
+  String get poDetailTitle => 'Purchase Order Detail';
+
+  @override
+  String get orderItems => 'Order Items';
+
+  @override
+  String get addItem => 'Add Item';
+
+  @override
+  String get noItemsPO => 'No items in this order yet.';
+
+  @override
+  String get addMaterialPrompt => 'Click \'+ Add Material\' to start.';
+
+  @override
+  String get materialInfo => 'MATERIAL INFORMATION';
+
+  @override
+  String get tapToSearch => 'Tap to search material...';
+
+  @override
+  String get transactionDetails => 'TRANSACTION DETAILS';
+
+  @override
+  String get unitPrice => 'Unit Price';
+
+  @override
+  String get lineTotal => 'Line Total';
+
+  @override
+  String get estimatedTotal => 'Estimated Total';
+
+  @override
+  String get confirmAdd => 'Confirm Add';
+
+  @override
+  String get searchMaterialPlaceholder => 'Type name, code, specs...';
+
+  @override
+  String get deletePO => 'Delete PO';
+
+  @override
+  String confirmDeletePO(String number) {
+    return 'Are you sure you want to delete PO $number?';
+  }
+
+  @override
+  String get bomTitle => 'BOM Management';
+
+  @override
+  String get bomSubtitle => 'Production > Bill of Materials';
+
+  @override
+  String get addBOM => 'ADD BOM';
+
+  @override
+  String get noBOMFound => 'No BOM configurations found';
+
+  @override
+  String get bomCode => 'BOM Code';
+
+  @override
+  String get bomName => 'BOM Name';
+
+  @override
+  String get baseQty => 'Base Qty';
+
+  @override
+  String get version => 'Version';
+
+  @override
+  String get viewIngredients => 'View Ingredients';
+
+  @override
+  String get newBOM => 'New BOM';
+
+  @override
+  String get editBOM => 'Edit BOM Header';
+
+  @override
+  String get selectProduct => 'Select Product';
+
+  @override
+  String get chooseProduct => 'Choose a product';
+
+  @override
+  String get loadingProducts => 'Loading products...';
+
+  @override
+  String get setActiveVersion => 'Set as Active Version';
+
+  @override
+  String get bomCodeRequired => 'BOM Code is required';
+
+  @override
+  String get productRequired => 'Please select a Product!';
+
+  @override
+  String get deleteBOM => 'Delete BOM';
+
+  @override
+  String confirmDeleteBOM(String code) {
+    return 'Delete BOM $code? This will remove all material details.';
+  }
+
+  @override
+  String get bomIngredientsConfig => 'BOM Ingredients Config';
+
+  @override
+  String get matId => 'Mat ID';
+
+  @override
+  String get ends => 'Ends';
+
+  @override
+  String get stdQty => 'Std';
+
+  @override
+  String get wastage => 'Waste';
+
+  @override
+  String get grossQty => 'Gross';
+
+  @override
+  String get saveDetail => 'Save Detail';
+
+  @override
+  String get editMaterialDetail => 'Edit Material Detail';
+
+  @override
+  String get importDeclarationTitle => 'Import Declarations';
+
+  @override
+  String get importDeclarationSubtitle =>
+      'Manage customs declarations (E31, A11...)';
+
+  @override
+  String get newDeclaration => 'NEW DECLARATION';
+
+  @override
+  String get searchDeclarationHint => 'Search No, Invoice, B/L...';
+
+  @override
+  String get noDeclarationFound => 'No declarations found';
+
+  @override
+  String get declarationNo => 'Declaration No';
+
+  @override
+  String get declarationDate => 'Declaration Date';
+
+  @override
+  String get declarationType => 'Type';
+
+  @override
+  String get invoiceBill => 'Invoice / Bill';
+
+  @override
+  String get totalTax => 'Total Tax';
+
+  @override
+  String get invoiceAbbr => 'Inv';
+
+  @override
+  String get billOfLadingAbbr => 'B/L';
+
+  @override
+  String get invoiceNo => 'Invoice No';
+
+  @override
+  String get billOfLading => 'Bill of Lading';
+
+  @override
+  String get createDeclaration => 'Create Declaration';
+
+  @override
+  String get editDeclaration => 'Edit Declaration';
+
+  @override
+  String get totalTaxAmount => 'Total Tax Amount';
+
+  @override
+  String get deleteDeclaration => 'Delete Declaration';
+
+  @override
+  String confirmDeleteDeclaration(String number) {
+    return 'Are you sure you want to delete declaration $number?';
+  }
+
+  @override
+  String get declarationDetailTitle => 'Declaration Details';
+
+  @override
+  String get declarationItemsList => 'Cargo List';
+
+  @override
+  String get addDeclarationItem => 'Add Item';
+
+  @override
+  String get noDeclarationItems => 'No items in this declaration.';
+
+  @override
+  String get addDeclarationItemPrompt => 'Click \'+ Add Item\' to start.';
+
+  @override
+  String get editDeclarationItem => 'Edit Item';
+
+  @override
+  String get addDeclarationItemTitle => 'Add Item to Declaration';
+
+  @override
+  String get materialLabel => 'Material';
+
+  @override
+  String get selectMaterialPlaceholder => 'Select material...';
+
+  @override
+  String get actualHSCode => 'HS Code (Actual)';
+
+  @override
+  String get quantityLabel => 'Quantity';
+
+  @override
+  String get unitPriceLabel => 'Unit Price';
+
+  @override
+  String get errorSelectMaterial => 'Please select a material!';
+
+  @override
+  String get searchMaterialTitle => 'Search Material';
+
+  @override
+  String get deleteItemTitle => 'Delete Item';
+
+  @override
+  String get confirmDeleteItemMsg =>
+      'Are you sure you want to delete this item?';
+
+  @override
+  String get registrationDate => 'Reg. Date';
+
+  @override
+  String get updateAction => 'Update';
 }

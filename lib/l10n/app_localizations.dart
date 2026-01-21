@@ -296,6 +296,18 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get delete;
 
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @remove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get remove;
+
   /// No description provided for @actions.
   ///
   /// In en, this message translates to:
@@ -331,6 +343,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Contact'**
   String get contact;
+
+  /// No description provided for @processing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing...'**
+  String get processing;
+
+  /// No description provided for @note.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get note;
 
   /// No description provided for @departmentTitle.
   ///
@@ -422,12 +446,6 @@ abstract class AppLocalizations {
   /// **'Department'**
   String get department;
 
-  /// No description provided for @note.
-  ///
-  /// In en, this message translates to:
-  /// **'Note'**
-  String get note;
-
   /// No description provided for @searchEmployee.
   ///
   /// In en, this message translates to:
@@ -482,6 +500,12 @@ abstract class AppLocalizations {
   /// **'Active'**
   String get active;
 
+  /// No description provided for @inactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get inactive;
+
   /// No description provided for @members.
   ///
   /// In en, this message translates to:
@@ -529,6 +553,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to delete {name}?'**
   String confirmDeleteSupplier(String name);
+
+  /// No description provided for @paymentTerm.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Term'**
+  String get paymentTerm;
+
+  /// No description provided for @taxCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax Code'**
+  String get taxCode;
+
+  /// No description provided for @leadTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Lead Time'**
+  String get leadTime;
+
+  /// No description provided for @days.
+  ///
+  /// In en, this message translates to:
+  /// **'Days'**
+  String get days;
+
+  /// No description provided for @contactPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Person'**
+  String get contactPerson;
+
+  /// No description provided for @shortName.
+  ///
+  /// In en, this message translates to:
+  /// **'Short Name'**
+  String get shortName;
+
+  /// No description provided for @currency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get currency;
+
+  /// No description provided for @originType.
+  ///
+  /// In en, this message translates to:
+  /// **'Origin Type'**
+  String get originType;
+
+  /// No description provided for @isActiveProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Is Active Provider?'**
+  String get isActiveProvider;
 
   /// No description provided for @yarnTitle.
   ///
@@ -953,7 +1031,7 @@ abstract class AppLocalizations {
   /// No description provided for @area.
   ///
   /// In en, this message translates to:
-  /// **'AREA'**
+  /// **'Area'**
   String get area;
 
   /// No description provided for @searchMachine.
@@ -1196,6 +1274,18 @@ abstract class AppLocalizations {
   /// **'Basket'**
   String get basketTitleVS2;
 
+  /// No description provided for @basketBreadcrumb.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory > Baskets'**
+  String get basketBreadcrumb;
+
+  /// No description provided for @totalBaskets.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Baskets'**
+  String get totalBaskets;
+
   /// No description provided for @tareWeight.
   ///
   /// In en, this message translates to:
@@ -1273,6 +1363,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Damaged'**
   String get stDamaged;
+
+  /// No description provided for @errorTareWeightInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Tare weight must be greater than 0'**
+  String get errorTareWeightInvalid;
 
   /// No description provided for @dyeColorTitle.
   ///
@@ -2042,12 +2138,6 @@ abstract class AppLocalizations {
   /// **'SUPERUSER'**
   String get superuser;
 
-  /// No description provided for @inactive.
-  ///
-  /// In en, this message translates to:
-  /// **'Inactive'**
-  String get inactive;
-
   /// No description provided for @never.
   ///
   /// In en, this message translates to:
@@ -2263,6 +2353,546 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export error: {error}'**
   String exportError(String error);
+
+  /// No description provided for @purchaseOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Orders'**
+  String get purchaseOrderTitle;
+
+  /// No description provided for @purchaseOrderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage procurement and suppliers'**
+  String get purchaseOrderSubtitle;
+
+  /// No description provided for @createPO.
+  ///
+  /// In en, this message translates to:
+  /// **'CREATE PO'**
+  String get createPO;
+
+  /// No description provided for @searchPO.
+  ///
+  /// In en, this message translates to:
+  /// **'Search PO Number...'**
+  String get searchPO;
+
+  /// No description provided for @poNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'PO Number'**
+  String get poNumber;
+
+  /// No description provided for @vendor.
+  ///
+  /// In en, this message translates to:
+  /// **'Vendor'**
+  String get vendor;
+
+  /// No description provided for @orderDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Date'**
+  String get orderDate;
+
+  /// No description provided for @eta.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected Arrival (ETA)'**
+  String get eta;
+
+  /// No description provided for @incoterm.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoterm'**
+  String get incoterm;
+
+  /// No description provided for @exchangeRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange Rate'**
+  String get exchangeRate;
+
+  /// No description provided for @totalAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Amount'**
+  String get totalAmount;
+
+  /// No description provided for @poDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Order Detail'**
+  String get poDetailTitle;
+
+  /// No description provided for @orderItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Items'**
+  String get orderItems;
+
+  /// No description provided for @addItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Item'**
+  String get addItem;
+
+  /// No description provided for @noItemsPO.
+  ///
+  /// In en, this message translates to:
+  /// **'No items in this order yet.'**
+  String get noItemsPO;
+
+  /// No description provided for @addMaterialPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Click \'+ Add Material\' to start.'**
+  String get addMaterialPrompt;
+
+  /// No description provided for @materialInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'MATERIAL INFORMATION'**
+  String get materialInfo;
+
+  /// No description provided for @tapToSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to search material...'**
+  String get tapToSearch;
+
+  /// No description provided for @transactionDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'TRANSACTION DETAILS'**
+  String get transactionDetails;
+
+  /// No description provided for @unitPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit Price'**
+  String get unitPrice;
+
+  /// No description provided for @lineTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Line Total'**
+  String get lineTotal;
+
+  /// No description provided for @estimatedTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Total'**
+  String get estimatedTotal;
+
+  /// No description provided for @confirmAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Add'**
+  String get confirmAdd;
+
+  /// No description provided for @searchMaterialPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Type name, code, specs...'**
+  String get searchMaterialPlaceholder;
+
+  /// No description provided for @deletePO.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete PO'**
+  String get deletePO;
+
+  /// No description provided for @confirmDeletePO.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete PO {number}?'**
+  String confirmDeletePO(String number);
+
+  /// No description provided for @bomTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'BOM Management'**
+  String get bomTitle;
+
+  /// No description provided for @bomSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Production > Bill of Materials'**
+  String get bomSubtitle;
+
+  /// No description provided for @addBOM.
+  ///
+  /// In en, this message translates to:
+  /// **'ADD BOM'**
+  String get addBOM;
+
+  /// No description provided for @noBOMFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No BOM configurations found'**
+  String get noBOMFound;
+
+  /// No description provided for @bomCode.
+  ///
+  /// In en, this message translates to:
+  /// **'BOM Code'**
+  String get bomCode;
+
+  /// No description provided for @bomName.
+  ///
+  /// In en, this message translates to:
+  /// **'BOM Name'**
+  String get bomName;
+
+  /// No description provided for @baseQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Base Qty'**
+  String get baseQty;
+
+  /// No description provided for @version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get version;
+
+  /// No description provided for @viewIngredients.
+  ///
+  /// In en, this message translates to:
+  /// **'View Ingredients'**
+  String get viewIngredients;
+
+  /// No description provided for @newBOM.
+  ///
+  /// In en, this message translates to:
+  /// **'New BOM'**
+  String get newBOM;
+
+  /// No description provided for @editBOM.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit BOM Header'**
+  String get editBOM;
+
+  /// No description provided for @selectProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Product'**
+  String get selectProduct;
+
+  /// No description provided for @chooseProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a product'**
+  String get chooseProduct;
+
+  /// No description provided for @loadingProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading products...'**
+  String get loadingProducts;
+
+  /// No description provided for @setActiveVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Set as Active Version'**
+  String get setActiveVersion;
+
+  /// No description provided for @bomCodeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'BOM Code is required'**
+  String get bomCodeRequired;
+
+  /// No description provided for @productRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a Product!'**
+  String get productRequired;
+
+  /// No description provided for @deleteBOM.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete BOM'**
+  String get deleteBOM;
+
+  /// No description provided for @confirmDeleteBOM.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete BOM {code}? This will remove all material details.'**
+  String confirmDeleteBOM(String code);
+
+  /// No description provided for @bomIngredientsConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'BOM Ingredients Config'**
+  String get bomIngredientsConfig;
+
+  /// No description provided for @matId.
+  ///
+  /// In en, this message translates to:
+  /// **'Mat ID'**
+  String get matId;
+
+  /// No description provided for @ends.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends'**
+  String get ends;
+
+  /// No description provided for @stdQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Std'**
+  String get stdQty;
+
+  /// No description provided for @wastage.
+  ///
+  /// In en, this message translates to:
+  /// **'Waste'**
+  String get wastage;
+
+  /// No description provided for @grossQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross'**
+  String get grossQty;
+
+  /// No description provided for @saveDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Detail'**
+  String get saveDetail;
+
+  /// No description provided for @editMaterialDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Material Detail'**
+  String get editMaterialDetail;
+
+  /// No description provided for @importDeclarationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Declarations'**
+  String get importDeclarationTitle;
+
+  /// No description provided for @importDeclarationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage customs declarations (E31, A11...)'**
+  String get importDeclarationSubtitle;
+
+  /// No description provided for @newDeclaration.
+  ///
+  /// In en, this message translates to:
+  /// **'NEW DECLARATION'**
+  String get newDeclaration;
+
+  /// No description provided for @searchDeclarationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search No, Invoice, B/L...'**
+  String get searchDeclarationHint;
+
+  /// No description provided for @noDeclarationFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No declarations found'**
+  String get noDeclarationFound;
+
+  /// No description provided for @declarationNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Declaration No'**
+  String get declarationNo;
+
+  /// No description provided for @declarationDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Declaration Date'**
+  String get declarationDate;
+
+  /// No description provided for @declarationType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get declarationType;
+
+  /// No description provided for @invoiceBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice / Bill'**
+  String get invoiceBill;
+
+  /// No description provided for @totalTax.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Tax'**
+  String get totalTax;
+
+  /// No description provided for @invoiceAbbr.
+  ///
+  /// In en, this message translates to:
+  /// **'Inv'**
+  String get invoiceAbbr;
+
+  /// No description provided for @billOfLadingAbbr.
+  ///
+  /// In en, this message translates to:
+  /// **'B/L'**
+  String get billOfLadingAbbr;
+
+  /// No description provided for @invoiceNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice No'**
+  String get invoiceNo;
+
+  /// No description provided for @billOfLading.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill of Lading'**
+  String get billOfLading;
+
+  /// No description provided for @createDeclaration.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Declaration'**
+  String get createDeclaration;
+
+  /// No description provided for @editDeclaration.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Declaration'**
+  String get editDeclaration;
+
+  /// No description provided for @totalTaxAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Tax Amount'**
+  String get totalTaxAmount;
+
+  /// No description provided for @deleteDeclaration.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Declaration'**
+  String get deleteDeclaration;
+
+  /// No description provided for @confirmDeleteDeclaration.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete declaration {number}?'**
+  String confirmDeleteDeclaration(String number);
+
+  /// No description provided for @declarationDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Declaration Details'**
+  String get declarationDetailTitle;
+
+  /// No description provided for @declarationItemsList.
+  ///
+  /// In en, this message translates to:
+  /// **'Cargo List'**
+  String get declarationItemsList;
+
+  /// No description provided for @addDeclarationItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Item'**
+  String get addDeclarationItem;
+
+  /// No description provided for @noDeclarationItems.
+  ///
+  /// In en, this message translates to:
+  /// **'No items in this declaration.'**
+  String get noDeclarationItems;
+
+  /// No description provided for @addDeclarationItemPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Click \'+ Add Item\' to start.'**
+  String get addDeclarationItemPrompt;
+
+  /// No description provided for @editDeclarationItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Item'**
+  String get editDeclarationItem;
+
+  /// No description provided for @addDeclarationItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Item to Declaration'**
+  String get addDeclarationItemTitle;
+
+  /// No description provided for @materialLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Material'**
+  String get materialLabel;
+
+  /// No description provided for @selectMaterialPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Select material...'**
+  String get selectMaterialPlaceholder;
+
+  /// No description provided for @actualHSCode.
+  ///
+  /// In en, this message translates to:
+  /// **'HS Code (Actual)'**
+  String get actualHSCode;
+
+  /// No description provided for @quantityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get quantityLabel;
+
+  /// No description provided for @unitPriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit Price'**
+  String get unitPriceLabel;
+
+  /// No description provided for @errorSelectMaterial.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a material!'**
+  String get errorSelectMaterial;
+
+  /// No description provided for @searchMaterialTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Material'**
+  String get searchMaterialTitle;
+
+  /// No description provided for @deleteItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Item'**
+  String get deleteItemTitle;
+
+  /// No description provided for @confirmDeleteItemMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this item?'**
+  String get confirmDeleteItemMsg;
+
+  /// No description provided for @registrationDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Reg. Date'**
+  String get registrationDate;
+
+  /// No description provided for @updateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get updateAction;
 }
 
 class _AppLocalizationsDelegate

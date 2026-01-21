@@ -3,8 +3,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+// --- IMPORTS ---
 import '../../../../../core/widgets/responsive_layout.dart';
 import '../../../../../l10n/app_localizations.dart';
+import '../../../../../core/constants/api_endpoints.dart'; // <--- [QUAN TRỌNG] Import file này
 import '../../../department/domain/department_model.dart';
 import '../../../department/presentation/bloc/department_cubit.dart';
 import '../../domain/employee_model.dart';
@@ -69,8 +72,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
       body: BlocBuilder<EmployeeCubit, EmployeeState>(
         builder: (context, state) {
           return Column(
-            // [FIX 1] Stretch để nội dung bung hết chiều ngang
-            crossAxisAlignment: CrossAxisAlignment.stretch, 
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // --- HEADER SECTION ---
               Container(
@@ -211,24 +213,21 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  // --- DESKTOP GRID (FIXED FULL WIDTH) ---
+  // --- DESKTOP GRID ---
   Widget _buildDesktopGrid(BuildContext context, List<Employee> employees, AppLocalizations l10n) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      // [FIX 2] Container width infinity để Card bung hết cỡ
-      // ignore: sized_box_for_whitespace
-      child: Container(
+      child: SizedBox(
         width: double.infinity,
         child: Card(
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
-          clipBehavior: Clip.antiAlias, // Cắt góc cho đẹp
-          child: LayoutBuilder( // [FIX 3] LayoutBuilder để lấy chiều rộng màn hình
+          clipBehavior: Clip.antiAlias,
+          child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: ConstrainedBox(
-                  // [FIX 4] Ép bảng rộng tối thiểu bằng chiều rộng container
                   constraints: BoxConstraints(minWidth: constraints.maxWidth),
                   child: DataTable(
                     headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
@@ -357,10 +356,13 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  // --- AVATAR LOGIC ---
+  // --- [FIX] AVATAR LOGIC (SỬ DỤNG API ENDPOINTS) ---
   Widget _buildAvatar(String url, String name, double radius) {
+    // 1. Lấy Full URL từ Helper
+    final fullUrl = ApiEndpoints.getImageUrl(url);
+
     String initials = "?";
-    if (url.isEmpty && name.isNotEmpty) {
+    if (fullUrl.isEmpty && name.isNotEmpty) {
       List<String> parts = name.trim().split(' ');
       if (parts.length >= 2) {
         initials = "${parts.first[0]}${parts.last[0]}".toUpperCase();
@@ -375,8 +377,9 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     return CircleAvatar(
       radius: radius,
       backgroundColor: _primaryColor.withOpacity(0.1),
-      backgroundImage: url.isNotEmpty ? NetworkImage(url) : null,
-      child: url.isEmpty
+      // 2. Sử dụng fullUrl thay vì url gốc
+      backgroundImage: fullUrl.isNotEmpty ? NetworkImage(fullUrl) : null,
+      child: fullUrl.isEmpty
           ? Text(initials,
               style: TextStyle(
                   color: _primaryColor,
@@ -429,6 +432,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setStateDialog) {
           Future<void> pickImage() async {
@@ -443,6 +447,15 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
             } catch (e) {
               print("Error picking file: $e");
             }
+          }
+
+          // [FIX] Xử lý hiển thị ảnh trong Dialog
+          ImageProvider? imageProvider;
+          if (pickedBytes != null) {
+            imageProvider = MemoryImage(pickedBytes!);
+          } else if (emp != null && emp.avatarUrl.isNotEmpty) {
+             // Sử dụng Helper để lấy link ảnh tuyệt đối
+             imageProvider = NetworkImage(ApiEndpoints.getImageUrl(emp.avatarUrl));
           }
 
           return AlertDialog(
@@ -466,10 +479,9 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                               child: CircleAvatar(
                                 radius: 40,
                                 backgroundColor: Colors.grey.shade200,
-                                backgroundImage: pickedBytes != null 
-                                    ? MemoryImage(pickedBytes!) 
-                                    : (emp != null && emp.avatarUrl.isNotEmpty ? NetworkImage(emp.avatarUrl) : null) as ImageProvider?,
-                                child: (pickedBytes == null && (emp == null || emp.avatarUrl.isEmpty))
+                                // Sử dụng imageProvider đã xử lý ở trên
+                                backgroundImage: imageProvider,
+                                child: imageProvider == null
                                     ? const Icon(Icons.person, size: 40, color: Colors.grey)
                                     : null,
                               ),
@@ -585,7 +597,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
   }
 }
 
-// Badge Phòng ban
+// Badge Phòng ban (Giữ nguyên)
 class _DepartmentBadge extends StatelessWidget {
   final int deptId;
   final bool isChip; 

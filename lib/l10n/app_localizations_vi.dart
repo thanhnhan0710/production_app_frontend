@@ -111,6 +111,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get delete => 'Xóa';
 
   @override
+  String get edit => 'Sửa';
+
+  @override
+  String get remove => 'Xóa';
+
+  @override
   String get actions => 'Hành động';
 
   @override
@@ -127,6 +133,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get contact => 'Liên hệ';
+
+  @override
+  String get processing => 'Đang xử lý...';
+
+  @override
+  String get note => 'Ghi chú';
 
   @override
   String get departmentTitle => 'Quản lý Bộ phận';
@@ -176,9 +188,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get department => 'Phòng ban';
 
   @override
-  String get note => 'Ghi chú';
-
-  @override
   String get searchEmployee => 'Tìm nhân viên...';
 
   @override
@@ -208,6 +217,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get active => 'Hoạt động';
 
   @override
+  String get inactive => 'Ngưng hoạt động';
+
+  @override
   String get members => 'Thành viên';
 
   @override
@@ -232,6 +244,33 @@ class AppLocalizationsVi extends AppLocalizations {
   String confirmDeleteSupplier(String name) {
     return 'Bạn có chắc muốn xóa $name không?';
   }
+
+  @override
+  String get paymentTerm => 'Điều khoản thanh toán';
+
+  @override
+  String get taxCode => 'Mã số thuế';
+
+  @override
+  String get leadTime => 'Thời gian giao hàng';
+
+  @override
+  String get days => 'Ngày';
+
+  @override
+  String get contactPerson => 'Người liên hệ';
+
+  @override
+  String get shortName => 'Tên viết tắt';
+
+  @override
+  String get currency => 'Tiền tệ';
+
+  @override
+  String get originType => 'Nguồn gốc';
+
+  @override
+  String get isActiveProvider => 'Nhà cung cấp hoạt động?';
 
   @override
   String get yarnTitle => 'Kho Sợi';
@@ -364,7 +403,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get totalMaterials => 'Tổng vật tư';
 
   @override
-  String get addMaterial => 'Thêm vật liệu';
+  String get addMaterial => 'Thêm Vật tư';
 
   @override
   String get editMaterial => 'Sửa vật liệu';
@@ -381,7 +420,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get noMaterialFound => 'Không tìm thấy vật liệu';
 
   @override
-  String get selectImporter => 'Chọn người nhập';
+  String get selectImporter => 'Chọn nguyên vật liệu';
 
   @override
   String get selectUnit => 'Chọn đơn vị';
@@ -592,6 +631,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get basketTitleVS2 => 'Rổ';
 
   @override
+  String get basketBreadcrumb => 'Kho vận > Rổ chứa';
+
+  @override
+  String get totalBaskets => 'Tổng số rổ';
+
+  @override
   String get tareWeight => 'Trọng lượng bì (kg)';
 
   @override
@@ -634,6 +679,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get stDamaged => 'Hư hỏng';
+
+  @override
+  String get errorTareWeightInvalid => 'Trọng lượng bì phải lớn hơn 0';
 
   @override
   String get dyeColorTitle => 'Màu nhuộm';
@@ -1033,9 +1081,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get superuser => 'SUPERUSER';
 
   @override
-  String get inactive => 'Ngưng hoạt động';
-
-  @override
   String get never => 'Chưa từng';
 
   @override
@@ -1147,4 +1192,281 @@ class AppLocalizationsVi extends AppLocalizations {
   String exportError(String error) {
     return 'Lỗi xuất file: $error';
   }
+
+  @override
+  String get purchaseOrderTitle => 'Đơn Mua Hàng';
+
+  @override
+  String get purchaseOrderSubtitle => 'Quản lý thu mua và nhà cung cấp';
+
+  @override
+  String get createPO => 'TẠO ĐƠN';
+
+  @override
+  String get searchPO => 'Tìm số PO...';
+
+  @override
+  String get poNumber => 'Số PO';
+
+  @override
+  String get vendor => 'Nhà cung cấp';
+
+  @override
+  String get orderDate => 'Ngày đặt hàng';
+
+  @override
+  String get eta => 'Ngày về dự kiến (ETA)';
+
+  @override
+  String get incoterm => 'Điều khoản TM (Incoterm)';
+
+  @override
+  String get exchangeRate => 'Tỷ giá';
+
+  @override
+  String get totalAmount => 'Tổng tiền';
+
+  @override
+  String get poDetailTitle => 'Chi tiết Đơn hàng';
+
+  @override
+  String get orderItems => 'Danh sách hàng';
+
+  @override
+  String get addItem => 'Thêm hàng';
+
+  @override
+  String get noItemsPO => 'Chưa có vật tư trong đơn này.';
+
+  @override
+  String get addMaterialPrompt => 'Nhấn \'+ Thêm Vật tư\' để bắt đầu.';
+
+  @override
+  String get materialInfo => 'THÔNG TIN VẬT TƯ';
+
+  @override
+  String get tapToSearch => 'Chạm để tìm vật tư...';
+
+  @override
+  String get transactionDetails => 'CHI TIẾT GIAO DỊCH';
+
+  @override
+  String get unitPrice => 'Đơn giá';
+
+  @override
+  String get lineTotal => 'Thành tiền';
+
+  @override
+  String get estimatedTotal => 'Tổng tạm tính';
+
+  @override
+  String get confirmAdd => 'Xác nhận thêm';
+
+  @override
+  String get searchMaterialPlaceholder => 'Nhập tên, mã, quy cách...';
+
+  @override
+  String get deletePO => 'Xóa Đơn hàng';
+
+  @override
+  String confirmDeletePO(String number) {
+    return 'Bạn có chắc muốn xóa đơn $number?';
+  }
+
+  @override
+  String get bomTitle => 'Quản lý Định mức';
+
+  @override
+  String get bomSubtitle => 'Sản xuất > Định mức Nguyên liệu';
+
+  @override
+  String get addBOM => 'THÊM BOM';
+
+  @override
+  String get noBOMFound => 'Không tìm thấy định mức nào';
+
+  @override
+  String get bomCode => 'Mã BOM';
+
+  @override
+  String get bomName => 'Tên BOM';
+
+  @override
+  String get baseQty => 'Số lượng gốc';
+
+  @override
+  String get version => 'Phiên bản';
+
+  @override
+  String get viewIngredients => 'Xem thành phần';
+
+  @override
+  String get newBOM => 'Tạo BOM mới';
+
+  @override
+  String get editBOM => 'Sửa thông tin BOM';
+
+  @override
+  String get selectProduct => 'Chọn sản phẩm';
+
+  @override
+  String get chooseProduct => 'Chọn một sản phẩm';
+
+  @override
+  String get loadingProducts => 'Đang tải sản phẩm...';
+
+  @override
+  String get setActiveVersion => 'Đặt làm phiên bản chính';
+
+  @override
+  String get bomCodeRequired => 'Vui lòng nhập mã BOM';
+
+  @override
+  String get productRequired => 'Vui lòng chọn sản phẩm!';
+
+  @override
+  String get deleteBOM => 'Xóa BOM';
+
+  @override
+  String confirmDeleteBOM(String code) {
+    return 'Xóa BOM $code? Hành động này sẽ xóa tất cả chi tiết vật tư.';
+  }
+
+  @override
+  String get bomIngredientsConfig => 'Cấu hình thành phần BOM';
+
+  @override
+  String get matId => 'Mã VL';
+
+  @override
+  String get ends => 'Số sợi';
+
+  @override
+  String get stdQty => 'Định mức';
+
+  @override
+  String get wastage => 'Hao hụt';
+
+  @override
+  String get grossQty => 'Tổng';
+
+  @override
+  String get saveDetail => 'Lưu chi tiết';
+
+  @override
+  String get editMaterialDetail => 'Sửa chi tiết vật tư';
+
+  @override
+  String get importDeclarationTitle => 'Tờ khai Hải quan';
+
+  @override
+  String get importDeclarationSubtitle =>
+      'Quản lý tờ khai hải quan (E31, A11...)';
+
+  @override
+  String get newDeclaration => 'THÊM TỜ KHAI';
+
+  @override
+  String get searchDeclarationHint => 'Tìm số tờ khai, Invoice, B/L...';
+
+  @override
+  String get noDeclarationFound => 'Không tìm thấy tờ khai nào';
+
+  @override
+  String get declarationNo => 'Số tờ khai';
+
+  @override
+  String get declarationDate => 'Ngày đăng ký';
+
+  @override
+  String get declarationType => 'Loại hình';
+
+  @override
+  String get invoiceBill => 'Invoice / Vận đơn';
+
+  @override
+  String get totalTax => 'Tổng thuế';
+
+  @override
+  String get invoiceAbbr => 'Inv';
+
+  @override
+  String get billOfLadingAbbr => 'B/L';
+
+  @override
+  String get invoiceNo => 'Số Invoice';
+
+  @override
+  String get billOfLading => 'Vận đơn (B/L)';
+
+  @override
+  String get createDeclaration => 'Tạo tờ khai';
+
+  @override
+  String get editDeclaration => 'Sửa tờ khai';
+
+  @override
+  String get totalTaxAmount => 'Tổng tiền thuế';
+
+  @override
+  String get deleteDeclaration => 'Xóa tờ khai';
+
+  @override
+  String confirmDeleteDeclaration(String number) {
+    return 'Bạn có chắc muốn xóa tờ khai $number không?';
+  }
+
+  @override
+  String get declarationDetailTitle => 'Chi tiết Tờ khai';
+
+  @override
+  String get declarationItemsList => 'Danh sách hàng';
+
+  @override
+  String get addDeclarationItem => 'Thêm hàng';
+
+  @override
+  String get noDeclarationItems => 'Chưa có hàng hóa trong tờ khai.';
+
+  @override
+  String get addDeclarationItemPrompt => 'Nhấn \'+ Thêm hàng\' để bắt đầu.';
+
+  @override
+  String get editDeclarationItem => 'Sửa hàng hóa';
+
+  @override
+  String get addDeclarationItemTitle => 'Thêm hàng vào Tờ khai';
+
+  @override
+  String get materialLabel => 'Vật tư';
+
+  @override
+  String get selectMaterialPlaceholder => 'Chọn vật tư...';
+
+  @override
+  String get actualHSCode => 'HS Code (Thực tế)';
+
+  @override
+  String get quantityLabel => 'Số lượng';
+
+  @override
+  String get unitPriceLabel => 'Đơn giá';
+
+  @override
+  String get errorSelectMaterial => 'Vui lòng chọn vật tư!';
+
+  @override
+  String get searchMaterialTitle => 'Tìm kiếm Vật tư';
+
+  @override
+  String get deleteItemTitle => 'Xóa dòng hàng';
+
+  @override
+  String get confirmDeleteItemMsg => 'Bạn có chắc muốn xóa dòng này không?';
+
+  @override
+  String get registrationDate => 'Ngày ĐK';
+
+  @override
+  String get updateAction => 'Cập nhật';
 }

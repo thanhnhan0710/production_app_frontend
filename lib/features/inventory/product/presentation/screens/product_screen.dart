@@ -2,8 +2,12 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:production_app_frontend/l10n/app_localizations.dart';
-import 'package:production_app_frontend/core/widgets/responsive_layout.dart';
+
+// --- IMPORTS ---
+// Đảm bảo đường dẫn import này đúng với cấu trúc dự án của bạn
+import '../../../../../l10n/app_localizations.dart';
+import '../../../../../core/widgets/responsive_layout.dart';
+import '../../../../../core/constants/api_endpoints.dart'; // <--- Import quan trọng để lấy Server URL
 import '../../domain/product_model.dart';
 import '../bloc/product_cubit.dart';
 
@@ -16,6 +20,8 @@ class ProductScreen extends StatefulWidget {
 
 class _ProductScreenState extends State<ProductScreen> {
   final _searchController = TextEditingController();
+  
+  // Màu sắc chủ đạo (có thể đưa vào Theme sau này)
   final Color _primaryColor = const Color(0xFF003366);
   final Color _accentColor = const Color(0xFFD81B60);
   final Color _bgLight = const Color(0xFFF5F7FA);
@@ -23,7 +29,14 @@ class _ProductScreenState extends State<ProductScreen> {
   @override
   void initState() {
     super.initState();
+    // Load dữ liệu khi màn hình khởi tạo
     context.read<ProductCubit>().loadProducts();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -33,7 +46,7 @@ class _ProductScreenState extends State<ProductScreen> {
 
     return Scaffold(
       backgroundColor: _bgLight,
-      // [TÍNH NĂNG 1] SelectionArea: Cho phép copy text trên toàn màn hình
+      // SelectionArea cho phép user bôi đen/copy text trên màn hình (UX tốt cho Desktop)
       body: SelectionArea(
         child: BlocBuilder<ProductCubit, ProductState>(
           builder: (context, state) {
@@ -43,13 +56,15 @@ class _ProductScreenState extends State<ProductScreen> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // --- HEADER ---
+                // ==========================
+                // 1. HEADER & TOOLBAR
+                // ==========================
                 Container(
                   color: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   child: Column(
                     children: [
+                      // Title Row
                       Row(
                         children: [
                           Container(
@@ -73,15 +88,14 @@ class _ProductScreenState extends State<ProductScreen> {
                               const SizedBox(height: 2),
                               Text("Inventory > Finished Goods",
                                   style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey.shade500)),
+                                      fontSize: 13, color: Colors.grey.shade500)),
                             ],
                           ),
                           const Spacer(),
+                          // Nút thêm mới (Chỉ hiện trên Desktop)
                           if (isDesktop)
                             ElevatedButton.icon(
-                              onPressed: () =>
-                                  _showEditDialog(context, null, l10n),
+                              onPressed: () => _showEditDialog(context, null, l10n),
                               icon: const Icon(Icons.add, size: 18),
                               label: Text(l10n.addProduct.toUpperCase()),
                               style: ElevatedButton.styleFrom(
@@ -97,7 +111,8 @@ class _ProductScreenState extends State<ProductScreen> {
                         ],
                       ),
                       const SizedBox(height: 24),
-                      // Search Bar
+                      
+                      // Search & Filter Row
                       Row(
                         children: [
                           if (isDesktop) ...[
@@ -106,6 +121,8 @@ class _ProductScreenState extends State<ProductScreen> {
                             const SizedBox(width: 16),
                             const Spacer(),
                           ],
+                          
+                          // Ô Tìm kiếm
                           Expanded(
                             flex: isDesktop ? 0 : 1,
                             child: Container(
@@ -113,28 +130,25 @@ class _ProductScreenState extends State<ProductScreen> {
                               decoration: BoxDecoration(
                                   color: _bgLight,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                      color: Colors.grey.shade200)),
+                                  border: Border.all(color: Colors.grey.shade200)),
                               child: TextField(
                                 controller: _searchController,
                                 textInputAction: TextInputAction.search,
                                 decoration: InputDecoration(
                                   hintText: l10n.searchProduct,
                                   hintStyle: TextStyle(
-                                      color: Colors.grey.shade400,
-                                      fontSize: 14),
+                                      color: Colors.grey.shade400, fontSize: 14),
                                   prefixIcon: Icon(Icons.search,
                                       color: Colors.grey.shade500, size: 20),
                                   border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 14),
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(vertical: 14),
                                   suffixIcon: IconButton(
                                     icon: const Icon(Icons.arrow_forward,
                                         color: Colors.blue),
                                     onPressed: () => context
                                         .read<ProductCubit>()
-                                        .searchProducts(
-                                            _searchController.text),
+                                        .searchProducts(_searchController.text),
                                   ),
                                 ),
                                 onSubmitted: (value) => context
@@ -144,13 +158,13 @@ class _ProductScreenState extends State<ProductScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
+                          // Nút Filter giả lập
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: Colors.grey.shade300)),
+                                border: Border.all(color: Colors.grey.shade300)),
                             child: const Icon(Icons.filter_list,
                                 color: Colors.grey, size: 20),
                           ),
@@ -161,14 +175,15 @@ class _ProductScreenState extends State<ProductScreen> {
                 ),
                 Container(height: 1, color: Colors.grey.shade200),
 
-                // --- CONTENT ---
+                // ==========================
+                // 2. MAIN CONTENT
+                // ==========================
                 Expanded(
                   child: Builder(
                     builder: (context) {
                       if (state is ProductLoading) {
                         return Center(
-                            child: CircularProgressIndicator(
-                                color: _primaryColor));
+                            child: CircularProgressIndicator(color: _primaryColor));
                       }
                       if (state is ProductError) {
                         return Center(
@@ -185,12 +200,12 @@ class _ProductScreenState extends State<ProductScreen> {
                                     size: 60, color: Colors.grey.shade300),
                                 const SizedBox(height: 16),
                                 Text(l10n.noProductFound,
-                                    style: TextStyle(
-                                        color: Colors.grey.shade500)),
+                                    style: TextStyle(color: Colors.grey.shade500)),
                               ],
                             ),
                           );
                         }
+                        // Responsive Switch: Table vs List
                         return isDesktop
                             ? _buildDesktopTable(context, state.products, l10n)
                             : _buildMobileList(context, state.products, l10n);
@@ -204,6 +219,7 @@ class _ProductScreenState extends State<ProductScreen> {
           },
         ),
       ),
+      // Floating Button cho Mobile
       floatingActionButton: !isDesktop
           ? FloatingActionButton(
               backgroundColor: _accentColor,
@@ -214,7 +230,7 @@ class _ProductScreenState extends State<ProductScreen> {
     );
   }
 
-  // --- DESKTOP TABLE ---
+  // --- WIDGET: DESKTOP TABLE ---
   Widget _buildDesktopTable(
       BuildContext context, List<Product> products, AppLocalizations l10n) {
     return SingleChildScrollView(
@@ -231,8 +247,7 @@ class _ProductScreenState extends State<ProductScreen> {
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: ConstrainedBox(
-                  constraints:
-                      BoxConstraints(minWidth: constraints.maxWidth),
+                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
                   child: DataTable(
                     headingRowColor:
                         MaterialStateProperty.all(const Color(0xFFF9FAFB)),
@@ -260,10 +275,9 @@ class _ProductScreenState extends State<ProductScreen> {
                           DataCell(_buildImagePreview(context, item.imageUrl, 60)),
                           DataCell(Text(item.itemCode,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14))),
-                          DataCell(Text(item.note,
-                              overflow: TextOverflow.ellipsis)),
+                                  fontWeight: FontWeight.bold, fontSize: 14))),
+                          DataCell(
+                              Text(item.note, overflow: TextOverflow.ellipsis)),
                           DataCell(Row(
                             children: [
                               IconButton(
@@ -297,7 +311,7 @@ class _ProductScreenState extends State<ProductScreen> {
       fontSize: 12,
       letterSpacing: 0.5);
 
-  // --- MOBILE LIST ---
+  // --- WIDGET: MOBILE LIST ---
   Widget _buildMobileList(
       BuildContext context, List<Product> products, AppLocalizations l10n) {
     return ListView.separated(
@@ -354,11 +368,14 @@ class _ProductScreenState extends State<ProductScreen> {
     );
   }
 
-  // [TÍNH NĂNG 2] Click vào ảnh để xem full + Zoom
+  // --- WIDGET: IMAGE PREVIEW (CÓ ZOOM) ---
   Widget _buildImagePreview(BuildContext context, String url, double size) {
+    // [CLEAN CODE] Sử dụng Helper để lấy Full URL (đã xử lý logic localhost/IP)
+    final fullUrl = ApiEndpoints.getImageUrl(url);
+
     return GestureDetector(
       onTap: () {
-        if (url.isNotEmpty) {
+        if (fullUrl.isNotEmpty) {
           showDialog(
             context: context,
             builder: (ctx) => Dialog(
@@ -367,15 +384,15 @@ class _ProductScreenState extends State<ProductScreen> {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // InteractiveViewer cho phép Zoom, Pan
                   InteractiveViewer(
                     panEnabled: true,
                     minScale: 0.5,
                     maxScale: 4,
                     child: Image.network(
-                      url,
+                      fullUrl,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.error, color: Colors.white, size: 50),
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.error, color: Colors.white, size: 50),
                     ),
                   ),
                   Positioned(
@@ -396,9 +413,8 @@ class _ProductScreenState extends State<ProductScreen> {
           );
         }
       },
-      // Thay đổi con trỏ chuột để báo hiệu có thể click
       child: MouseRegion(
-        cursor: url.isNotEmpty ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        cursor: fullUrl.isNotEmpty ? SystemMouseCursors.click : SystemMouseCursors.basic,
         child: Container(
           width: size,
           height: size,
@@ -409,12 +425,12 @@ class _ProductScreenState extends State<ProductScreen> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: url.isNotEmpty
+            child: fullUrl.isNotEmpty
                 ? Image.network(
-                    url,
+                    fullUrl,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.image_not_supported, color: Colors.grey),
+                        const Icon(Icons.broken_image, color: Colors.grey),
                   )
                 : const Icon(Icons.image, color: Colors.grey),
           ),
@@ -423,13 +439,35 @@ class _ProductScreenState extends State<ProductScreen> {
     );
   }
 
-  // --- DIALOG ---
+  // --- WIDGET: STAT BADGE ---
+  Widget _buildStatBadge(
+      IconData icon, String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10)),
+      child: Row(children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 10),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
+          Text(value,
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+        ])
+      ]),
+    );
+  }
+
+  // --- DIALOG: ADD/EDIT PRODUCT ---
   void _showEditDialog(
       BuildContext context, Product? item, AppLocalizations l10n) {
     final codeCtrl = TextEditingController(text: item?.itemCode ?? '');
     final noteCtrl = TextEditingController(text: item?.note ?? '');
-
-    // State local cho ảnh
+    
+    // State local để hiển thị ảnh preview khi user vừa chọn file
     PlatformFile? pickedFile;
     Uint8List? pickedBytes;
 
@@ -437,10 +475,13 @@ class _ProductScreenState extends State<ProductScreen> {
 
     showDialog(
       context: context,
+      barrierDismissible: false, // Bắt buộc user phải nhấn Cancel hoặc Save
       builder: (ctx) => StatefulBuilder(
         builder: (context, setStateDialog) {
+          
           Future<void> pickImage() async {
             try {
+              // withData: true để lấy bytes (quan trọng cho Web)
               FilePickerResult? result = await FilePicker.platform
                   .pickFiles(type: FileType.image, withData: true);
               if (result != null) {
@@ -450,19 +491,29 @@ class _ProductScreenState extends State<ProductScreen> {
                 });
               }
             } catch (e) {
-              print("Error picking file: $e");
+              debugPrint("Error picking file: $e");
             }
           }
 
+          // Xử lý ảnh preview trong Dialog
+          ImageProvider? imageProvider;
+          if (pickedBytes != null) {
+            imageProvider = MemoryImage(pickedBytes!);
+          } else if (item != null && item.imageUrl.isNotEmpty) {
+             // Sử dụng Helper cho ảnh hiện có
+            imageProvider = NetworkImage(ApiEndpoints.getImageUrl(item.imageUrl));
+          }
+
           return AlertDialog(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             titlePadding: const EdgeInsets.all(24),
             contentPadding: const EdgeInsets.symmetric(horizontal: 24),
             title: Text(
-                item == null ? l10n.addProduct : l10n.editProduct,
-                style: TextStyle(
-                    color: _primaryColor, fontWeight: FontWeight.bold)),
+              item == null ? l10n.addProduct : l10n.editProduct,
+              style: TextStyle(
+                  color: _primaryColor, fontWeight: FontWeight.bold),
+            ),
             content: Form(
               key: formKey,
               child: SizedBox(
@@ -471,7 +522,7 @@ class _ProductScreenState extends State<ProductScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Image Upload Area
+                      // Upload Area
                       GestureDetector(
                         onTap: pickImage,
                         child: Container(
@@ -484,25 +535,17 @@ class _ProductScreenState extends State<ProductScreen> {
                                 color: Colors.grey.shade300,
                                 width: 2,
                                 style: BorderStyle.solid),
-                            image: pickedBytes != null
+                            image: imageProvider != null
                                 ? DecorationImage(
-                                    image: MemoryImage(pickedBytes!),
-                                    fit: BoxFit.cover)
-                                : (item != null && item.imageUrl.isNotEmpty
-                                    ? DecorationImage(
-                                        image: NetworkImage(item.imageUrl),
-                                        fit: BoxFit.cover)
-                                    : null),
+                                    image: imageProvider, fit: BoxFit.cover)
+                                : null,
                           ),
-                          child: (pickedBytes == null &&
-                                  (item == null || item.imageUrl.isEmpty))
+                          child: imageProvider == null
                               ? Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(Icons.add_a_photo,
-                                        color: Colors.grey.shade400,
-                                        size: 32),
+                                        color: Colors.grey.shade400, size: 32),
                                     const SizedBox(height: 8),
                                     Text(l10n.uploadImage,
                                         style: TextStyle(
@@ -518,7 +561,7 @@ class _ProductScreenState extends State<ProductScreen> {
                           controller: codeCtrl,
                           decoration: _inputDeco(l10n.itemCode),
                           validator: (v) =>
-                              v!.isEmpty ? "Required" : null),
+                              v!.trim().isEmpty ? "Required" : null),
                       const SizedBox(height: 16),
                       TextFormField(
                           controller: noteCtrl,
@@ -579,27 +622,7 @@ class _ProductScreenState extends State<ProductScreen> {
     );
   }
 
-  Widget _buildStatBadge(
-      IconData icon, String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(10)),
-      child: Row(children: [
-        Icon(icon, size: 18, color: color),
-        const SizedBox(width: 10),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
-          Text(value,
-              style: TextStyle(
-                  color: color, fontWeight: FontWeight.bold, fontSize: 14)),
-        ])
-      ]),
-    );
-  }
-
+  // --- DIALOG: CONFIRM DELETE ---
   void _confirmDelete(
       BuildContext context, Product item, AppLocalizations l10n) {
     showDialog(
@@ -609,8 +632,7 @@ class _ProductScreenState extends State<ProductScreen> {
         content: Text(l10n.confirmDeleteProduct(item.itemCode)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l10n.cancel)),
+              onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
           ElevatedButton(
             onPressed: () {
               context.read<ProductCubit>().deleteProduct(item.id);

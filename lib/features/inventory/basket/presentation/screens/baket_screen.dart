@@ -64,7 +64,7 @@ class _BasketScreenState extends State<BasketScreen> {
                           children: [
                             Text(l10n.basketTitle, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
                             const SizedBox(height: 2),
-                            Text("Inventory > Containers", style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                            Text(l10n.basketBreadcrumb, style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
                           ],
                         ),
                         const Spacer(),
@@ -88,7 +88,7 @@ class _BasketScreenState extends State<BasketScreen> {
                     Row(
                       children: [
                          if (isDesktop) ...[
-                          _buildStatBadge(Icons.grid_view, "Total Baskets", "$total", Colors.blue),
+                          _buildStatBadge(Icons.grid_view, l10n.totalBaskets, "$total", Colors.blue),
                           const SizedBox(width: 16),
                           const Spacer(),
                         ],
@@ -133,7 +133,7 @@ class _BasketScreenState extends State<BasketScreen> {
                 child: Builder(
                   builder: (context) {
                     if (state is BasketLoading) return Center(child: CircularProgressIndicator(color: _primaryColor));
-                    if (state is BasketError) return Center(child: Text("Error: ${state.message}", style: const TextStyle(color: Colors.red)));
+                    if (state is BasketError) return Center(child: Text("${l10n.exportError}: ${state.message}", style: const TextStyle(color: Colors.red)));
                     if (state is BasketLoaded) {
                       if (state.baskets.isEmpty) {
                         return Center(
@@ -297,7 +297,7 @@ class _BasketScreenState extends State<BasketScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(children: [
-                    Expanded(child: TextFormField(controller: codeCtrl, decoration: _inputDeco(l10n.basketCode), validator: (v) => v!.isEmpty ? "Required" : null)),
+                    Expanded(child: TextFormField(controller: codeCtrl, decoration: _inputDeco(l10n.basketCode), validator: (v) => v!.isEmpty ? l10n.required : null)),
                     const SizedBox(width: 12),
                     Expanded(child: TextFormField(controller: weightCtrl, decoration: _inputDeco(l10n.tareWeight), keyboardType: TextInputType.number)),
                   ]),
@@ -321,10 +321,18 @@ class _BasketScreenState extends State<BasketScreen> {
           ElevatedButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
+                final weight = double.tryParse(weightCtrl.text) ?? 0;
+
+                // Validation logic for tareWeight
+                if (weight <= 0) {
+                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorTareWeightInvalid), backgroundColor: Colors.red));
+                   return;
+                }
+
                 final newItem = Basket(
                   id: item?.id ?? 0,
                   code: codeCtrl.text,
-                  tareWeight: double.tryParse(weightCtrl.text) ?? 0,
+                  tareWeight: weight,
                   status: selectedStatus,
                   note: noteCtrl.text,
                 );

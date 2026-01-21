@@ -20,7 +20,17 @@ class _SupplierScreenState extends State<SupplierScreen> {
 
   // Define Options for Dropdowns
   final List<String> _originOptions = ['Domestic', 'Import'];
-  final List<String> _currencyOptions = ['VND', 'USD'];
+  final List<String> _currencyOptions = ['VND', 'USD', 'CNY', 'EUR'];
+  
+  final List<String> _paymentTermOptions = [
+    'Net 30', 
+    'Net 45', 
+    'Net 60', 
+    'T/T', 
+    'L/C', 
+    'COD', 
+    'Immediate'
+  ];
 
   @override
   void initState() {
@@ -80,7 +90,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              "Manage partners, origins & contracts",
+                              "Manage partners, origins & contracts", // Tagline giữ nguyên hoặc có thể thêm key sau
                               style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                             ),
                           ],
@@ -116,7 +126,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                               controller: _searchController,
                               textInputAction: TextInputAction.search,
                               decoration: InputDecoration(
-                                hintText: l10n.searchSupplier, // "Search by name, code, contact..."
+                                hintText: l10n.searchSupplier,
                                 hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
                                 prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
                                 border: InputBorder.none,
@@ -132,7 +142,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                         IconButton(
                            onPressed: () => context.read<SupplierCubit>().loadSuppliers(),
                            icon: const Icon(Icons.refresh, color: Colors.grey),
-                           tooltip: "Refresh",
+                           tooltip: l10n.refreshData,
                         )
                       ],
                     ),
@@ -147,7 +157,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                   builder: (context) {
                     if (state is SupplierLoading) return Center(child: CircularProgressIndicator(color: _primaryColor));
                     if (state is SupplierError) {
-                      return Center(child: Text("Error: ${state.message}", style: const TextStyle(color: Colors.red)));
+                      return Center(child: Text("${l10n.errorGeneric}: ${state.message}", style: const TextStyle(color: Colors.red)));
                     }
                     if (state is SupplierLoaded) {
                       if (state.suppliers.isEmpty) {
@@ -157,7 +167,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                             children: [
                               Icon(Icons.store_mall_directory_outlined, size: 60, color: Colors.grey.shade300),
                               const SizedBox(height: 16),
-                              Text("No suppliers found", style: TextStyle(color: Colors.grey.shade500)),
+                              Text("No suppliers found", style: TextStyle(color: Colors.grey.shade500)), // Fallback text
                             ],
                           ),
                         );
@@ -203,16 +213,16 @@ class _SupplierScreenState extends State<SupplierScreen> {
                     headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
                     horizontalMargin: 24,
                     columnSpacing: 24,
-                    dataRowMinHeight: 70, // Tăng chiều cao để chứa nhiều thông tin hơn
+                    dataRowMinHeight: 70,
                     dataRowMaxHeight: 70,
                     
                     columns: [
-                      DataColumn(label: Text("INFO", style: _headerStyle)), // Name & Email
-                      DataColumn(label: Text("TYPE / CODE", style: _headerStyle)), // Origin, ShortName, Tax
-                      DataColumn(label: Text("CONTACT", style: _headerStyle)), // Person & Address
-                      DataColumn(label: Text("FINANCE", style: _headerStyle)), // Currency & LeadTime
-                      DataColumn(label: Text("STATUS", style: _headerStyle)), // Active
-                      DataColumn(label: Text(l10n.actions.toUpperCase(), style: _headerStyle)),
+                      DataColumn(label: Text(l10n.generalInfo.toUpperCase(), style: _headerStyle)), // INFO
+                      DataColumn(label: Text("TYPE / CODE", style: _headerStyle)), // Header cứng
+                      DataColumn(label: Text(l10n.contact.toUpperCase(), style: _headerStyle)), // CONTACT
+                      DataColumn(label: Text("FINANCE", style: _headerStyle)), // FINANCE
+                      DataColumn(label: Text(l10n.status.toUpperCase(), style: _headerStyle)), // STATUS
+                      DataColumn(label: Text(l10n.actions.toUpperCase(), style: _headerStyle)), // ACTIONS
                     ],
                     rows: suppliers.map((item) {
                       return DataRow(
@@ -241,7 +251,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                             ],
                           )),
 
-                          // 2. TYPE / CODE: Short Name, Origin, Country
+                          // 2. TYPE / CODE
                           DataCell(Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -254,7 +264,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                 ),
                               const SizedBox(height: 4),
                               Text("${item.originType ?? '-'} • ${item.country ?? ''}", style: const TextStyle(fontSize: 12)),
-                              if(item.taxCode != null) Text("Tax: ${item.taxCode}", style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                              if(item.taxCode != null) Text("${l10n.taxCode}: ${item.taxCode}", style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
                             ],
                           )),
 
@@ -278,8 +288,18 @@ class _SupplierScreenState extends State<SupplierScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(item.currencyDefault, style: const TextStyle(fontWeight: FontWeight.bold)),
-                              Text("Lead: ${item.leadTimeDays} days", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                              Row(
+                                children: [
+                                  Text(item.currencyDefault, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                    decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(3)),
+                                    child: Text(item.paymentTerm, style: const TextStyle(fontSize: 10, color: Colors.black87)),
+                                  )
+                                ],
+                              ),
+                              Text("${l10n.leadTime}: ${item.leadTimeDays} ${l10n.days}", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                             ],
                           )),
 
@@ -293,7 +313,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                                 border: Border.all(color: item.isActive ? Colors.green.shade100 : Colors.red.shade100),
                               ),
                               child: Text(
-                                item.isActive ? "Active" : "Inactive",
+                                item.isActive ? l10n.active : l10n.inactive,
                                 style: TextStyle(fontSize: 11, color: item.isActive ? Colors.green : Colors.red, fontWeight: FontWeight.w500),
                               ),
                             )
@@ -367,11 +387,12 @@ class _SupplierScreenState extends State<SupplierScreen> {
                  child: Column(
                    children: [
                      const Divider(),
-                     _infoRow(Icons.email, "Email", item.email),
-                     _infoRow(Icons.location_on, "Address", item.address ?? '--'),
-                     _infoRow(Icons.receipt, "Tax Code", item.taxCode ?? '--'),
-                     _infoRow(Icons.category, "Origin", item.originType ?? '--'),
-                     _infoRow(Icons.schedule, "Lead Time", "${item.leadTimeDays} days"),
+                     _infoRow(Icons.email, l10n.email, item.email),
+                     _infoRow(Icons.location_on, l10n.address, item.address ?? '--'),
+                     _infoRow(Icons.receipt, l10n.taxCode, item.taxCode ?? '--'),
+                     _infoRow(Icons.category, l10n.originType, item.originType ?? '--'),
+                     _infoRow(Icons.payment, l10n.paymentTerm, item.paymentTerm),
+                     _infoRow(Icons.schedule, l10n.leadTime, "${item.leadTimeDays} ${l10n.days}"),
                      const SizedBox(height: 12),
                      Row(
                        mainAxisAlignment: MainAxisAlignment.end,
@@ -399,7 +420,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
         children: [
           Icon(icon, size: 16, color: Colors.grey.shade400),
           const SizedBox(width: 8),
-          SizedBox(width: 80, child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13))),
+          SizedBox(width: 110, child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13))), // Tăng width cho label dài
           Expanded(child: Text(value, style: const TextStyle(color: Colors.black87, fontSize: 13))),
         ],
       ),
@@ -408,7 +429,6 @@ class _SupplierScreenState extends State<SupplierScreen> {
 
   // --- DIALOG (CREATE / EDIT) ---
   void _showEditDialog(BuildContext context, Supplier? item, AppLocalizations l10n) {
-    // Controllers
     final nameCtrl = TextEditingController(text: item?.name ?? '');
     final shortNameCtrl = TextEditingController(text: item?.shortName ?? '');
     final emailCtrl = TextEditingController(text: item?.email ?? '');
@@ -418,9 +438,9 @@ class _SupplierScreenState extends State<SupplierScreen> {
     final countryCtrl = TextEditingController(text: item?.country ?? '');
     final leadTimeCtrl = TextEditingController(text: (item?.leadTimeDays ?? 7).toString());
     
-    // Dropdown & Switch States
     String selectedCurrency = item?.currencyDefault ?? 'VND';
-    String? selectedOrigin = item?.originType; // Nullable
+    String selectedPaymentTerm = item?.paymentTerm ?? 'Net 30';
+    String? selectedOrigin = item?.originType;
     bool isActive = item?.isActive ?? true;
 
     final formKey = GlobalKey<FormState>();
@@ -429,7 +449,6 @@ class _SupplierScreenState extends State<SupplierScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) {
-        // StatefulBuilder required to update Switch and Dropdowns inside Dialog
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
@@ -440,42 +459,42 @@ class _SupplierScreenState extends State<SupplierScreen> {
               content: Form(
                 key: formKey,
                 child: SizedBox(
-                  width: 600, // Wider dialog for more fields
+                  width: 650,
                   child: SingleChildScrollView(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Row 1: Name & ShortName
+                        // Row 1
                         Row(
                           children: [
-                            Expanded(flex: 2, child: TextFormField(controller: nameCtrl, decoration: _inputDeco(l10n.supplierName), validator: (v) => v!.isEmpty ? "Required" : null)),
+                            Expanded(flex: 2, child: TextFormField(controller: nameCtrl, decoration: _inputDeco(l10n.supplierName), validator: (v) => v!.isEmpty ? l10n.required : null)),
                             const SizedBox(width: 12),
-                            Expanded(flex: 1, child: TextFormField(controller: shortNameCtrl, decoration: _inputDeco("Short Name (e.g. ABC)"))),
+                            Expanded(flex: 1, child: TextFormField(controller: shortNameCtrl, decoration: _inputDeco(l10n.shortName))),
                           ],
                         ),
                         const SizedBox(height: 16),
                         
-                        // Row 2: Email & Contact Person
+                        // Row 2
                         Row(
                           children: [
-                            Expanded(child: TextFormField(controller: emailCtrl, decoration: _inputDeco(l10n.email), validator: (v) => v!.isEmpty ? "Required" : null)),
+                            Expanded(child: TextFormField(controller: emailCtrl, decoration: _inputDeco(l10n.email), validator: (v) => v!.isEmpty ? l10n.required : null)),
                             const SizedBox(width: 12),
-                            Expanded(child: TextFormField(controller: contactCtrl, decoration: _inputDeco("Contact Person"))),
+                            Expanded(child: TextFormField(controller: contactCtrl, decoration: _inputDeco(l10n.contactPerson))),
                           ],
                         ),
                         const SizedBox(height: 16),
 
-                        // Row 3: Tax Code, Country, Lead Time
+                        // Row 3
                         Row(
                           children: [
-                            Expanded(flex: 2, child: TextFormField(controller: taxCtrl, decoration: _inputDeco("Tax Code"))),
+                            Expanded(flex: 2, child: TextFormField(controller: taxCtrl, decoration: _inputDeco(l10n.taxCode))),
                             const SizedBox(width: 12),
-                            Expanded(flex: 1, child: TextFormField(controller: countryCtrl, decoration: _inputDeco("Country (VN)"))),
+                            Expanded(flex: 1, child: TextFormField(controller: countryCtrl, decoration: _inputDeco("Country"))),
                             const SizedBox(width: 12),
                             Expanded(flex: 1, child: TextFormField(
                               controller: leadTimeCtrl, 
-                              decoration: _inputDeco("Days"), 
+                              decoration: _inputDeco(l10n.days), 
                               keyboardType: TextInputType.number,
                               validator: (v) => int.tryParse(v!) == null ? "Invalid" : null,
                             )),
@@ -483,13 +502,13 @@ class _SupplierScreenState extends State<SupplierScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Row 4: Origin & Currency (Dropdowns)
+                        // Row 4
                         Row(
                           children: [
                             Expanded(
                               child: DropdownButtonFormField<String>(
                                 value: selectedOrigin,
-                                decoration: _inputDeco("Origin Type"),
+                                decoration: _inputDeco(l10n.originType),
                                 items: _originOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                                 onChanged: (val) => setState(() => selectedOrigin = val),
                               ),
@@ -498,9 +517,18 @@ class _SupplierScreenState extends State<SupplierScreen> {
                             Expanded(
                               child: DropdownButtonFormField<String>(
                                 value: selectedCurrency,
-                                decoration: _inputDeco("Currency"),
+                                decoration: _inputDeco(l10n.currency),
                                 items: _currencyOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                                 onChanged: (val) => setState(() => selectedCurrency = val!),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: selectedPaymentTerm,
+                                decoration: _inputDeco(l10n.paymentTerm),
+                                items: _paymentTermOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                                onChanged: (val) => setState(() => selectedPaymentTerm = val!),
                               ),
                             ),
                           ],
@@ -511,14 +539,14 @@ class _SupplierScreenState extends State<SupplierScreen> {
                         TextFormField(controller: addressCtrl, decoration: _inputDeco(l10n.address), maxLines: 2),
                         const SizedBox(height: 16),
 
-                        // Is Active Switch
+                        // Is Active
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade200)),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text("Is Active Provider?", style: TextStyle(fontWeight: FontWeight.w500)),
+                              Text(l10n.isActiveProvider, style: const TextStyle(fontWeight: FontWeight.w500)),
                               Switch(
                                 value: isActive, 
                                 onChanged: (val) => setState(() => isActive = val),
@@ -546,6 +574,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                         originType: selectedOrigin,
                         country: countryCtrl.text.isEmpty ? null : countryCtrl.text,
                         currencyDefault: selectedCurrency,
+                        paymentTerm: selectedPaymentTerm,
                         taxCode: taxCtrl.text.isEmpty ? null : taxCtrl.text,
                         contactPerson: contactCtrl.text.isEmpty ? null : contactCtrl.text,
                         address: addressCtrl.text.isEmpty ? null : addressCtrl.text,

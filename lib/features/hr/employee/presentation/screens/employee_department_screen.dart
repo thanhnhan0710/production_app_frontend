@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:production_app_frontend/core/constants/api_endpoints.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../core/widgets/responsive_layout.dart';
@@ -222,18 +223,33 @@ class _EmployeeDepartmentScreenState extends State<EmployeeDepartmentScreen> {
   }
 
   Widget _buildAvatar(String url, String name, double radius) {
+    // 1. Lấy Full URL từ Helper
+    final fullUrl = ApiEndpoints.getImageUrl(url);
+
     String initials = "?";
-    if (url.isEmpty && name.isNotEmpty) {
+    if (fullUrl.isEmpty && name.isNotEmpty) {
       List<String> parts = name.trim().split(' ');
-      if (parts.length >= 2) initials = "${parts.first[0]}${parts.last[0]}".toUpperCase();
-      else if (parts.isNotEmpty) initials = parts[0][0].toUpperCase();
+      if (parts.length >= 2) {
+        initials = "${parts.first[0]}${parts.last[0]}".toUpperCase();
+      } else if (parts.isNotEmpty) {
+        initials = parts[0][0].toUpperCase();
+        if (parts[0].length > 1) {
+           initials += parts[0][1].toUpperCase();
+        }
+      }
     }
+
     return CircleAvatar(
       radius: radius,
       backgroundColor: _primaryColor.withOpacity(0.1),
-      backgroundImage: url.isNotEmpty ? NetworkImage(url) : null,
-      child: url.isEmpty
-          ? Text(initials, style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold, fontSize: radius * 0.8))
+      // 2. Sử dụng fullUrl thay vì url gốc
+      backgroundImage: fullUrl.isNotEmpty ? NetworkImage(fullUrl) : null,
+      child: fullUrl.isEmpty
+          ? Text(initials,
+              style: TextStyle(
+                  color: _primaryColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: radius * 0.8))
           : null,
     );
   }

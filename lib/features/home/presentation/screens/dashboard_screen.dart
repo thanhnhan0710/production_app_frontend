@@ -25,7 +25,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final l10n = AppLocalizations.of(context)!;
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
-    // Lấy đường dẫn hiện tại để highlight menu
     String currentPath = '/dashboard';
     try {
       currentPath = GoRouterState.of(context).uri.path;
@@ -78,9 +77,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Chỉ hiển thị Dashboard Content khi ở route /dashboard
-                        // Nếu dùng ShellRoute (nested navigation), phần này sẽ được thay thế bằng `child`
-                        // Tuy nhiên với code hiện tại, ta giả định DashboardScreen là trang chủ
                         if (currentPath == '/dashboard') ...[
                           Text(
                             l10n.dashboard,
@@ -113,9 +109,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ],
                             ),
                         ]
-                        // Lưu ý: Nếu bạn dùng ShellRoute, nội dung của các trang con (như /users) 
-                        // sẽ được render bởi router, không phải nằm trong body của DashboardScreen này.
-                        // File này chủ yếu đóng vai trò là Layout (Shell).
                       ],
                     ),
                   ),
@@ -183,24 +176,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       collapsedIconColor: Colors.white70,
                       childrenPadding: EdgeInsets.zero, 
                       children: [
-                        // Tổng quan
                         _buildSubMenuItem(context, Icons.dashboard_customize, l10n.generalInfo, '/production', isMobile, currentPath),
-                        
-                        // Máy móc
                         _buildSubMenuItem(context, Icons.settings_input_component, l10n.machineTitle, '/machines', isMobile, currentPath),
-                        
-                        // Tiêu chuẩn
                         _buildSubMenuItem(context, Icons.assignment, l10n.standardTitle, '/standards', isMobile, currentPath),
-                        
-                        // Vận hành
                         _buildSubMenuItem(context, Icons.precision_manufacturing, l10n.machineOperation, '/machine-operation', isMobile, currentPath),
-                        
-                        // Phiếu rổ (Đổi icon sang description cho hợp với "Phiếu")
                         _buildSubMenuItem(context, Icons.description, l10n.weavingTicketTitle, '/weaving', isMobile, currentPath),
-                        
-                        // [CẬP NHẬT MỚI] Thống kê sản lượng
-                        // Icon: bar_chart (Biểu đồ)
-                        // Title: prodStatsTitle (Đa ngôn ngữ)
                         _buildSubMenuItem(context, Icons.bar_chart, l10n.prodStatsTitle, '/weaving-productions', isMobile, currentPath),
                       ],
                     ),
@@ -210,6 +190,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Theme(
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
+                      // [UPDATED] Added /purchase-orders check
                       initiallyExpanded: currentPath.startsWith('/inventory') || 
                                          currentPath.startsWith('/materials') ||
                                          currentPath.startsWith('/yarns') || 
@@ -218,7 +199,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                          currentPath.startsWith('/units') ||
                                          currentPath.startsWith('/baskets') ||
                                          currentPath.startsWith('/dye-colors')||
-                                         currentPath.startsWith('/products'),
+                                         currentPath.startsWith('/products')||
+                                         currentPath.startsWith('/boms')||
+                                         currentPath.startsWith('/purchase-orders')||
+                                         currentPath.startsWith('/import-declarations'),
                       leading: const Icon(Icons.inventory_2, color: Colors.white70),
                       title: Text(l10n.inventory, style: const TextStyle(color: Colors.white70)),
                       iconColor: Colors.white,
@@ -226,14 +210,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       childrenPadding: EdgeInsets.zero,
                       children: [
                         _buildSubMenuItem(context, Icons.grid_view, "Items", '/inventory', isMobile, currentPath),
-                        _buildSubMenuItem(context, Icons.layers, l10n.materialTitle, '/materials', isMobile, currentPath), // Nguyên vật liệu
-                        _buildSubMenuItem(context, Icons.timeline, l10n.yarnTitle, '/yarns', isMobile, currentPath), // Sợi
-                        _buildSubMenuItem(context, Icons.qr_code_2, l10n.yarnLotTitle, '/yarn-lots', isMobile, currentPath), // Lô sợi
-                        _buildSubMenuItem(context, Icons.local_shipping, l10n.supplierTitle, '/suppliers', isMobile, currentPath), // NCC
-                        _buildSubMenuItem(context, Icons.straighten, l10n.unitTitle, '/units', isMobile, currentPath), // Đơn vị
+                        _buildSubMenuItem(context, Icons.layers, l10n.materialTitle, '/materials', isMobile, currentPath),
+                        _buildSubMenuItem(context, Icons.timeline, l10n.yarnTitle, '/yarns', isMobile, currentPath),
+                        _buildSubMenuItem(context, Icons.qr_code_2, l10n.yarnLotTitle, '/yarn-lots', isMobile, currentPath),
+                        _buildSubMenuItem(context, Icons.local_shipping, l10n.supplierTitle, '/suppliers', isMobile, currentPath),
+                        _buildSubMenuItem(context, Icons.straighten, l10n.unitTitle, '/units', isMobile, currentPath),
                         _buildSubMenuItem(context, Icons.all_inbox, l10n.basketTitle, '/baskets', isMobile, currentPath),
                         _buildSubMenuItem(context, Icons.color_lens, l10n.dyeColorTitle, '/dye-colors', isMobile, currentPath),
                         _buildSubMenuItem(context, Icons.shopping_bag, l10n.productTitle, '/products', isMobile, currentPath),
+                        _buildSubMenuItem(context, Icons.account_tree, l10n.bomTitle, '/boms', isMobile, currentPath),
+                        // [NEW] Purchase Order Menu Item
+                        _buildSubMenuItem(context, Icons.shopping_cart_checkout, l10n.purchaseOrderTitle, '/purchase-orders', isMobile, currentPath),
+                        _buildSubMenuItem(context, Icons.receipt_long, l10n.importDeclarationTitle, '/import-declarations', isMobile, currentPath),
                       ],
                     ),
                   ),
@@ -253,13 +241,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         _buildSubMenuItem(context, Icons.domain, l10n.departmentTitle, '/departments', isMobile, currentPath),
                         _buildSubMenuItem(context, Icons.badge, l10n.employeeTitle, '/employees', isMobile, currentPath),
-                        _buildSubMenuItem(context, Icons.access_time, l10n.shiftTitle, '/shifts', isMobile, currentPath), // Ca làm việc
+                        _buildSubMenuItem(context, Icons.access_time, l10n.shiftTitle, '/shifts', isMobile, currentPath),
                         _buildSubMenuItem(context, Icons.calendar_month, l10n.scheduleTitle, '/schedules', isMobile, currentPath),
                       ],
                     ),
                   ),
 
-                  // --- ADMINISTRATION GROUP (NEW) ---
+                  // --- ADMINISTRATION GROUP ---
                   Theme(
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
@@ -325,15 +313,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // [CẬP NHẬT] Item cấp 2 (Menu con) - Đã thêm Icon
+  // Item cấp 2 (Menu con)
   Widget _buildSubMenuItem(BuildContext context, IconData icon, String title, String route, bool isMobile, String currentPath) {
     final bool isActive = currentPath.startsWith(route) && (route != '/' || currentPath == '/');
 
     return Container(
-      color: Colors.black12, // Nền tối hơn chút
+      color: Colors.black12, 
       child: ListTile(
-        contentPadding: const EdgeInsets.only(left: 32, right: 16), // Thụt lề sâu hơn
-        leading: Icon(icon, color: isActive ? Colors.white : Colors.white70, size: 18), // Icon nhỏ hơn menu chính
+        contentPadding: const EdgeInsets.only(left: 32, right: 16), 
+        leading: Icon(icon, color: isActive ? Colors.white : Colors.white70, size: 18), 
         title: Text(
           title,
           style: TextStyle(
@@ -343,7 +331,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         dense: true,
-        horizontalTitleGap: 8, // Khoảng cách giữa icon và chữ nhỏ lại
+        horizontalTitleGap: 8,
         onTap: () {
           context.go(route);
           if (isMobile) Navigator.pop(context);

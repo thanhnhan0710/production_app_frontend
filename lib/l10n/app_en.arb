@@ -42,12 +42,16 @@
   "confirm": "Confirm",
   "close": "Close",
   "delete": "Delete",
+  "edit": "Edit",
+  "remove": "Remove",
   "actions": "Actions",
   "required": "Required",
   "successAdded": "Added successfully",
   "successUpdated": "Updated successfully",
   "successDeleted": "Deleted successfully",
   "contact": "Contact",
+  "processing": "Processing...",
+  "note": "Note",
 
   "departmentTitle": "Departments",
   "deptName": "Department Name",
@@ -72,7 +76,6 @@
   "address": "Address",
   "position": "Position",
   "department": "Department",
-  "note": "Note",
   "searchEmployee": "Search employee...",
   "addEmployee": "Add Employee",
   "editEmployee": "Edit Employee",
@@ -89,6 +92,7 @@
   "totalDepartments": "Total Departments",
   "status": "Status",
   "active": "Active",
+  "inactive": "Inactive",
   "members": "Members",
 
   "supplierTitle": "Suppliers",
@@ -105,6 +109,15 @@
       }
     }
   },
+  "paymentTerm": "Payment Term",
+  "taxCode": "Tax Code",
+  "leadTime": "Lead Time",
+  "days": "Days",
+  "contactPerson": "Contact Person",
+  "shortName": "Short Name",
+  "currency": "Currency",
+  "originType": "Origin Type",
+  "isActiveProvider": "Is Active Provider?",
 
   "yarnTitle": "Yarn Inventory",
   "yarnName": "Yarn Name",
@@ -208,7 +221,7 @@
   "machineName": "Machine Name",
   "totalLines": "Total Lines",
   "purpose": "Purpose",
-  "area":"AREA",
+  "area":"Area",
   "searchMachine": "Search machine...",
   "addMachine": "Add Machine",
   "editMachine": "Edit Machine",
@@ -269,7 +282,7 @@
     }
   },
   "timeCurrent": "Now",
-   
+    
   "changeStatusTitle": "Change Status: {status}",
   "@changeStatusTitle": {
     "placeholders": {
@@ -311,10 +324,12 @@
     }
   },
   "noShiftFound": "No shifts found",
-     
+      
   "basketTitle": "Baskets",
   "basketCode": "Basket Code",
   "basketTitleVS2":"Basket",
+  "basketBreadcrumb": "Inventory > Baskets",
+  "totalBaskets": "Total Baskets",
   "tareWeight": "Tare Weight (kg)",
   "searchBasket": "Search basket...",
   "addBasket": "Add Basket",
@@ -342,6 +357,7 @@
   "stInUse": "In Use",
   "stHolding": "Holding",
   "stDamaged": "Damaged",
+  "errorTareWeightInvalid": "Tare weight must be greater than 0",
 
   "dyeColorTitle": "Dye Colors",
   "colorName": "Color Name",
@@ -569,5 +585,122 @@
         "type": "String"
       }
     }
-  }
+  },
+
+  "purchaseOrderTitle": "Purchase Orders",
+  "purchaseOrderSubtitle": "Manage procurement and suppliers",
+  "createPO": "CREATE PO",
+  "searchPO": "Search PO Number...",
+  "poNumber": "PO Number",
+  "vendor": "Vendor",
+  "orderDate": "Order Date",
+  "eta": "Expected Arrival (ETA)",
+  "incoterm": "Incoterm",
+  "currency": "Currency",
+  "exchangeRate": "Exchange Rate",
+  "totalAmount": "Total Amount",
+  "poDetailTitle": "Purchase Order Detail",
+  "orderItems": "Order Items",
+  "addItem": "Add Item",
+  "addMaterial": "Add Material",
+  "noItemsPO": "No items in this order yet.",
+  "addMaterialPrompt": "Click '+ Add Material' to start.",
+  "materialInfo": "MATERIAL INFORMATION",
+  "tapToSearch": "Tap to search material...",
+  "transactionDetails": "TRANSACTION DETAILS",
+  "unitPrice": "Unit Price",
+  "lineTotal": "Line Total",
+  "estimatedTotal": "Estimated Total",
+  "confirmAdd": "Confirm Add",
+  "searchMaterialPlaceholder": "Type name, code, specs...",
+  "deletePO": "Delete PO",
+  "confirmDeletePO": "Are you sure you want to delete PO {number}?",
+  "@confirmDeletePO": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+
+  "bomTitle": "BOM Management",
+  "bomSubtitle": "Production > Bill of Materials",
+  "addBOM": "ADD BOM",
+  "noBOMFound": "No BOM configurations found",
+  "bomCode": "BOM Code",
+  "bomName": "BOM Name",
+  "baseQty": "Base Qty",
+  "version": "Version",
+  "viewIngredients": "View Ingredients",
+  "newBOM": "New BOM",
+  "editBOM": "Edit BOM Header",
+  "selectProduct": "Select Product",
+  "chooseProduct": "Choose a product",
+  "loadingProducts": "Loading products...",
+  "setActiveVersion": "Set as Active Version",
+  "bomCodeRequired": "BOM Code is required",
+  "productRequired": "Please select a Product!",
+  "deleteBOM": "Delete BOM",
+  "confirmDeleteBOM": "Delete BOM {code}? This will remove all material details.",
+  "@confirmDeleteBOM": {
+     "placeholders": {
+        "code": {
+          "type": "String"
+        }
+     }
+  },
+  "bomIngredientsConfig": "BOM Ingredients Config",
+  "matId": "Mat ID",
+  "ends": "Ends",
+  "stdQty": "Std",
+  "wastage": "Waste",
+  "grossQty": "Gross",
+  "saveDetail": "Save Detail",
+  "editMaterialDetail": "Edit Material Detail",
+
+  "importDeclarationTitle": "Import Declarations",
+  "importDeclarationSubtitle": "Manage customs declarations (E31, A11...)",
+  "newDeclaration": "NEW DECLARATION",
+  "searchDeclarationHint": "Search No, Invoice, B/L...",
+  "noDeclarationFound": "No declarations found",
+  "declarationNo": "Declaration No",
+  "declarationDate": "Declaration Date",
+  "declarationType": "Type",
+  "invoiceBill": "Invoice / Bill",
+  "totalTax": "Total Tax",
+  "invoiceAbbr": "Inv",
+  "billOfLadingAbbr": "B/L",
+  "invoiceNo": "Invoice No",
+  "billOfLading": "Bill of Lading",
+  "createDeclaration": "Create Declaration",
+  "editDeclaration": "Edit Declaration",
+  "totalTaxAmount": "Total Tax Amount",
+  "deleteDeclaration": "Delete Declaration",
+  "confirmDeleteDeclaration": "Are you sure you want to delete declaration {number}?",
+  "@confirmDeleteDeclaration": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+
+  "declarationDetailTitle": "Declaration Details",
+  "declarationItemsList": "Cargo List",
+  "addDeclarationItem": "Add Item",
+  "noDeclarationItems": "No items in this declaration.",
+  "addDeclarationItemPrompt": "Click '+ Add Item' to start.",
+  "editDeclarationItem": "Edit Item",
+  "addDeclarationItemTitle": "Add Item to Declaration",
+  "materialLabel": "Material",
+  "selectMaterialPlaceholder": "Select material...",
+  "actualHSCode": "HS Code (Actual)",
+  "quantityLabel": "Quantity",
+  "unitPriceLabel": "Unit Price",
+  "errorSelectMaterial": "Please select a material!",
+  "searchMaterialTitle": "Search Material",
+  "deleteItemTitle": "Delete Item",
+  "confirmDeleteItemMsg": "Are you sure you want to delete this item?",
+  "registrationDate": "Reg. Date",
+  "updateAction": "Update"
 }

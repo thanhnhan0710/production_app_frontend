@@ -94,7 +94,7 @@ class EmployeeRepository {
         'file': MultipartFile.fromBytes(
           file.bytes!,
           filename: file.name,
-          contentType: MediaType('image', 'jpeg'),
+          contentType: MediaType('image', 'jpeg'), 
         ),
       });
 
@@ -105,3 +105,4 @@ class EmployeeRepository {
     }
   }
 }
+
