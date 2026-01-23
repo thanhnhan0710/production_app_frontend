@@ -3,9 +3,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:production_app_frontend/features/inventory/batch/data/batch_repository.dart';
+import 'package:production_app_frontend/features/inventory/batch/presentation/bloc/batch_cubit.dart';
+import 'package:production_app_frontend/features/inventory/batch/presentation/screens/batch_screen.dart';
 import 'package:production_app_frontend/features/inventory/import_declaration/data/import_declaration_repository.dart';
 import 'package:production_app_frontend/features/inventory/import_declaration/presentation/bloc/import_declaration_cubit.dart';
 import 'package:production_app_frontend/features/inventory/import_declaration/presentation/screens/import_declaration_screen.dart';
+import 'package:production_app_frontend/features/inventory/stock_in/presentation/screens/stock_in_screen.dart';
+import 'package:production_app_frontend/features/inventory/warehouse/data/warehouse_repository.dart';
+import 'package:production_app_frontend/features/inventory/warehouse/presentation/bloc/warehouse_cubit.dart';
+import 'package:production_app_frontend/features/inventory/warehouse/presentation/screens/warehouse_screen.dart';
 import 'package:production_app_frontend/features/inventory/yarn_lot/presentation/screens/yarn_lot_screen';
 
 // --- CORE & L10N ---
@@ -125,6 +132,8 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => BOMCubit(BOMRepository())),
           BlocProvider(create: (context) => PurchaseOrderCubit(PurchaseOrderRepository())),
           BlocProvider(create: (context) => ImportDeclarationCubit(ImportDeclarationRepository())),
+          BlocProvider(create: (context) => WarehouseCubit(WarehouseRepository())),
+          BlocProvider(create: (context) => BatchCubit(BatchRepository())),
           
           // 4. Production Providers
           BlocProvider(create: (context) => MachineCubit(MachineRepository())),
@@ -199,6 +208,9 @@ class AppView extends StatelessWidget {
         GoRoute(path: '/products', builder: (context, state) => const ProductScreen()),
         GoRoute(path: '/boms', builder: (context, state) => const BOMScreen()),
         GoRoute(path: '/import-declarations', builder: (context, state) => const ImportDeclarationScreen()),
+        GoRoute(path: '/warehouses', builder: (context, state) => const WarehouseScreen()),
+        GoRoute(path: '/stock-in', builder: (context, state) => const StockInScreen()),
+        GoRoute(path: '/batches', builder: (context, state) => const BatchScreen()),
         
         
         // [NEW] Purchase Order Route

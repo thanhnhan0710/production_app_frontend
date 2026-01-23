@@ -62,6 +62,18 @@ class PurchaseOrderRepository {
     }
   }
 
+  // [MỚI] Lấy số PO tự động từ Backend
+  Future<String> getNextPONumber() async {
+    try {
+      final response = await _dio.get('$_endpoint/next-number');
+      return response.data['po_number'] ?? '';
+    } catch (e) {
+      print("Error fetching next PO number: $e");
+      // Fallback offline format
+      return "PO-OFFLINE-${DateTime.now().millisecondsSinceEpoch % 100}"; 
+    }
+  }
+
   // --- CREATE ---
   Future<PurchaseOrderHeader> createPurchaseOrder(PurchaseOrderHeader po) async {
     try {
@@ -80,7 +92,7 @@ class PurchaseOrderRepository {
     try {
       // Chỉ gửi các trường header cần update, không gửi details ở đây nếu BE tách biệt
       final data = po.toJson();
-      data.remove('details'); // Thường update header không update kèm details trong cùng 1 request PUT header
+      data.remove('details'); 
 
       final response = await _dio.put('$_endpoint/$poId', data: data);
       return PurchaseOrderHeader.fromJson(response.data);
@@ -99,6 +111,17 @@ class PurchaseOrderRepository {
       return PurchaseOrderHeader.fromJson(response.data);
     } catch (e) {
       throw Exception("Failed to add item: $e");
+    }
+  }
+
+  Future<void> deletePurchaseOrder(int id) async {
+    try {
+      await _dio.delete('$_endpoint/$id');
+    } on DioException catch (e) {
+      // Xử lý lỗi từ Backend trả về (VD: Không phải Draft)
+      throw Exception(e.response?.data['detail'] ?? "Failed to delete PO: $e");
+    } catch (e) {
+      throw Exception("Failed to delete PO: $e");
     }
   }
 }

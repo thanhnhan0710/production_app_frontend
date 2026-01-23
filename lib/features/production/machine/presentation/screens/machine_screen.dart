@@ -149,7 +149,7 @@ class _MachineScreenState extends State<MachineScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.precision_manufacturing_outlined, size: 60, color: Colors.grey.shade300),
+                              Icon(Icons.precision_manufacturing, size: 60, color: Colors.grey.shade300),
                               const SizedBox(height: 16),
                               Text(l10n.noMachineFound, style: TextStyle(color: Colors.grey.shade500)),
                             ],

@@ -404,6 +404,84 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to delete {name}?'**
   String confirmDelete(String name);
 
+  /// No description provided for @warehouseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Warehouse Management'**
+  String get warehouseTitle;
+
+  /// No description provided for @warehouseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage storage locations & inventory'**
+  String get warehouseSubtitle;
+
+  /// No description provided for @searchWarehouseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or location...'**
+  String get searchWarehouseHint;
+
+  /// No description provided for @addWarehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Warehouse'**
+  String get addWarehouse;
+
+  /// No description provided for @editWarehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Warehouse'**
+  String get editWarehouse;
+
+  /// No description provided for @deleteWarehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Warehouse'**
+  String get deleteWarehouse;
+
+  /// No description provided for @confirmDeleteWarehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete \'{name}\'? This action cannot be undone.'**
+  String confirmDeleteWarehouse(String name);
+
+  /// No description provided for @warehouseName.
+  ///
+  /// In en, this message translates to:
+  /// **'Warehouse Name'**
+  String get warehouseName;
+
+  /// No description provided for @location.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get location;
+
+  /// No description provided for @description.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get description;
+
+  /// No description provided for @noWarehouseFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No warehouses found'**
+  String get noWarehouseFound;
+
+  /// No description provided for @noDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'No description'**
+  String get noDescription;
+
+  /// No description provided for @cannotOpenMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot open maps'**
+  String get cannotOpenMap;
+
   /// No description provided for @employeeTitle.
   ///
   /// In en, this message translates to:
@@ -2893,6 +2971,420 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Update'**
   String get updateAction;
+
+  /// No description provided for @stockInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock In'**
+  String get stockInTitle;
+
+  /// No description provided for @stockInSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage stock in receipts'**
+  String get stockInSubtitle;
+
+  /// No description provided for @tabMaterial.
+  ///
+  /// In en, this message translates to:
+  /// **'Materials'**
+  String get tabMaterial;
+
+  /// No description provided for @tabSemiFinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Semi-finished'**
+  String get tabSemiFinished;
+
+  /// No description provided for @tabFinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished Goods'**
+  String get tabFinished;
+
+  /// No description provided for @goodsList.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods List'**
+  String get goodsList;
+
+  /// No description provided for @addRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Row'**
+  String get addRow;
+
+  /// No description provided for @saveReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'SAVE RECEIPT'**
+  String get saveReceipt;
+
+  /// No description provided for @receiptNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt No'**
+  String get receiptNumber;
+
+  /// No description provided for @receivingWarehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Receiving Warehouse'**
+  String get receivingWarehouse;
+
+  /// No description provided for @sendingDepartment.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending Dept'**
+  String get sendingDepartment;
+
+  /// No description provided for @semiFinishedCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get semiFinishedCode;
+
+  /// No description provided for @semiFinishedName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get semiFinishedName;
+
+  /// No description provided for @goodQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Good Qty'**
+  String get goodQty;
+
+  /// No description provided for @badQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Bad Qty'**
+  String get badQty;
+
+  /// No description provided for @source.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get source;
+
+  /// No description provided for @carton.
+  ///
+  /// In en, this message translates to:
+  /// **'Carton/Bundle'**
+  String get carton;
+
+  /// No description provided for @selectPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Select...'**
+  String get selectPlaceholder;
+
+  /// No description provided for @cancelAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelAction;
+
+  /// No description provided for @generalInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'General Info - {title}'**
+  String generalInfoTitle(String title);
+
+  /// No description provided for @createReceiptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Receipt'**
+  String get createReceiptTitle;
+
+  /// No description provided for @editReceiptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt Details'**
+  String get editReceiptTitle;
+
+  /// No description provided for @logisticsInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Logistics Info'**
+  String get logisticsInfo;
+
+  /// No description provided for @byPO.
+  ///
+  /// In en, this message translates to:
+  /// **'By Purchase Order (PO)'**
+  String get byPO;
+
+  /// No description provided for @customsDeclarationOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Customs Declaration (Optional)'**
+  String get customsDeclarationOptional;
+
+  /// No description provided for @noSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'--- No Selection ---'**
+  String get noSelection;
+
+  /// No description provided for @loadingDeclaration.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading declarations...'**
+  String get loadingDeclaration;
+
+  /// No description provided for @createdBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Created By'**
+  String get createdBy;
+
+  /// No description provided for @containerNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Container No'**
+  String get containerNumber;
+
+  /// No description provided for @sealNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Seal No'**
+  String get sealNumber;
+
+  /// No description provided for @poQtyKg.
+  ///
+  /// In en, this message translates to:
+  /// **'PO Qty (Kg)'**
+  String get poQtyKg;
+
+  /// No description provided for @poQtyCones.
+  ///
+  /// In en, this message translates to:
+  /// **'PO Qty (Cones)'**
+  String get poQtyCones;
+
+  /// No description provided for @actualQtyKg.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual (Kg)'**
+  String get actualQtyKg;
+
+  /// No description provided for @actualQtyCones.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual (Cones)'**
+  String get actualQtyCones;
+
+  /// No description provided for @pallets.
+  ///
+  /// In en, this message translates to:
+  /// **'Pallets'**
+  String get pallets;
+
+  /// No description provided for @supplierBatch.
+  ///
+  /// In en, this message translates to:
+  /// **'SUPPLIER BATCH'**
+  String get supplierBatch;
+
+  /// No description provided for @selectWarehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Warehouse'**
+  String get selectWarehouse;
+
+  /// No description provided for @noMaterialsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No materials added yet'**
+  String get noMaterialsYet;
+
+  /// No description provided for @confirmDeleteDetailMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting this line will update PO quantities. Continue?'**
+  String get confirmDeleteDetailMsg;
+
+  /// No description provided for @searchStockInHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Receipt No, PO, Container...'**
+  String get searchStockInHint;
+
+  /// No description provided for @createStockIn.
+  ///
+  /// In en, this message translates to:
+  /// **'CREATE RECEIPT'**
+  String get createStockIn;
+
+  /// No description provided for @reload.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get reload;
+
+  /// No description provided for @noStockInFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No stock in receipts found for this period.'**
+  String get noStockInFound;
+
+  /// No description provided for @containerSeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Container / Seal'**
+  String get containerSeal;
+
+  /// No description provided for @confirmDeleteStockIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete receipt {number}?'**
+  String confirmDeleteStockIn(String number);
+
+  /// No description provided for @errorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {message}'**
+  String errorLabel(String message);
+
+  /// No description provided for @errorLoadMaterials.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading materials: {error}'**
+  String errorLoadMaterials(String error);
+
+  /// No description provided for @actualImportLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ACTUAL IMPORT'**
+  String get actualImportLabel;
+
+  /// No description provided for @errorNegative.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot be negative'**
+  String get errorNegative;
+
+  /// No description provided for @batchManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch Management'**
+  String get batchManagement;
+
+  /// No description provided for @batchSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track raw material batches & QC status'**
+  String get batchSubtitle;
+
+  /// No description provided for @addBatch.
+  ///
+  /// In en, this message translates to:
+  /// **'ADD BATCH'**
+  String get addBatch;
+
+  /// No description provided for @searchBatchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by Batch No...'**
+  String get searchBatchHint;
+
+  /// No description provided for @internalCode.
+  ///
+  /// In en, this message translates to:
+  /// **'INTERNAL CODE'**
+  String get internalCode;
+
+  /// No description provided for @originCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'ORIGIN'**
+  String get originCountry;
+
+  /// No description provided for @qcStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'QC STATUS'**
+  String get qcStatus;
+
+  /// No description provided for @qcNote.
+  ///
+  /// In en, this message translates to:
+  /// **'QC NOTE'**
+  String get qcNote;
+
+  /// No description provided for @traceability.
+  ///
+  /// In en, this message translates to:
+  /// **'TRACEABILITY'**
+  String get traceability;
+
+  /// No description provided for @linkedReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked to Receipt'**
+  String get linkedReceipt;
+
+  /// No description provided for @linkedReceiptId.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked Receipt Detail ID'**
+  String get linkedReceiptId;
+
+  /// No description provided for @linkedReceiptIdHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter ID of Material Receipt Detail (Optional)'**
+  String get linkedReceiptIdHelper;
+
+  /// No description provided for @mfgDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Mfg Date'**
+  String get mfgDate;
+
+  /// No description provided for @expDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Exp Date'**
+  String get expDate;
+
+  /// No description provided for @qualityControl.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality Control'**
+  String get qualityControl;
+
+  /// No description provided for @generalNote.
+  ///
+  /// In en, this message translates to:
+  /// **'General Note'**
+  String get generalNote;
+
+  /// No description provided for @isActiveBatchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off if batch is cancelled or unused'**
+  String get isActiveBatchHint;
+
+  /// No description provided for @confirmDeleteBatchMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete batch {code}?'**
+  String confirmDeleteBatchMsg(String code);
+
+  /// No description provided for @noBatchesFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No batches found'**
+  String get noBatchesFound;
+
+  /// No description provided for @unknownMaterial.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Material #{id}'**
+  String unknownMaterial(int id);
 }
 
 class _AppLocalizationsDelegate

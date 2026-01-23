@@ -55,6 +55,20 @@
   "deleteDept": "Xóa bộ phận",
   "confirmDelete": "Bạn có chắc muốn xóa bộ phận {name} không?",
 
+  "warehouseTitle": "Quản lý Kho hàng",
+  "warehouseSubtitle": "Quản lý vị trí lưu trữ & tồn kho",
+  "searchWarehouseHint": "Tìm theo tên hoặc vị trí...",
+  "addWarehouse": "Thêm Kho",
+  "editWarehouse": "Sửa Kho",
+  "deleteWarehouse": "Xóa Kho",
+  "confirmDeleteWarehouse": "Bạn có chắc muốn xóa kho '{name}'? Hành động này không thể hoàn tác.",
+  "warehouseName": "Tên Kho",
+  "location": "Vị trí",
+  "description": "Mô tả",
+  "noWarehouseFound": "Không tìm thấy kho nào",
+  "noDescription": "Không có mô tả",
+  "cannotOpenMap": "Không thể mở bản đồ",
+
   "employeeTitle": "Nhân viên",
   "fullName": "Họ và tên",
   "email": "Email",
@@ -431,13 +445,6 @@
   "searchMaterialPlaceholder": "Nhập tên, mã, quy cách...",
   "deletePO": "Xóa Đơn hàng",
   "confirmDeletePO": "Bạn có chắc muốn xóa đơn {number}?",
-  "@confirmDeletePO": {
-    "placeholders": {
-      "number": {
-        "type": "String"
-      }
-    }
-  },
 
   "bomTitle": "Quản lý Định mức",
   "bomSubtitle": "Sản xuất > Định mức Nguyên liệu",
@@ -458,13 +465,6 @@
   "productRequired": "Vui lòng chọn sản phẩm!",
   "deleteBOM": "Xóa BOM",
   "confirmDeleteBOM": "Xóa BOM {code}? Hành động này sẽ xóa tất cả chi tiết vật tư.",
-  "@confirmDeleteBOM": {
-     "placeholders": {
-        "code": {
-          "type": "String"
-        }
-     }
-  },
   "bomIngredientsConfig": "Cấu hình thành phần BOM",
   "matId": "Mã VL",
   "ends": "Số sợi",
@@ -511,5 +511,82 @@
   "deleteItemTitle": "Xóa dòng hàng",
   "confirmDeleteItemMsg": "Bạn có chắc muốn xóa dòng này không?",
   "registrationDate": "Ngày ĐK",
-  "updateAction": "Cập nhật"
+  "updateAction": "Cập nhật",
+
+  "stockInTitle": "Nhập kho",
+  "stockInSubtitle": "Quản lý phiếu nhập kho",
+  "tabMaterial": "Nguyên vật liệu",
+  "tabSemiFinished": "Bán thành phẩm",
+  "tabFinished": "Thành phẩm",
+  "goodsList": "Danh sách hàng hóa",
+  "addRow": "Thêm dòng",
+  "saveReceipt": "LƯU PHIẾU NHẬP",
+  "receiptNumber": "Mã phiếu nhập",
+  "receivingWarehouse": "Kho nhập",
+  "sendingDepartment": "Bộ phận chuyển đến",
+  "semiFinishedCode": "Mã BTP",
+  "semiFinishedName": "Tên Bán Thành Phẩm",
+  "goodQty": "SL Đạt",
+  "badQty": "SL Hỏng",
+  "source": "Nguồn nhập",
+  "carton": "Thùng/Kiện",
+  "selectPlaceholder": "Chọn...",
+  "cancelAction": "Hủy bỏ",
+  "generalInfoTitle": "Thông tin chung - {title}",
+
+  "createReceiptTitle": "Tạo Phiếu Nhập Mới",
+  "editReceiptTitle": "Chi Tiết Phiếu Nhập kho Nguyên vật liệu",
+  "logisticsInfo": "Thông tin Logistics",
+  "byPO": "Theo đơn mua (PO)",
+  "customsDeclarationOptional": "Tờ khai hải quan (Tùy chọn)",
+  "noSelection": "--- Không chọn ---",
+  "loadingDeclaration": "Đang tải tờ khai...",
+  "createdBy": "Người tạo phiếu",
+  "containerNumber": "Số Container",
+  "sealNumber": "Số Seal (Chì)",
+  "materialCode": "Mã VT",
+  "materialName": "Tên Vật Tư",
+  "poQtyKg": "SL PO (Kg)",
+  "poQtyCones": "SL PO (Cuộn)",
+  "actualQtyKg": "Thực Nhập (Kg)",
+  "actualQtyCones": "Thực Nhập (Cuộn)",
+  "pallets": "Kiện",
+  "supplierBatch": "Lô NCC",
+  "selectWarehouse": "Chọn kho",
+  "noMaterialsYet": "Chưa có vật tư nào",
+  "confirmDeleteDetailMsg": "Xóa dòng này sẽ cập nhật lại số lượng PO. Tiếp tục?",
+  "importDate": "Ngày nhập",
+
+  "searchStockInHint": "Tìm theo số phiếu, PO, Container...",
+  "createStockIn": "TẠO PHIẾU",
+  "reload": "Tải lại",
+  "noStockInFound": "Không tìm thấy phiếu nhập nào trong khoảng thời gian này.",
+  "containerSeal": "Container / Seal",
+  "confirmDeleteStockIn": "Bạn có chắc muốn xóa phiếu {number}?",
+  "errorLabel": "Lỗi: {message}",
+  "errorLoadMaterials": "Lỗi tải vật tư: {error}",
+  "actualImportLabel": "THỰC NHẬP (ACTUAL)",
+  "errorNegative": "Không âm",
+
+  "batchManagement": "Quản lý Lô (Batch)",
+  "batchSubtitle": "Theo dõi lô vật tư & trạng thái QC",
+  "addBatch": "THÊM LÔ",
+  "searchBatchHint": "Tìm theo Mã Lô...",
+  "internalCode": "MÃ NỘI BỘ",
+  "supplierBatch": "LÔ NCC",
+  "originCountry": "XUẤT XỨ",
+  "qcStatus": "TRẠNG THÁI QC",
+  "qcNote": "GHI CHÚ QC",
+  "traceability": "TRUY XUẤT",
+  "linkedReceipt": "Phiếu Nhập",
+  "linkedReceiptId": "ID Chi tiết Phiếu",
+  "linkedReceiptIdHelper": "Nhập ID chi tiết phiếu nhập (Tùy chọn)",
+  "mfgDate": "Ngày SX",
+  "expDate": "Hạn SD",
+  "qualityControl": "Kiểm soát Chất lượng (QC)",
+  "generalNote": "Ghi chú chung",
+  "isActiveBatchHint": "Tắt nếu lô hàng bị hủy hoặc không dùng nữa",
+  "confirmDeleteBatchMsg": "Bạn có chắc muốn xóa lô {code}?",
+  "noBatchesFound": "Không tìm thấy lô hàng nào",
+  "unknownMaterial": "Vật tư không xác định #{id}"
 }

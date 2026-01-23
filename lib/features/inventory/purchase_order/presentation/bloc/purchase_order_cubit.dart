@@ -70,27 +70,30 @@ class PurchaseOrderCubit extends Cubit<PurchaseOrderState> {
     }
   }
 
-  // 3. Save (Create or Update) - Tương tự EmployeeCubit
+  // [MỚI] Hàm lấy số PO tiếp theo
+  Future<String> fetchNextPONumber() async {
+    try {
+      return await _repo.getNextPONumber();
+    } catch (e) {
+      return "";
+    }
+  }
+
+  // 3. Save (Create or Update)
   Future<void> savePurchaseOrder({
     required PurchaseOrderHeader po,
     required bool isEdit,
   }) async {
     try {
-      // print("📤 Saving PO: ${po.toJson()}"); // Debug log nếu cần
-
       if (isEdit) {
         await _repo.updatePurchaseOrder(po.poId, po);
       } else {
         await _repo.createPurchaseOrder(po);
       }
       
-      // Sau khi lưu thành công, tải lại danh sách để cập nhật UI
-      // Lưu ý: Nếu đang dùng bộ lọc, việc gọi hàm không tham số này sẽ reset về danh sách mặc định
       loadPurchaseOrders(); 
     } catch (e) {
-      // In lỗi ra console để debug
       print("❌ Save PO Failed: $e");
-      // Emit state lỗi để UI hiển thị Snackbar/Alert
       emit(POError(e.toString().replaceAll("Exception: ", "")));
     }
   }
@@ -99,10 +102,23 @@ class PurchaseOrderCubit extends Cubit<PurchaseOrderState> {
   Future<void> addDetailItem(int poId, PurchaseOrderDetail detail) async {
     try {
       await _repo.addDetailItem(poId, detail);
-      // Reload detail để cập nhật tổng tiền và danh sách item mới nhất
       loadPurchaseOrderDetail(poId);
     } catch (e) {
       emit(POError(e.toString()));
+    }
+  }
+
+  // [UPDATED] Hàm xóa PO hoàn chỉnh
+  Future<void> deletePurchaseOrder(int poId) async {
+    try {
+      await _repo.deletePurchaseOrder(poId);
+      // Xóa thành công thì load lại danh sách
+      loadPurchaseOrders();
+    } catch (e) {
+      // Emit lỗi để UI hiển thị SnackBar
+      emit(POError(e.toString().replaceAll("Exception: ", "")));
+      // Load lại danh sách để khôi phục trạng thái UI (tránh bị treo ở màn hình lỗi)
+      loadPurchaseOrders();
     }
   }
 }

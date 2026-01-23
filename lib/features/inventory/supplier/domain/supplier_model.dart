@@ -59,6 +59,8 @@ class Supplier {
     );
   }
 
+  get supplierName => null;
+
   // Chuyển Object thành JSON để gửi lên API (Create/Update)
   Map<String, dynamic> toJson() {
     return {

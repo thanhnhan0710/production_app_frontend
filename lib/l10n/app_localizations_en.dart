@@ -166,6 +166,47 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get warehouseTitle => 'Warehouse Management';
+
+  @override
+  String get warehouseSubtitle => 'Manage storage locations & inventory';
+
+  @override
+  String get searchWarehouseHint => 'Search by name or location...';
+
+  @override
+  String get addWarehouse => 'Add Warehouse';
+
+  @override
+  String get editWarehouse => 'Edit Warehouse';
+
+  @override
+  String get deleteWarehouse => 'Delete Warehouse';
+
+  @override
+  String confirmDeleteWarehouse(String name) {
+    return 'Are you sure you want to delete \'$name\'? This action cannot be undone.';
+  }
+
+  @override
+  String get warehouseName => 'Warehouse Name';
+
+  @override
+  String get location => 'Location';
+
+  @override
+  String get description => 'Description';
+
+  @override
+  String get noWarehouseFound => 'No warehouses found';
+
+  @override
+  String get noDescription => 'No description';
+
+  @override
+  String get cannotOpenMap => 'Cannot open maps';
+
+  @override
   String get employeeTitle => 'Employees';
 
   @override
@@ -1468,4 +1509,225 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateAction => 'Update';
+
+  @override
+  String get stockInTitle => 'Stock In';
+
+  @override
+  String get stockInSubtitle => 'Manage stock in receipts';
+
+  @override
+  String get tabMaterial => 'Materials';
+
+  @override
+  String get tabSemiFinished => 'Semi-finished';
+
+  @override
+  String get tabFinished => 'Finished Goods';
+
+  @override
+  String get goodsList => 'Goods List';
+
+  @override
+  String get addRow => 'Add Row';
+
+  @override
+  String get saveReceipt => 'SAVE RECEIPT';
+
+  @override
+  String get receiptNumber => 'Receipt No';
+
+  @override
+  String get receivingWarehouse => 'Receiving Warehouse';
+
+  @override
+  String get sendingDepartment => 'Sending Dept';
+
+  @override
+  String get semiFinishedCode => 'Code';
+
+  @override
+  String get semiFinishedName => 'Name';
+
+  @override
+  String get goodQty => 'Good Qty';
+
+  @override
+  String get badQty => 'Bad Qty';
+
+  @override
+  String get source => 'Source';
+
+  @override
+  String get carton => 'Carton/Bundle';
+
+  @override
+  String get selectPlaceholder => 'Select...';
+
+  @override
+  String get cancelAction => 'Cancel';
+
+  @override
+  String generalInfoTitle(String title) {
+    return 'General Info - $title';
+  }
+
+  @override
+  String get createReceiptTitle => 'Create New Receipt';
+
+  @override
+  String get editReceiptTitle => 'Receipt Details';
+
+  @override
+  String get logisticsInfo => 'Logistics Info';
+
+  @override
+  String get byPO => 'By Purchase Order (PO)';
+
+  @override
+  String get customsDeclarationOptional => 'Customs Declaration (Optional)';
+
+  @override
+  String get noSelection => '--- No Selection ---';
+
+  @override
+  String get loadingDeclaration => 'Loading declarations...';
+
+  @override
+  String get createdBy => 'Created By';
+
+  @override
+  String get containerNumber => 'Container No';
+
+  @override
+  String get sealNumber => 'Seal No';
+
+  @override
+  String get poQtyKg => 'PO Qty (Kg)';
+
+  @override
+  String get poQtyCones => 'PO Qty (Cones)';
+
+  @override
+  String get actualQtyKg => 'Actual (Kg)';
+
+  @override
+  String get actualQtyCones => 'Actual (Cones)';
+
+  @override
+  String get pallets => 'Pallets';
+
+  @override
+  String get supplierBatch => 'SUPPLIER BATCH';
+
+  @override
+  String get selectWarehouse => 'Select Warehouse';
+
+  @override
+  String get noMaterialsYet => 'No materials added yet';
+
+  @override
+  String get confirmDeleteDetailMsg =>
+      'Deleting this line will update PO quantities. Continue?';
+
+  @override
+  String get searchStockInHint => 'Search Receipt No, PO, Container...';
+
+  @override
+  String get createStockIn => 'CREATE RECEIPT';
+
+  @override
+  String get reload => 'Reload';
+
+  @override
+  String get noStockInFound => 'No stock in receipts found for this period.';
+
+  @override
+  String get containerSeal => 'Container / Seal';
+
+  @override
+  String confirmDeleteStockIn(String number) {
+    return 'Are you sure you want to delete receipt $number?';
+  }
+
+  @override
+  String errorLabel(String message) {
+    return 'Error: $message';
+  }
+
+  @override
+  String errorLoadMaterials(String error) {
+    return 'Error loading materials: $error';
+  }
+
+  @override
+  String get actualImportLabel => 'ACTUAL IMPORT';
+
+  @override
+  String get errorNegative => 'Cannot be negative';
+
+  @override
+  String get batchManagement => 'Batch Management';
+
+  @override
+  String get batchSubtitle => 'Track raw material batches & QC status';
+
+  @override
+  String get addBatch => 'ADD BATCH';
+
+  @override
+  String get searchBatchHint => 'Search by Batch No...';
+
+  @override
+  String get internalCode => 'INTERNAL CODE';
+
+  @override
+  String get originCountry => 'ORIGIN';
+
+  @override
+  String get qcStatus => 'QC STATUS';
+
+  @override
+  String get qcNote => 'QC NOTE';
+
+  @override
+  String get traceability => 'TRACEABILITY';
+
+  @override
+  String get linkedReceipt => 'Linked to Receipt';
+
+  @override
+  String get linkedReceiptId => 'Linked Receipt Detail ID';
+
+  @override
+  String get linkedReceiptIdHelper =>
+      'Enter ID of Material Receipt Detail (Optional)';
+
+  @override
+  String get mfgDate => 'Mfg Date';
+
+  @override
+  String get expDate => 'Exp Date';
+
+  @override
+  String get qualityControl => 'Quality Control';
+
+  @override
+  String get generalNote => 'General Note';
+
+  @override
+  String get isActiveBatchHint => 'Turn off if batch is cancelled or unused';
+
+  @override
+  String confirmDeleteBatchMsg(String code) {
+    return 'Are you sure you want to delete batch $code?';
+  }
+
+  @override
+  String get noBatchesFound => 'No batches found';
+
+  @override
+  String unknownMaterial(int id) {
+    return 'Unknown Material #$id';
+  }
 }

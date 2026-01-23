@@ -186,23 +186,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   
-                  // --- INVENTORY GROUP ---
                   Theme(
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
-                      // [UPDATED] Added /purchase-orders check
-                      initiallyExpanded: currentPath.startsWith('/inventory') || 
-                                         currentPath.startsWith('/materials') ||
-                                         currentPath.startsWith('/yarns') || 
-                                         currentPath.startsWith('/yarn-lots') ||
-                                         currentPath.startsWith('/suppliers') ||
-                                         currentPath.startsWith('/units') ||
-                                         currentPath.startsWith('/baskets') ||
-                                         currentPath.startsWith('/dye-colors')||
-                                         currentPath.startsWith('/products')||
-                                         currentPath.startsWith('/boms')||
-                                         currentPath.startsWith('/purchase-orders')||
-                                         currentPath.startsWith('/import-declarations'),
+                      // 1. [UPDATED] Thêm check '/batches' để giữ menu mở khi đang ở màn hình Batch
+                      initiallyExpanded: currentPath.startsWith('/inventory') ||
+                                       currentPath.startsWith('/materials') ||
+                                       currentPath.startsWith('/yarns') ||
+                                       currentPath.startsWith('/yarn-lots') ||
+                                       currentPath.startsWith('/suppliers') ||
+                                       currentPath.startsWith('/units') ||
+                                       currentPath.startsWith('/baskets') ||
+                                       currentPath.startsWith('/dye-colors')||
+                                       currentPath.startsWith('/products')||
+                                       currentPath.startsWith('/boms')||
+                                       currentPath.startsWith('/purchase-orders')||
+                                       currentPath.startsWith('/import-declarations')||
+                                       currentPath.startsWith('/warehouses') ||
+                                       currentPath.startsWith('/batches') || // <--- MỚI: Thêm dòng này
+                                       currentPath.startsWith('/stock-in'),
                       leading: const Icon(Icons.inventory_2, color: Colors.white70),
                       title: Text(l10n.inventory, style: const TextStyle(color: Colors.white70)),
                       iconColor: Colors.white,
@@ -210,6 +212,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       childrenPadding: EdgeInsets.zero,
                       children: [
                         _buildSubMenuItem(context, Icons.grid_view, "Items", '/inventory', isMobile, currentPath),
+                        _buildSubMenuItem(context, Icons.store_mall_directory, l10n.warehouseTitle, '/warehouses', isMobile, currentPath),
+                        _buildSubMenuItem(context, Icons.move_to_inbox, l10n.stockInTitle, '/stock-in', isMobile, currentPath),
+
+                        // [NEW] Batch / Lô hàng
+                        // Icon fact_check phù hợp vì có QC Status (Pass/Fail)
+                        // Bạn có thể thay "Batches" bằng l10n.batchTitle nếu đã khai báo trong file ARB
+                        _buildSubMenuItem(context, Icons.fact_check, l10n.batchManagement, '/batches', isMobile, currentPath),
+
                         _buildSubMenuItem(context, Icons.layers, l10n.materialTitle, '/materials', isMobile, currentPath),
                         _buildSubMenuItem(context, Icons.timeline, l10n.yarnTitle, '/yarns', isMobile, currentPath),
                         _buildSubMenuItem(context, Icons.qr_code_2, l10n.yarnLotTitle, '/yarn-lots', isMobile, currentPath),
@@ -219,7 +229,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         _buildSubMenuItem(context, Icons.color_lens, l10n.dyeColorTitle, '/dye-colors', isMobile, currentPath),
                         _buildSubMenuItem(context, Icons.shopping_bag, l10n.productTitle, '/products', isMobile, currentPath),
                         _buildSubMenuItem(context, Icons.account_tree, l10n.bomTitle, '/boms', isMobile, currentPath),
-                        // [NEW] Purchase Order Menu Item
                         _buildSubMenuItem(context, Icons.shopping_cart_checkout, l10n.purchaseOrderTitle, '/purchase-orders', isMobile, currentPath),
                         _buildSubMenuItem(context, Icons.receipt_long, l10n.importDeclarationTitle, '/import-declarations', isMobile, currentPath),
                       ],

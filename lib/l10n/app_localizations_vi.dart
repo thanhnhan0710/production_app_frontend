@@ -167,6 +167,47 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get warehouseTitle => 'Quản lý Kho hàng';
+
+  @override
+  String get warehouseSubtitle => 'Quản lý vị trí lưu trữ & tồn kho';
+
+  @override
+  String get searchWarehouseHint => 'Tìm theo tên hoặc vị trí...';
+
+  @override
+  String get addWarehouse => 'Thêm Kho';
+
+  @override
+  String get editWarehouse => 'Sửa Kho';
+
+  @override
+  String get deleteWarehouse => 'Xóa Kho';
+
+  @override
+  String confirmDeleteWarehouse(String name) {
+    return 'Bạn có chắc muốn xóa kho \'$name\'? Hành động này không thể hoàn tác.';
+  }
+
+  @override
+  String get warehouseName => 'Tên Kho';
+
+  @override
+  String get location => 'Vị trí';
+
+  @override
+  String get description => 'Mô tả';
+
+  @override
+  String get noWarehouseFound => 'Không tìm thấy kho nào';
+
+  @override
+  String get noDescription => 'Không có mô tả';
+
+  @override
+  String get cannotOpenMap => 'Không thể mở bản đồ';
+
+  @override
   String get employeeTitle => 'Nhân viên';
 
   @override
@@ -376,10 +417,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get materialBreadcrumb => 'Kho vận > Vật tư';
 
   @override
-  String get materialName => 'Tên vật liệu';
+  String get materialName => 'Tên Vật Tư';
 
   @override
-  String get materialCode => 'Mã vật liệu';
+  String get materialCode => 'Mã VT';
 
   @override
   String get materialType => 'Loại';
@@ -1469,4 +1510,225 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get updateAction => 'Cập nhật';
+
+  @override
+  String get stockInTitle => 'Nhập kho';
+
+  @override
+  String get stockInSubtitle => 'Quản lý phiếu nhập kho';
+
+  @override
+  String get tabMaterial => 'Nguyên vật liệu';
+
+  @override
+  String get tabSemiFinished => 'Bán thành phẩm';
+
+  @override
+  String get tabFinished => 'Thành phẩm';
+
+  @override
+  String get goodsList => 'Danh sách hàng hóa';
+
+  @override
+  String get addRow => 'Thêm dòng';
+
+  @override
+  String get saveReceipt => 'LƯU PHIẾU NHẬP';
+
+  @override
+  String get receiptNumber => 'Mã phiếu nhập';
+
+  @override
+  String get receivingWarehouse => 'Kho nhập';
+
+  @override
+  String get sendingDepartment => 'Bộ phận chuyển đến';
+
+  @override
+  String get semiFinishedCode => 'Mã BTP';
+
+  @override
+  String get semiFinishedName => 'Tên Bán Thành Phẩm';
+
+  @override
+  String get goodQty => 'SL Đạt';
+
+  @override
+  String get badQty => 'SL Hỏng';
+
+  @override
+  String get source => 'Nguồn nhập';
+
+  @override
+  String get carton => 'Thùng/Kiện';
+
+  @override
+  String get selectPlaceholder => 'Chọn...';
+
+  @override
+  String get cancelAction => 'Hủy bỏ';
+
+  @override
+  String generalInfoTitle(String title) {
+    return 'Thông tin chung - $title';
+  }
+
+  @override
+  String get createReceiptTitle => 'Tạo Phiếu Nhập Mới';
+
+  @override
+  String get editReceiptTitle => 'Chi Tiết Phiếu Nhập kho Nguyên vật liệu';
+
+  @override
+  String get logisticsInfo => 'Thông tin Logistics';
+
+  @override
+  String get byPO => 'Theo đơn mua (PO)';
+
+  @override
+  String get customsDeclarationOptional => 'Tờ khai hải quan (Tùy chọn)';
+
+  @override
+  String get noSelection => '--- Không chọn ---';
+
+  @override
+  String get loadingDeclaration => 'Đang tải tờ khai...';
+
+  @override
+  String get createdBy => 'Người tạo phiếu';
+
+  @override
+  String get containerNumber => 'Số Container';
+
+  @override
+  String get sealNumber => 'Số Seal (Chì)';
+
+  @override
+  String get poQtyKg => 'SL PO (Kg)';
+
+  @override
+  String get poQtyCones => 'SL PO (Cuộn)';
+
+  @override
+  String get actualQtyKg => 'Thực Nhập (Kg)';
+
+  @override
+  String get actualQtyCones => 'Thực Nhập (Cuộn)';
+
+  @override
+  String get pallets => 'Kiện';
+
+  @override
+  String get supplierBatch => 'LÔ NCC';
+
+  @override
+  String get selectWarehouse => 'Chọn kho';
+
+  @override
+  String get noMaterialsYet => 'Chưa có vật tư nào';
+
+  @override
+  String get confirmDeleteDetailMsg =>
+      'Xóa dòng này sẽ cập nhật lại số lượng PO. Tiếp tục?';
+
+  @override
+  String get searchStockInHint => 'Tìm theo số phiếu, PO, Container...';
+
+  @override
+  String get createStockIn => 'TẠO PHIẾU';
+
+  @override
+  String get reload => 'Tải lại';
+
+  @override
+  String get noStockInFound =>
+      'Không tìm thấy phiếu nhập nào trong khoảng thời gian này.';
+
+  @override
+  String get containerSeal => 'Container / Seal';
+
+  @override
+  String confirmDeleteStockIn(String number) {
+    return 'Bạn có chắc muốn xóa phiếu $number?';
+  }
+
+  @override
+  String errorLabel(String message) {
+    return 'Lỗi: $message';
+  }
+
+  @override
+  String errorLoadMaterials(String error) {
+    return 'Lỗi tải vật tư: $error';
+  }
+
+  @override
+  String get actualImportLabel => 'THỰC NHẬP (ACTUAL)';
+
+  @override
+  String get errorNegative => 'Không âm';
+
+  @override
+  String get batchManagement => 'Quản lý Lô (Batch)';
+
+  @override
+  String get batchSubtitle => 'Theo dõi lô vật tư & trạng thái QC';
+
+  @override
+  String get addBatch => 'THÊM LÔ';
+
+  @override
+  String get searchBatchHint => 'Tìm theo Mã Lô...';
+
+  @override
+  String get internalCode => 'MÃ NỘI BỘ';
+
+  @override
+  String get originCountry => 'XUẤT XỨ';
+
+  @override
+  String get qcStatus => 'TRẠNG THÁI QC';
+
+  @override
+  String get qcNote => 'GHI CHÚ QC';
+
+  @override
+  String get traceability => 'TRUY XUẤT';
+
+  @override
+  String get linkedReceipt => 'Phiếu Nhập';
+
+  @override
+  String get linkedReceiptId => 'ID Chi tiết Phiếu';
+
+  @override
+  String get linkedReceiptIdHelper => 'Nhập ID chi tiết phiếu nhập (Tùy chọn)';
+
+  @override
+  String get mfgDate => 'Ngày SX';
+
+  @override
+  String get expDate => 'Hạn SD';
+
+  @override
+  String get qualityControl => 'Kiểm soát Chất lượng (QC)';
+
+  @override
+  String get generalNote => 'Ghi chú chung';
+
+  @override
+  String get isActiveBatchHint => 'Tắt nếu lô hàng bị hủy hoặc không dùng nữa';
+
+  @override
+  String confirmDeleteBatchMsg(String code) {
+    return 'Bạn có chắc muốn xóa lô $code?';
+  }
+
+  @override
+  String get noBatchesFound => 'Không tìm thấy lô hàng nào';
+
+  @override
+  String unknownMaterial(int id) {
+    return 'Vật tư không xác định #$id';
+  }
 }

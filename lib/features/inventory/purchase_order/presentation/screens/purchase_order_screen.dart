@@ -10,7 +10,6 @@ import '../../../../../l10n/app_localizations.dart';
 
 import '../../domain/purchase_order_model.dart';
 import '../bloc/purchase_order_cubit.dart';
-
 import 'purchase_order_detail_screen.dart';
 
 class PurchaseOrderScreen extends StatefulWidget {
@@ -22,6 +21,8 @@ class PurchaseOrderScreen extends StatefulWidget {
 
 class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
   final _searchController = TextEditingController();
+  
+  // Theme Colors
   final Color _primaryColor = const Color(0xFF003366);
   final Color _accentColor = const Color(0xFF0055AA);
   final Color _bgLight = const Color(0xFFF5F7FA);
@@ -42,7 +43,18 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
 
     return Scaffold(
       backgroundColor: _bgLight,
-      body: BlocBuilder<PurchaseOrderCubit, PurchaseOrderState>(
+      body: BlocConsumer<PurchaseOrderCubit, PurchaseOrderState>(
+        listener: (context, state) {
+          if (state is POError) {
+             ScaffoldMessenger.of(context).showSnackBar(
+               SnackBar(
+                 content: Text(state.message), 
+                 backgroundColor: Colors.red,
+                 behavior: SnackBarBehavior.floating,
+               ),
+             );
+          }
+        },
         builder: (context, state) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -152,9 +164,6 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
                   builder: (context) {
                     if (state is POLoading) {
                       return Center(child: CircularProgressIndicator(color: _primaryColor));
-                    } else if (state is POError) {
-                      // ignore: unnecessary_string_interpolations
-                      return Center(child: Text("${l10n.exportError(state.message)}", style: const TextStyle(color: Colors.red)));
                     } else if (state is POListLoaded) {
                       if (state.list.isEmpty) {
                         return Center(
@@ -200,14 +209,11 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
           child: DataTable(
-            headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
+            headingRowColor: WidgetStateProperty.all(const Color(0xFFF9FAFB)),
             horizontalMargin: 24,
             columnSpacing: 20,
-            
-            // [FIXED] Sửa lỗi BoxConstraints: minHeight <= maxHeight
             dataRowMinHeight: 60, 
-            dataRowMaxHeight: double.infinity, // Cho phép dãn theo nội dung Note
-
+            dataRowMaxHeight: double.infinity, 
             columns: [
               DataColumn(label: Text(l10n.poNumber.toUpperCase(), style: _headerStyle)),
               DataColumn(label: Text(l10n.vendor.toUpperCase(), style: _headerStyle)),
@@ -233,14 +239,15 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
                   DataCell(Text(_dateFormat.format(po.orderDate))),
                   DataCell(Text(po.expectedArrivalDate != null ? _dateFormat.format(po.expectedArrivalDate!) : "-")),
                   DataCell(Text(po.incoterm.name)),
-                  // Hiển thị Note đầy đủ, tự xuống dòng
                   DataCell(
                     Container(
-                      width: 250, // Chiều rộng cố định để text wrap
+                      width: 200, 
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Text(
                         po.note ?? '', 
                         style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
@@ -249,24 +256,33 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   )),
                   DataCell(_buildStatusBadge(po.status)),
-                  DataCell(Row(
-                    mainAxisSize: MainAxisSize.min, 
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.visibility, color: Colors.blue),
-                        onPressed: () => _navigateToDetail(po.poId),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.edit_note, color: Colors.grey),
-                        onPressed: () => _showEditDialog(context, po, l10n),
-                      ),
-                      if (po.status == POStatus.Draft)
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                          onPressed: () => _confirmDelete(context, po, l10n),
+                  // [UPDATED] Sử dụng PopupMenuButton để chứa nút xóa gọn gàng
+                  DataCell(
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert, color: Colors.grey),
+                      onSelected: (value) {
+                        if (value == 'view') _navigateToDetail(po.poId);
+                        if (value == 'edit') _showEditDialog(context, po, l10n);
+                        if (value == 'delete') _confirmDelete(context, po, l10n);
+                      },
+                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                        const PopupMenuItem<String>(
+                          value: 'view',
+                          child: Row(children: [Icon(Icons.visibility, color: Colors.blue, size: 20), SizedBox(width: 8), Text("View Details")]),
                         ),
-                    ],
-                  )),
+                        PopupMenuItem<String>(
+                          value: 'edit',
+                          child: Row(children: [const Icon(Icons.edit, color: Colors.grey, size: 20), const SizedBox(width: 8), Text(l10n.edit)]),
+                        ),
+                        // Chỉ hiển thị nút xóa nếu là Draft
+                        if (po.status == POStatus.Draft)
+                          PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Row(children: [const Icon(Icons.delete_outline, color: Colors.red, size: 20), const SizedBox(width: 8), Text(l10n.delete, style: const TextStyle(color: Colors.red))]),
+                          ),
+                      ],
+                    ),
+                  ),
                 ],
               );
             }).toList(),
@@ -301,7 +317,33 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(po.poNumber, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      _buildStatusBadge(po.status),
+                      // [UPDATED] Menu 3 chấm cho Mobile
+                      PopupMenuButton<String>(
+                        icon: Icon(Icons.more_vert, color: Colors.grey.shade400),
+                        padding: EdgeInsets.zero,
+                        onSelected: (value) {
+                          if (value == 'edit') _showEditDialog(context, po, l10n);
+                          if (value == 'delete') _confirmDelete(context, po, l10n);
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Row(children: [const Icon(Icons.edit, size: 18), const SizedBox(width: 8), Text(l10n.edit)]),
+                          ),
+                          if (po.status == POStatus.Draft)
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Row(children: [const Icon(Icons.delete_outline, size: 18, color: Colors.red), const SizedBox(width: 8), Text(l10n.delete, style: const TextStyle(color: Colors.red))]),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                       _buildStatusBadge(po.status),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -361,7 +403,7 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _primaryColor),
                       ),
                     ],
-                  )
+                  ),
                 ],
               ),
             ),
@@ -417,6 +459,8 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
     DateTime? selectedEta = po?.expectedArrivalDate;
     IncotermType selectedIncoterm = po?.incoterm ?? IncotermType.EXW;
     POStatus selectedStatus = po?.status ?? POStatus.Draft;
+    
+    bool hasFetchedNumber = false; 
 
     final formKey = GlobalKey<FormState>();
 
@@ -450,6 +494,17 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
               child: SingleChildScrollView(
                 child: StatefulBuilder(
                   builder: (context, setState) {
+                    
+                    if (po == null && !hasFetchedNumber) {
+                      hasFetchedNumber = true;
+                      context.read<PurchaseOrderCubit>().fetchNextPONumber().then((val) {
+                        if (poNumberCtrl.text.isEmpty && val.isNotEmpty) {
+                          poNumberCtrl.text = val;
+                          setState(() {}); 
+                        }
+                      });
+                    }
+
                     Widget responsiveRow({required Widget child1, required Widget child2}) {
                       if (isSmallScreen) {
                         return Column(children: [child1, const SizedBox(height: 16), child2]);
@@ -461,13 +516,18 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // --- Row 1: PO Number & Vendor ---
                         responsiveRow(
                           child1: TextFormField(
                             controller: poNumberCtrl,
-                            decoration: _inputDeco(l10n.poNumber, icon: Icons.tag),
+                            decoration: _inputDeco(
+                              l10n.poNumber, 
+                              icon: Icons.tag,
+                              suffixIcon: (po == null && poNumberCtrl.text.isEmpty) 
+                                ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2))) 
+                                : null
+                            ),
                             validator: (v) => v!.isEmpty ? l10n.required : null,
-                            enabled: po == null,
+                            readOnly: po == null && poNumberCtrl.text.isEmpty,
                           ),
                           child2: BlocBuilder<SupplierCubit, SupplierState>(
                             builder: (context, state) {
@@ -490,7 +550,6 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // --- Row 2: Dates ---
                         responsiveRow(
                           child1: InkWell(
                             onTap: () => selectDate(context, false, (d) => setState(() => selectedDate = d!)),
@@ -509,7 +568,6 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // --- Row 3: Incoterm & Status ---
                         responsiveRow(
                           child1: DropdownButtonFormField<IncotermType>(
                             value: selectedIncoterm,
@@ -526,7 +584,6 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // --- Row 4: Currency & Exchange Rate ---
                         responsiveRow(
                           child1: TextFormField(
                             controller: currencyCtrl,
@@ -540,7 +597,6 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // --- Row 5: Note ---
                         TextFormField(
                           controller: noteCtrl,
                           decoration: _inputDeco(l10n.note, icon: Icons.note),
@@ -588,10 +644,11 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
     );
   }
 
-  InputDecoration _inputDeco(String label, {IconData? icon}) {
+  InputDecoration _inputDeco(String label, {IconData? icon, Widget? suffixIcon}) {
     return InputDecoration(
       labelText: label,
       prefixIcon: icon != null ? Icon(icon, size: 18, color: Colors.grey) : null,
+      suffixIcon: suffixIcon,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
       filled: true,
@@ -612,6 +669,7 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
+              context.read<PurchaseOrderCubit>().deletePurchaseOrder(po.poId);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             child: Text(l10n.delete),
