@@ -24,6 +24,7 @@ class PurchaseOrderDetailScreen extends StatefulWidget {
 
 class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
   final _currencyFormat = NumberFormat.currency(locale: 'en_US', symbol: '');
+  final _vndFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫'); // Formatter cho VND
   final _dateFormat = DateFormat('dd/MM/yyyy');
 
   @override
@@ -41,7 +42,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text(l10n.poDetailTitle), // "Purchase Order Detail"
+        title: Text(l10n.poDetailTitle),
         backgroundColor: const Color(0xFF003366),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -77,11 +78,21 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                                 ),
                               ],
                             ),
-                            if (po.details.isNotEmpty)
-                              Text(
-                                "${l10n.totalAmount}: ${_currencyFormat.format(po.totalAmount)} ${po.currency}",
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
-                              )
+                            // Hiển thị tổng tiền (Có thể thêm quy đổi ở đây nếu cần)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  "${l10n.totalAmount}: ${_currencyFormat.format(po.totalAmount)} ${po.currency}",
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                                ),
+                                if (po.currency != 'VND')
+                                  Text(
+                                    "≈ ${_vndFormat.format(po.totalAmount * po.exchangeRate)}",
+                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                                  ),
+                              ],
+                            )
                           ],
                         ),
                       ),
@@ -93,7 +104,8 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                               itemCount: po.details.length,
                               separatorBuilder: (_,__) => const SizedBox(height: 12),
                               itemBuilder: (context, index) {
-                                return _buildDetailItem(po.details[index], po.currency);
+                                // Truyền cả object PO để lấy tỷ giá tính toán
+                                return _buildDetailItem(po.details[index], po);
                               },
                             ),
                       ),
@@ -111,11 +123,19 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
           return const SizedBox();
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddItemDialog(context, l10n),
-        backgroundColor: const Color(0xFF0055AA),
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(l10n.addMaterial, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      // Nút thêm mới gọi Dialog và cần truyền PO hiện tại vào để lấy tỷ giá
+      floatingActionButton: BlocBuilder<PurchaseOrderCubit, PurchaseOrderState>(
+        builder: (context, state) {
+          if (state is PODetailLoaded) {
+            return FloatingActionButton.extended(
+              onPressed: () => _showAddItemDialog(context, state.po, l10n),
+              backgroundColor: const Color(0xFF0055AA),
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: Text(l10n.addMaterial, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            );
+          }
+          return const SizedBox();
+        },
       ),
     );
   }
@@ -175,7 +195,8 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
               children: [
                 _buildInfoColumn(l10n.date, _dateFormat.format(po.orderDate), Icons.calendar_today),
                 _buildInfoColumn("ETA", po.expectedArrivalDate != null ? _dateFormat.format(po.expectedArrivalDate!) : "--/--", Icons.local_shipping),
-                _buildInfoColumn("Term", po.incoterm.name, Icons.handshake),
+                // Hiển thị thêm Tỷ giá ở đây cho rõ ràng
+                _buildInfoColumn("Rate", po.exchangeRate.toString(), Icons.currency_exchange),
                 _buildInfoColumn(l10n.currency, po.currency, Icons.attach_money),
               ],
             ),
@@ -197,10 +218,13 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
     );
   }
 
-  // --- ITEM CARD (PROFESSIONAL LOOK) ---
-  Widget _buildDetailItem(PurchaseOrderDetail item, String currency) {
+  // --- ITEM CARD (Updated with VND conversion) ---
+  Widget _buildDetailItem(PurchaseOrderDetail item, PurchaseOrderHeader po) {
     final mat = item.material;
     
+    // Tính giá quy đổi
+    double convertedLineTotal = item.lineTotal * po.exchangeRate;
+
     List<String> subInfos = [];
     if (mat != null) {
       if (mat.materialCode.isNotEmpty) subInfos.add(mat.materialCode);
@@ -238,7 +262,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    mat?.materialName ?? "Unknown Item",
+                    mat?.materialCode ?? "Unknown Item",
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87),
                   ),
                   const SizedBox(height: 6),
@@ -264,10 +288,18 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                // Giá Nguyên Tệ
                 Text(
-                  "${_currencyFormat.format(item.lineTotal)} $currency",
+                  "${_currencyFormat.format(item.lineTotal)} ${po.currency}",
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
                 ),
+                // [NEW] Giá Quy Đổi VND (nếu currency != VND)
+                if (po.currency != 'VND')
+                  Text(
+                    "≈ ${_vndFormat.format(convertedLineTotal)}",
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                  ),
+
                 const SizedBox(height: 4),
                 Text(
                   "${_currencyFormat.format(item.quantity)} ${item.uom?.name ?? 'Unit'}",
@@ -322,8 +354,8 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
     );
   }
 
-  // --- DIALOG THÊM CHI TIẾT ---
-  void _showAddItemDialog(BuildContext context, AppLocalizations l10n) {
+  // --- DIALOG THÊM CHI TIẾT (Đã cập nhật tính toán tỷ giá) ---
+  void _showAddItemDialog(BuildContext context, PurchaseOrderHeader po, AppLocalizations l10n) {
     int? selectedMaterialId;
     int? selectedUomId;
     final qtyCtrl = TextEditingController(text: '');
@@ -341,6 +373,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
             double qty = double.tryParse(qtyCtrl.text) ?? 0;
             double price = double.tryParse(priceCtrl.text) ?? 0;
             double total = qty * price;
+            double totalVND = total * po.exchangeRate; // Tính quy đổi
 
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -360,7 +393,22 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // MATERIAL
+                      // INFO TỶ GIÁ (Để user biết)
+                      if (po.currency != 'VND')
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8)),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline, size: 16, color: Colors.orange.shade800),
+                              const SizedBox(width: 8),
+                              Text("Rate: 1 ${po.currency} = ${_currencyFormat.format(po.exchangeRate)} VND", style: TextStyle(fontSize: 12, color: Colors.orange.shade900)),
+                            ],
+                          ),
+                        ),
+
+                      // MATERIAL SELECTOR
                       Text(l10n.materialInfo, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
                       const SizedBox(height: 8),
                       
@@ -407,9 +455,9 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text(selectedMaterial!.materialName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                            Text(selectedMaterial!.materialCode, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                                             Text(
-                                              "${selectedMaterial!.materialCode} • ${selectedMaterial!.materialType ?? 'Raw'} • ${selectedMaterial!.specDenier ?? '-'}", 
+                                              "${selectedMaterial!.materialType ?? 'Raw'} • ${selectedMaterial!.specDenier ?? '-'}", 
                                               style: TextStyle(fontSize: 12, color: Colors.grey.shade600)
                                             ),
                                           ],
@@ -424,7 +472,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // DETAILS
+                      // DETAILS INPUT
                       Text(l10n.transactionDetails, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
                       const SizedBox(height: 8),
                       
@@ -476,7 +524,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                               decoration: InputDecoration(
                                 labelText: l10n.unitPrice,
                                 hintText: "0.0",
-                                prefixText: "\$ ",
+                                prefixText: po.currency != 'VND' ? "\$ " : "₫ ",
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                               ),
@@ -488,7 +536,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                       
                       const SizedBox(height: 24),
                       
-                      // SUMMARY
+                      // SUMMARY (Updated to show VND conversion)
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -496,14 +544,30 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.blue.shade100),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Column(
                           children: [
-                            Text("${l10n.estimatedTotal}:", style: const TextStyle(color: Color(0xFF003366), fontWeight: FontWeight.w600)),
-                            Text(
-                              _currencyFormat.format(total),
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text("${l10n.estimatedTotal}:", style: const TextStyle(color: Color(0xFF003366), fontWeight: FontWeight.w600)),
+                                Text(
+                                  "${_currencyFormat.format(total)} ${po.currency}",
+                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
+                                ),
+                              ],
                             ),
+                            if (po.currency != 'VND') ...[
+                              const Divider(height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    "≈ ${_vndFormat.format(totalVND)}",
+                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                                  ),
+                                ],
+                              ),
+                            ]
                           ],
                         ),
                       )
@@ -511,20 +575,17 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                   ),
                 ),
               ),
-              actionsPadding: const EdgeInsets.all(24),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx), 
-                  child: Text(l10n.cancel, style: const TextStyle(color: Colors.grey))
-                ),
+                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
                 ElevatedButton.icon(
                   onPressed: () {
                     if (selectedMaterialId != null) {
                       final detail = PurchaseOrderDetail(
                         poId: widget.poId,
                         materialId: selectedMaterialId!,
-                        quantity: double.tryParse(qtyCtrl.text) ?? 0,
-                        unitPrice: double.tryParse(priceCtrl.text) ?? 0,
+                        quantity: qty,
+                        unitPrice: price,
+                        lineTotal: total, // Lưu số tiền theo ngoại tệ
                         uomId: selectedUomId,
                         // [FIX TEMPORARY] Gán object material để hiển thị ngay
                         material: selectedMaterial, 
@@ -581,7 +642,6 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                           } else {
                             final k = val.toLowerCase();
                             filtered = list.where((m) => 
-                              m.materialName.toLowerCase().contains(k) || 
                               m.materialCode.toLowerCase().contains(k) ||
                               (m.materialType?.toLowerCase().contains(k) ?? false)
                             ).toList();
@@ -598,7 +658,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                           final m = filtered[index];
                           return ListTile(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            title: Text(m.materialName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            title: Text(m.materialCode, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                             subtitle: Text("${m.materialCode} • ${m.materialType ?? 'Raw'}"),
                             trailing: const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
                             onTap: () => Navigator.pop(ctx, m),

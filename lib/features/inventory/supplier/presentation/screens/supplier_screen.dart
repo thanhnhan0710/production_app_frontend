@@ -1,3 +1,4 @@
+import 'dart:async'; // Import thêm thư viện này để dùng Timer (Debounce)
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -15,20 +16,22 @@ class SupplierScreen extends StatefulWidget {
 
 class _SupplierScreenState extends State<SupplierScreen> {
   final _searchController = TextEditingController();
+  Timer? _debounce; // Biến Timer để xử lý debounce search
+
   final Color _primaryColor = const Color(0xFF003366);
   final Color _bgLight = const Color(0xFFF5F7FA);
 
   // Define Options for Dropdowns
   final List<String> _originOptions = ['Domestic', 'Import'];
   final List<String> _currencyOptions = ['VND', 'USD', 'CNY', 'EUR'];
-  
+
   final List<String> _paymentTermOptions = [
-    'Net 30', 
-    'Net 45', 
-    'Net 60', 
-    'T/T', 
-    'L/C', 
-    'COD', 
+    'Net 30',
+    'Net 45',
+    'Net 60',
+    'T/T',
+    'L/C',
+    'COD',
     'Immediate'
   ];
 
@@ -36,6 +39,22 @@ class _SupplierScreenState extends State<SupplierScreen> {
   void initState() {
     super.initState();
     context.read<SupplierCubit>().loadSuppliers();
+  }
+
+  @override
+  void dispose() {
+    // Hủy Timer và Controller khi thoát màn hình để tránh rò rỉ bộ nhớ
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // Hàm xử lý tìm kiếm với Debounce (tránh spam request khi gõ nhanh)
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      context.read<SupplierCubit>().searchSuppliers(query);
+    });
   }
 
   Future<void> _launchAction(String scheme, String path) async {
@@ -59,130 +78,140 @@ class _SupplierScreenState extends State<SupplierScreen> {
 
     return Scaffold(
       backgroundColor: _bgLight,
-      body: BlocBuilder<SupplierCubit, SupplierState>(
-        builder: (context, state) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // --- HEADER SECTION ---
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(Icons.store_mall_directory, color: Colors.orange.shade800, size: 24),
-                        ),
-                        const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.supplierTitle,
-                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey.shade800),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              "Manage partners, origins & contracts", // Tagline giữ nguyên hoặc có thể thêm key sau
-                              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        if (isDesktop)
-                          ElevatedButton.icon(
-                            onPressed: () => _showEditDialog(context, null, l10n),
-                            icon: const Icon(Icons.add, size: 18),
-                            label: Text(l10n.addSupplier.toUpperCase()),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _primaryColor,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
+      // SelectionArea: Cho phép bôi đen và copy text trên toàn màn hình
+      body: SelectionArea(
+        child: BlocBuilder<SupplierCubit, SupplierState>(
+          builder: (context, state) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // --- HEADER SECTION ---
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: _bgLight,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey.shade200),
+                              color: Colors.orange.shade50,
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            child: TextField(
-                              controller: _searchController,
-                              textInputAction: TextInputAction.search,
-                              decoration: InputDecoration(
-                                hintText: l10n.searchSupplier,
-                                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                                prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                              ),
-                              onSubmitted: (value) {
-                                context.read<SupplierCubit>().searchSuppliers(value);
-                              },
-                            ),
+                            child: Icon(Icons.store_mall_directory, color: Colors.orange.shade800, size: 24),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        IconButton(
-                           onPressed: () => context.read<SupplierCubit>().loadSuppliers(),
-                           icon: const Icon(Icons.refresh, color: Colors.grey),
-                           tooltip: l10n.refreshData,
-                        )
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Container(height: 1, color: Colors.grey.shade200),
-
-              // --- CONTENT ---
-              Expanded(
-                child: Builder(
-                  builder: (context) {
-                    if (state is SupplierLoading) return Center(child: CircularProgressIndicator(color: _primaryColor));
-                    if (state is SupplierError) {
-                      return Center(child: Text("${l10n.errorGeneric}: ${state.message}", style: const TextStyle(color: Colors.red)));
-                    }
-                    if (state is SupplierLoaded) {
-                      if (state.suppliers.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          const SizedBox(width: 16),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.store_mall_directory_outlined, size: 60, color: Colors.grey.shade300),
-                              const SizedBox(height: 16),
-                              Text("No suppliers found", style: TextStyle(color: Colors.grey.shade500)), // Fallback text
+                              Text(
+                                l10n.supplierTitle,
+                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey.shade800),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                "Manage partners, origins & contracts",
+                                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                              ),
                             ],
                           ),
-                        );
-                      }
-                      return isDesktop
-                          ? _buildDesktopGrid(context, state.suppliers, l10n)
-                          : _buildMobileList(context, state.suppliers, l10n);
-                    }
-                    return const SizedBox();
-                  },
+                          const Spacer(),
+                          if (isDesktop)
+                            ElevatedButton.icon(
+                              onPressed: () => _showEditDialog(context, null, l10n),
+                              icon: const Icon(Icons.add, size: 18),
+                              label: Text(l10n.addSupplier.toUpperCase()),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: _bgLight,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: TextField(
+                                controller: _searchController,
+                                textInputAction: TextInputAction.search,
+                                decoration: InputDecoration(
+                                  hintText: l10n.searchSupplier,
+                                  hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                                  prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                                ),
+                                // CẬP NHẬT: Thêm onChanged để tìm kiếm real-time
+                                onChanged: _onSearchChanged,
+                                // Vẫn giữ onSubmitted cho trường hợp nhấn Enter
+                                onSubmitted: (value) {
+                                  if (_debounce?.isActive ?? false) _debounce!.cancel();
+                                  context.read<SupplierCubit>().searchSuppliers(value);
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          IconButton(
+                             onPressed: () {
+                               _searchController.clear();
+                               context.read<SupplierCubit>().loadSuppliers();
+                             },
+                             icon: const Icon(Icons.refresh, color: Colors.grey),
+                             tooltip: l10n.refreshData,
+                          )
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+                Container(height: 1, color: Colors.grey.shade200),
+
+                // --- CONTENT ---
+                Expanded(
+                  child: Builder(
+                    builder: (context) {
+                      if (state is SupplierLoading) return Center(child: CircularProgressIndicator(color: _primaryColor));
+                      if (state is SupplierError) {
+                        return Center(child: Text("${l10n.errorGeneric}: ${state.message}", style: const TextStyle(color: Colors.red)));
+                      }
+                      if (state is SupplierLoaded) {
+                        if (state.suppliers.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.store_mall_directory_outlined, size: 60, color: Colors.grey.shade300),
+                                const SizedBox(height: 16),
+                                Text("No suppliers found", style: TextStyle(color: Colors.grey.shade500)),
+                              ],
+                            ),
+                          );
+                        }
+                        return isDesktop
+                            ? _buildDesktopGrid(context, state.suppliers, l10n)
+                            : _buildMobileList(context, state.suppliers, l10n);
+                      }
+                      return const SizedBox();
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
       floatingActionButton: !isDesktop
           ? FloatingActionButton(
@@ -199,7 +228,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: SizedBox(
-        width: double.infinity, 
+        width: double.infinity,
         child: Card(
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
@@ -208,14 +237,13 @@ class _SupplierScreenState extends State<SupplierScreen> {
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth), 
+                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
                   child: DataTable(
-                    headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
+                    headingRowColor: WidgetStateProperty.all(const Color(0xFFF9FAFB)),
                     horizontalMargin: 24,
                     columnSpacing: 24,
                     dataRowMinHeight: 70,
                     dataRowMaxHeight: 70,
-                    
                     columns: [
                       DataColumn(label: Text(l10n.generalInfo.toUpperCase(), style: _headerStyle)), // INFO
                       DataColumn(label: Text("TYPE / CODE", style: _headerStyle)), // Header cứng
@@ -369,7 +397,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    if(item.shortName != null) 
+                    if(item.shortName != null)
                       Container(margin: const EdgeInsets.only(right: 8), padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)), child: Text(item.shortName!, style: const TextStyle(fontSize: 10, color: Colors.blue))),
                     Text("${item.country ?? ''} • ${item.currencyDefault}", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                   ],
@@ -420,7 +448,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
         children: [
           Icon(icon, size: 16, color: Colors.grey.shade400),
           const SizedBox(width: 8),
-          SizedBox(width: 110, child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13))), // Tăng width cho label dài
+          SizedBox(width: 110, child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13))),
           Expanded(child: Text(value, style: const TextStyle(color: Colors.black87, fontSize: 13))),
         ],
       ),
@@ -429,6 +457,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
 
   // --- DIALOG (CREATE / EDIT) ---
   void _showEditDialog(BuildContext context, Supplier? item, AppLocalizations l10n) {
+    // 1. Setup Controllers
     final nameCtrl = TextEditingController(text: item?.name ?? '');
     final shortNameCtrl = TextEditingController(text: item?.shortName ?? '');
     final emailCtrl = TextEditingController(text: item?.email ?? '');
@@ -437,7 +466,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
     final addressCtrl = TextEditingController(text: item?.address ?? '');
     final countryCtrl = TextEditingController(text: item?.country ?? '');
     final leadTimeCtrl = TextEditingController(text: (item?.leadTimeDays ?? 7).toString());
-    
+
     String selectedCurrency = item?.currencyDefault ?? 'VND';
     String selectedPaymentTerm = item?.paymentTerm ?? 'Net 30';
     String? selectedOrigin = item?.originType;
@@ -445,12 +474,73 @@ class _SupplierScreenState extends State<SupplierScreen> {
 
     final formKey = GlobalKey<FormState>();
 
+    // 2. Determine Layout Mode inside Dialog
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+
+    // 3. Helper to build Rows on Desktop and Columns on Mobile
+    Widget buildResponsiveRow({required List<Widget> children, List<int>? flexes}) {
+      if (isDesktop) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: children.asMap().entries.map((entry) {
+            final index = entry.key;
+            final widget = entry.value;
+            final flex = (flexes != null && flexes.length > index) ? flexes[index] : 1;
+            return Expanded(flex: flex, child: widget);
+          }).expand((widget) => [widget, const SizedBox(width: 12)]).toList()..removeLast(),
+        );
+      } else {
+        // On Mobile, just stack them with spacing
+        return Column(
+          children: children.map((widget) => Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: widget,
+          )).toList(),
+        );
+      }
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setState) {
+            // Prepare Input Widgets to reuse in layout
+            final wName = TextFormField(controller: nameCtrl, decoration: _inputDeco(l10n.supplierName), validator: (v) => v!.isEmpty ? l10n.required : null);
+            final wShortName = TextFormField(controller: shortNameCtrl, decoration: _inputDeco(l10n.shortName));
+            final wEmail = TextFormField(controller: emailCtrl, decoration: _inputDeco(l10n.email), validator: (v) => v!.isEmpty ? l10n.required : null);
+            final wContact = TextFormField(controller: contactCtrl, decoration: _inputDeco(l10n.contactPerson));
+            final wTax = TextFormField(controller: taxCtrl, decoration: _inputDeco(l10n.taxCode));
+            final wCountry = TextFormField(controller: countryCtrl, decoration: _inputDeco("Country"));
+            final wLeadTime = TextFormField(
+                controller: leadTimeCtrl,
+                decoration: _inputDeco(l10n.days),
+                keyboardType: TextInputType.number,
+                validator: (v) => int.tryParse(v!) == null ? "Invalid" : null
+            );
+
+            final wOrigin = DropdownButtonFormField<String>(
+              value: selectedOrigin,
+              decoration: _inputDeco(l10n.originType),
+              items: _originOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+              onChanged: (val) => setState(() => selectedOrigin = val),
+            );
+
+            final wCurrency = DropdownButtonFormField<String>(
+              value: selectedCurrency,
+              decoration: _inputDeco(l10n.currency),
+              items: _currencyOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+              onChanged: (val) => setState(() => selectedCurrency = val!),
+            );
+
+            final wPayment = DropdownButtonFormField<String>(
+              value: selectedPaymentTerm,
+              decoration: _inputDeco(l10n.paymentTerm),
+              items: _paymentTermOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+              onChanged: (val) => setState(() => selectedPaymentTerm = val!),
+            );
+
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               titlePadding: const EdgeInsets.all(24),
@@ -458,82 +548,30 @@ class _SupplierScreenState extends State<SupplierScreen> {
               title: Text(item == null ? l10n.addSupplier : l10n.editSupplier, style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
               content: Form(
                 key: formKey,
-                child: SizedBox(
-                  width: 650,
+                child: Container(
+                  // Responsive Width
+                  constraints: const BoxConstraints(maxWidth: 650),
+                  width: isDesktop ? 650 : double.maxFinite, 
                   child: SingleChildScrollView(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Row 1
-                        Row(
-                          children: [
-                            Expanded(flex: 2, child: TextFormField(controller: nameCtrl, decoration: _inputDeco(l10n.supplierName), validator: (v) => v!.isEmpty ? l10n.required : null)),
-                            const SizedBox(width: 12),
-                            Expanded(flex: 1, child: TextFormField(controller: shortNameCtrl, decoration: _inputDeco(l10n.shortName))),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        
-                        // Row 2
-                        Row(
-                          children: [
-                            Expanded(child: TextFormField(controller: emailCtrl, decoration: _inputDeco(l10n.email), validator: (v) => v!.isEmpty ? l10n.required : null)),
-                            const SizedBox(width: 12),
-                            Expanded(child: TextFormField(controller: contactCtrl, decoration: _inputDeco(l10n.contactPerson))),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
+                        // Row 1: Name (2), ShortName (1)
+                        buildResponsiveRow(children: [wName, wShortName], flexes: [2, 1]),
+                        if(isDesktop) const SizedBox(height: 16),
 
-                        // Row 3
-                        Row(
-                          children: [
-                            Expanded(flex: 2, child: TextFormField(controller: taxCtrl, decoration: _inputDeco(l10n.taxCode))),
-                            const SizedBox(width: 12),
-                            Expanded(flex: 1, child: TextFormField(controller: countryCtrl, decoration: _inputDeco("Country"))),
-                            const SizedBox(width: 12),
-                            Expanded(flex: 1, child: TextFormField(
-                              controller: leadTimeCtrl, 
-                              decoration: _inputDeco(l10n.days), 
-                              keyboardType: TextInputType.number,
-                              validator: (v) => int.tryParse(v!) == null ? "Invalid" : null,
-                            )),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
+                        // Row 2: Email (1), Contact (1)
+                        buildResponsiveRow(children: [wEmail, wContact], flexes: [1, 1]),
+                        if(isDesktop) const SizedBox(height: 16),
 
-                        // Row 4
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                value: selectedOrigin,
-                                decoration: _inputDeco(l10n.originType),
-                                items: _originOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                                onChanged: (val) => setState(() => selectedOrigin = val),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                value: selectedCurrency,
-                                decoration: _inputDeco(l10n.currency),
-                                items: _currencyOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                                onChanged: (val) => setState(() => selectedCurrency = val!),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                value: selectedPaymentTerm,
-                                decoration: _inputDeco(l10n.paymentTerm),
-                                items: _paymentTermOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                                onChanged: (val) => setState(() => selectedPaymentTerm = val!),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
+                        // Row 3: Tax (2), Country (1), LeadTime (1)
+                        buildResponsiveRow(children: [wTax, wCountry, wLeadTime], flexes: [2, 1, 1]),
+                        if(isDesktop) const SizedBox(height: 16),
+
+                        // Row 4: Origin (1), Currency (1), Payment (1)
+                        buildResponsiveRow(children: [wOrigin, wCurrency, wPayment], flexes: [1, 1, 1]),
+                        if(isDesktop) const SizedBox(height: 16),
 
                         // Address
                         TextFormField(controller: addressCtrl, decoration: _inputDeco(l10n.address), maxLines: 2),
@@ -548,7 +586,7 @@ class _SupplierScreenState extends State<SupplierScreen> {
                             children: [
                               Text(l10n.isActiveProvider, style: const TextStyle(fontWeight: FontWeight.w500)),
                               Switch(
-                                value: isActive, 
+                                value: isActive,
                                 onChanged: (val) => setState(() => isActive = val),
                                 activeColor: Colors.green,
                               ),

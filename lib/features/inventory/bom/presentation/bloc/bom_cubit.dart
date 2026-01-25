@@ -1,135 +1,185 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/bom_repository.dart';
 import '../../domain/bom_model.dart';
 
+// --- STATES ---
 abstract class BOMState {}
+
 class BOMInitial extends BOMState {}
+
 class BOMLoading extends BOMState {}
+
+// State cho màn hình danh sách (BOM Screen)
 class BOMListLoaded extends BOMState {
   final List<BOMHeader> boms;
   BOMListLoaded(this.boms);
 }
-// State đặc biệt khi xem chi tiết 1 BOM để edit nguyên liệu
+
+// State cho màn hình chi tiết (BOM Detail Screen)
 class BOMDetailViewLoaded extends BOMState {
   final BOMHeader bom;
   BOMDetailViewLoaded(this.bom);
 }
+
+class BOMOperationSuccess extends BOMState {
+  final String message;
+  BOMOperationSuccess(this.message);
+}
+
 class BOMError extends BOMState {
   final String message;
   BOMError(this.message);
 }
 
+// --- CUBIT ---
 class BOMCubit extends Cubit<BOMState> {
   final BOMRepository _repo;
 
-  // Giữ lại productId hiện tại để reload list đúng ngữ cảnh sau khi Add/Delete
-  int? _currentProductId;
-
   BOMCubit(this._repo) : super(BOMInitial());
 
-  // ==========================================
-  // HEADER ACTIONS
-  // ==========================================
-
-  // Load danh sách Header
+  // 1. Load danh sách (BOM Headers only)
   Future<void> loadBOMHeaders({int? productId}) async {
-    _currentProductId = productId; // Lưu lại state filter
     emit(BOMLoading());
     try {
-      List<BOMHeader> list;
+      // Giả sử repo có hàm search hoặc get all. 
+      // Nếu backend hỗ trợ filter productId thì truyền vào, ko thì filter local
+      final list = await _repo.getBOMs(); 
       
       if (productId != null) {
-        // [FIX ERROR] Nếu có productId, dùng hàm search để lọc
-        list = await _repo.searchBOMHeaders(productId: productId);
+        final filtered = list.where((b) => b.productId == productId).toList();
+        emit(BOMListLoaded(filtered));
       } else {
-        // Nếu không, dùng hàm get all
-        list = await _repo.getBOMHeaders();
+        emit(BOMListLoaded(list));
       }
-      
-      emit(BOMListLoaded(list));
     } catch (e) {
       emit(BOMError(e.toString()));
     }
   }
 
-  // Tìm kiếm theo từ khóa (Có thể kèm productId nếu đang đứng ở màn chi tiết SP)
-  Future<void> searchBOMHeaders(String keyword) async {
-    if (keyword.trim().isEmpty) {
-      loadBOMHeaders(productId: _currentProductId);
-      return;
-    }
+  // 2. Load chi tiết 1 BOM
+  Future<void> loadBOMDetailView(int id) async {
     emit(BOMLoading());
     try {
-      final list = await _repo.searchBOMHeaders(
-        keyword: keyword, 
-        productId: _currentProductId
-      );
-      emit(BOMListLoaded(list));
-    } catch (e) {
-      emit(BOMError(e.toString()));
-    }
-  }
-
-  // Load chi tiết 1 BOM để xem list nguyên liệu
-  Future<void> loadBOMDetailView(int bomId) async {
-    emit(BOMLoading());
-    try {
-      final bom = await _repo.getBOMHeaderById(bomId);
+      final bom = await _repo.getBOMById(id);
       emit(BOMDetailViewLoaded(bom));
     } catch (e) {
       emit(BOMError(e.toString()));
     }
   }
 
-  // Save Header (Create / Update)
+  // 3. Save Header (Tạo mới hoặc Sửa thông tin chung)
   Future<void> saveBOMHeader({required BOMHeader bom, required bool isEdit}) async {
+    emit(BOMLoading());
     try {
       if (isEdit) {
-        await _repo.updateBOMHeader(bom);
+        await _repo.updateBOM(bom);
       } else {
-        await _repo.createBOMHeader(bom);
+        await _repo.createBOM(bom);
       }
-      // Reload lại list sau khi save, giữ nguyên filter productId nếu có
-      loadBOMHeaders(productId: _currentProductId);
+      emit(BOMOperationSuccess(isEdit ? "Updated Header" : "Created BOM"));
+      // Reload lại danh sách sau khi lưu
+      loadBOMHeaders(); 
     } catch (e) {
-      emit(BOMError("Error saving BOM: $e"));
+      emit(BOMError("Failed: $e"));
     }
   }
 
-  Future<void> deleteBOMHeader(int id) async {
-    try {
-      await _repo.deleteBOMHeader(id);
-      loadBOMHeaders(productId: _currentProductId);
-    } catch (e) {
-      emit(BOMError("Error deleting: $e"));
-    }
-  }
-
-  // ==========================================
-  // DETAIL ACTIONS (Thêm/Sửa/Xóa nguyên liệu)
-  // ==========================================
-  
+  // 4. Save Detail (Thêm/Sửa thành phần con)
+  // Logic: Lấy BOM hiện tại -> Sửa list details -> Gọi Update BOM Header
   Future<void> saveBOMDetail(BOMDetail detail, bool isEdit) async {
-    try {
-      if (isEdit) {
-        await _repo.updateBOMDetail(detail);
-      } else {
-        await _repo.createBOMDetail(detail);
+    final currentState = state;
+    if (currentState is BOMDetailViewLoaded) {
+      final currentBOM = currentState.bom;
+      emit(BOMLoading());
+
+      try {
+        // Tạo list mới từ list cũ để tránh tham chiếu
+        List<BOMDetail> updatedDetails = List.from(currentBOM.bomDetails);
+
+        if (isEdit) {
+          // Tìm và thay thế
+          final index = updatedDetails.indexWhere((d) => d.detailId == detail.detailId);
+          if (index != -1) {
+            updatedDetails[index] = detail;
+          }
+        } else {
+          // Thêm mới
+          updatedDetails.add(detail);
+        }
+
+        // Tạo object BOM mới với list details mới
+        final newBOMHeader = BOMHeader(
+          bomId: currentBOM.bomId,
+          productId: currentBOM.productId,
+          bomCode: currentBOM.bomCode,
+          bomName: currentBOM.bomName,
+          targetWeightGm: currentBOM.targetWeightGm,
+          totalScrapRate: currentBOM.totalScrapRate,
+          totalShrinkageRate: currentBOM.totalShrinkageRate,
+          widthBehindLoom: currentBOM.widthBehindLoom,
+          picks: currentBOM.picks,
+          version: currentBOM.version,
+          isActive: currentBOM.isActive,
+          bomDetails: updatedDetails, // <--- List mới
+        );
+
+        // Gọi API Update (Backend sẽ tính toán lại)
+        await _repo.updateBOM(newBOMHeader);
+        
+        // Reload lại chi tiết để lấy số liệu tính toán từ server
+        await loadBOMDetailView(currentBOM.bomId);
+        
+      } catch (e) {
+        emit(BOMError("Failed to save detail: $e"));
+        // Re-emit state cũ nếu lỗi
+        emit(BOMDetailViewLoaded(currentBOM)); 
       }
-      // Reload lại view chi tiết để cập nhật list nguyên liệu
-      loadBOMDetailView(detail.bomId);
-    } catch (e) {
-      emit(BOMError("Error saving detail: $e"));
     }
   }
 
+  // 5. Delete Detail
   Future<void> deleteBOMDetail(int detailId, int bomId) async {
-    try {
-      await _repo.deleteBOMDetail(detailId);
-      loadBOMDetailView(bomId);
-    } catch (e) {
-      emit(BOMError("Error deleting detail: $e"));
+    final currentState = state;
+    if (currentState is BOMDetailViewLoaded) {
+      final currentBOM = currentState.bom;
+      emit(BOMLoading());
+
+      try {
+        List<BOMDetail> updatedDetails = List.from(currentBOM.bomDetails);
+        updatedDetails.removeWhere((d) => d.detailId == detailId);
+
+        final newBOMHeader = BOMHeader(
+          bomId: currentBOM.bomId,
+          productId: currentBOM.productId,
+          bomCode: currentBOM.bomCode,
+          bomName: currentBOM.bomName,
+          targetWeightGm: currentBOM.targetWeightGm,
+          totalScrapRate: currentBOM.totalScrapRate,
+          totalShrinkageRate: currentBOM.totalShrinkageRate,
+          widthBehindLoom: currentBOM.widthBehindLoom,
+          picks: currentBOM.picks,
+          version: currentBOM.version,
+          isActive: currentBOM.isActive,
+          bomDetails: updatedDetails, // <--- List đã xóa item
+        );
+
+        await _repo.updateBOM(newBOMHeader);
+        await loadBOMDetailView(bomId);
+
+      } catch (e) {
+        emit(BOMError("Failed to delete: $e"));
+        emit(BOMDetailViewLoaded(currentBOM));
+      }
     }
+  }
+  
+  // 6. Delete Header
+  Future<void> deleteBOMHeader(int id) async {
+     try {
+       await _repo.deleteBOM(id);
+       loadBOMHeaders(); // Back to list
+     } catch (e) {
+       emit(BOMError(e.toString()));
+     }
   }
 }

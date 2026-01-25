@@ -1,3 +1,5 @@
+// features/inventory/bom/data/bom_repository.dart
+
 import 'package:dio/dio.dart';
 import '../../../../core/network/api_client.dart';
 import '../domain/bom_model.dart';
@@ -5,17 +7,14 @@ import '../domain/bom_model.dart';
 class BOMRepository {
   final Dio _dio = ApiClient().dio;
 
-  // ==========================================
-  // BOM HEADER OPERATIONS
-  // ==========================================
-
-  /// Lấy danh sách BOM (Mặc định lấy tất cả hoặc phân trang)
-  /// Tương tự getProducts()
-  Future<List<BOMHeader>> getBOMHeaders() async {
+  // Get all BOMs (có hỗ trợ filter nếu cần, ở đây viết hàm get all cơ bản)
+  Future<List<BOMHeader>> getBOMs() async {
     try {
-      final response = await _dio.get('/api/v1/bom-headers/');
+      final response = await _dio.get('/api/v1/boms/');
       if (response.data is List) {
-        return (response.data as List).map((e) => BOMHeader.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => BOMHeader.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -23,96 +22,68 @@ class BOMRepository {
     }
   }
 
-  /// Tìm kiếm và Lọc BOM Header
-  /// Tương tự searchProducts(keyword) nhưng có thêm productId
-  Future<List<BOMHeader>> searchBOMHeaders({String? keyword, int? productId}) async {
+  // Search BOMs (Tìm theo Product Code hoặc BOM Code)
+  // Dựa vào Backend: GET /api/v1/boms/?product_code=...&bom_code=...
+  Future<List<BOMHeader>> searchBOMs({String? keyword}) async {
     try {
-      // [FIX ERROR] Khai báo tường minh Map<String, dynamic>
-      final Map<String, dynamic> query = {
-        'skip': 0,
-        'limit': 100,
-      };
-
+      final Map<String, dynamic> queryParams = {};
       if (keyword != null && keyword.isNotEmpty) {
-        query['keyword'] = keyword;
-      }
-      if (productId != null) {
-        query['product_id'] = productId;
+        // Giả định search chung keyword cho cả bom_code và product_code
+        // Hoặc bạn có thể tách ra tùy UI. Ở đây mình ưu tiên tìm theo bom_code
+        queryParams['bom_code'] = keyword; 
       }
 
       final response = await _dio.get(
-        '/api/v1/bom-headers/search',
-        queryParameters: query,
+        '/api/v1/boms/',
+        queryParameters: queryParams,
       );
 
       if (response.data is List) {
-        return (response.data as List).map((e) => BOMHeader.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => BOMHeader.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
-      throw Exception("Failed to search BOMs: $e");
+      throw Exception("BOMs not found: $e");
     }
   }
 
-  /// Lấy chi tiết 1 BOM kèm danh sách nguyên liệu
-  Future<BOMHeader> getBOMHeaderById(int id) async {
+  // Get BOM Detail by ID
+  Future<BOMHeader> getBOMById(int id) async {
     try {
-      final response = await _dio.get('/api/v1/bom-headers/$id');
+      final response = await _dio.get('/api/v1/boms/$id');
       return BOMHeader.fromJson(response.data);
     } catch (e) {
-      throw Exception("Failed to load BOM Detail: $e");
+      throw Exception("Failed to load BOM detail: $e");
     }
   }
 
-  Future<void> createBOMHeader(BOMHeader item) async {
+  // Create BOM
+  Future<void> createBOM(BOMHeader bom) async {
     try {
-      await _dio.post('/api/v1/bom-headers/', data: item.toJson());
+      // Backend mong đợi: product_id, bom_code, details, etc...
+      await _dio.post('/api/v1/boms/', data: bom.toJson());
     } catch (e) {
       throw Exception("Failed to create BOM: $e");
     }
   }
 
-  Future<void> updateBOMHeader(BOMHeader item) async {
+  // Update BOM
+  Future<void> updateBOM(BOMHeader bom) async {
     try {
-      await _dio.put('/api/v1/bom-headers/${item.bomId}', data: item.toJson());
+      await _dio.put('/api/v1/boms/${bom.bomId}', data: bom.toJson());
     } catch (e) {
       throw Exception("Failed to update BOM: $e");
     }
   }
 
-  Future<void> deleteBOMHeader(int id) async {
+  // Delete BOM
+  Future<void> deleteBOM(int id) async {
     try {
-      await _dio.delete('/api/v1/bom-headers/$id');
+      await _dio.delete('/api/v1/boms/$id');
     } catch (e) {
       throw Exception("Failed to delete BOM: $e");
-    }
-  }
-
-  // ==========================================
-  // BOM DETAIL OPERATIONS
-  // ==========================================
-
-  Future<void> createBOMDetail(BOMDetail item) async {
-    try {
-      await _dio.post('/api/v1/bom-details/', data: item.toJson());
-    } catch (e) {
-      throw Exception("Failed to add detail: $e");
-    }
-  }
-
-  Future<void> updateBOMDetail(BOMDetail item) async {
-    try {
-      await _dio.put('/api/v1/bom-details/${item.detailId}', data: item.toJson());
-    } catch (e) {
-      throw Exception("Failed to update detail: $e");
-    }
-  }
-
-  Future<void> deleteBOMDetail(int id) async {
-    try {
-      await _dio.delete('/api/v1/bom-details/$id');
-    } catch (e) {
-      throw Exception("Failed to delete detail: $e");
     }
   }
 }

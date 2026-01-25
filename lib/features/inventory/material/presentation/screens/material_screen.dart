@@ -6,7 +6,6 @@ import 'package:production_app_frontend/core/widgets/responsive_layout.dart';
 import '../../domain/material_model.dart';
 import '../bloc/material_cubit.dart';
 
-// [QUAN TRỌNG] Import Unit Feature để dùng cho Dropdown
 import 'package:production_app_frontend/features/inventory/unit/presentation/bloc/unit_cubit.dart';
 // ignore: unused_import
 import 'package:production_app_frontend/features/inventory/unit/domain/unit_model.dart' as inventory;
@@ -24,14 +23,21 @@ class _MaterialScreenState extends State<MaterialScreen> {
   final Color _accentColor = const Color(0xFFC2185B);
   final Color _bgLight = const Color(0xFFF5F7FA);
 
-  // Danh sách loại vật tư gợi ý
-  final List<String> _typeOptions = const ['Polyester', 'Nylon', 'Polypropylene', 'Cotton', 'Chemical'];
+  final List<String> _typeOptions = const [
+    'Polyester',
+    'Polyamide 6',
+    'Polyamide 66',
+    'Polypropylene',
+    'Viscose',
+    'Cotton',
+    'Spandex',
+    'Chemical'
+  ];
 
   @override
   void initState() {
     super.initState();
     context.read<MaterialCubit>().loadMaterials();
-    // Load danh sách đơn vị tính để dùng cho Dialog
     context.read<UnitCubit>().loadUnits();
   }
 
@@ -44,126 +50,149 @@ class _MaterialScreenState extends State<MaterialScreen> {
       backgroundColor: _bgLight,
       body: BlocBuilder<MaterialCubit, MaterialState>(
         builder: (context, state) {
-          int total = 0;
-          if (state is MaterialLoaded) total = state.materials.length;
+          // 1. Lấy danh sách gốc từ State
+          List<MaterialModel> displayedMaterials = [];
+          if (state is MaterialLoaded) {
+            displayedMaterials = state.materials;
+          }
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // --- HEADER ---
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.purple.shade50,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(Icons.category, color: Colors.purple.shade800, size: 24),
-                        ),
-                        const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(l10n.materialMaster, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
-                            const SizedBox(height: 2),
-                            Text(l10n.materialBreadcrumb, style: const TextStyle(fontSize: 13, color: Colors.grey)),
-                          ],
-                        ),
-                        const Spacer(),
-                        if (isDesktop)
-                          ElevatedButton.icon(
-                            onPressed: () => _showEditDialog(context, null, l10n),
-                            icon: const Icon(Icons.add, size: 18),
-                            label: Text(l10n.addMaterial.toUpperCase()),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _primaryColor,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          // 2. Logic tìm kiếm Client-side
+          if (_searchController.text.isNotEmpty) {
+            final query = _searchController.text.toLowerCase();
+            displayedMaterials = displayedMaterials.where((item) {
+              final code = item.materialCode.toLowerCase();
+              final type = (item.materialType ?? '').toLowerCase();
+              final hs = (item.hsCode ?? '').toLowerCase();
+              return code.contains(query) || type.contains(query) || hs.contains(query);
+            }).toList();
+          }
+
+          int total = displayedMaterials.length;
+
+          // [QUAN TRỌNG] Wrap toàn bộ nội dung trong SelectionArea để cho phép tô và copy
+          return SelectionArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // --- HEADER ---
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.shade50,
+                              borderRadius: BorderRadius.circular(10),
                             ),
+                            child: Icon(Icons.category, color: Colors.purple.shade800, size: 24),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Search Bar
-                    Row(
-                      children: [
-                        if (isDesktop) ...[
-                          _buildStatBadge(Icons.grid_view, l10n.totalMaterials, "$total", Colors.blue),
                           const SizedBox(width: 16),
-                          const Spacer(),
-                        ],
-                        Expanded(
-                          flex: isDesktop ? 0 : 1,
-                          child: Container(
-                            width: isDesktop ? 350 : double.infinity,
-                            decoration: BoxDecoration(color: _bgLight, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade200)),
-                            child: TextField(
-                              controller: _searchController,
-                              textInputAction: TextInputAction.search,
-                              decoration: InputDecoration(
-                                hintText: l10n.searchMaterialHint,
-                                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                                prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                                suffixIcon: IconButton(
-                                  icon: const Icon(Icons.arrow_forward, color: Colors.blue),
-                                  onPressed: () => context.read<MaterialCubit>().searchMaterials(_searchController.text),
-                                ),
-                              ),
-                              onSubmitted: (value) => context.read<MaterialCubit>().searchMaterials(value),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
-                          child: const Icon(Icons.filter_list, color: Colors.grey, size: 20),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Container(height: 1, color: Colors.grey.shade200),
-
-              // --- CONTENT ---
-              Expanded(
-                child: Builder(
-                  builder: (context) {
-                    if (state is MaterialLoading) return Center(child: CircularProgressIndicator(color: _primaryColor));
-                    if (state is MaterialError) return Center(child: Text("${l10n.errorGeneric}: ${state.message}", style: const TextStyle(color: Colors.red)));
-                    if (state is MaterialLoaded) {
-                      if (state.materials.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.inventory_2_outlined, size: 60, color: Colors.grey.shade300),
-                              const SizedBox(height: 16),
-                              Text(l10n.noMaterialFound, style: const TextStyle(color: Colors.grey)),
+                              Text(l10n.materialMaster, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+                              const SizedBox(height: 2),
+                              Text(l10n.materialBreadcrumb, style: const TextStyle(fontSize: 13, color: Colors.grey)),
                             ],
                           ),
-                        );
-                      }
-                      return isDesktop
-                          ? _buildDesktopTable(context, state.materials, l10n)
-                          : _buildMobileList(context, state.materials, l10n);
-                    }
-                    return const SizedBox();
-                  },
+                          const Spacer(),
+                          if (isDesktop)
+                            ElevatedButton.icon(
+                              onPressed: () => _showEditDialog(context, null, l10n),
+                              icon: const Icon(Icons.add, size: 18),
+                              label: Text(l10n.addMaterial.toUpperCase()),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      // Search Bar
+                      Row(
+                        children: [
+                          if (isDesktop) ...[
+                            _buildStatBadge(Icons.grid_view, l10n.totalMaterials, "$total", Colors.blue),
+                            const SizedBox(width: 16),
+                            const Spacer(),
+                          ],
+                          Expanded(
+                            flex: isDesktop ? 0 : 1,
+                            child: Container(
+                              width: isDesktop ? 350 : double.infinity,
+                              decoration: BoxDecoration(color: _bgLight, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade200)),
+                              child: TextField(
+                                controller: _searchController,
+                                textInputAction: TextInputAction.search,
+                                onChanged: (value) {
+                                  setState(() {});
+                                },
+                                decoration: InputDecoration(
+                                  hintText: l10n.searchMaterialHint,
+                                  hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                                  prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                                  suffixIcon: IconButton(
+                                    icon: const Icon(Icons.arrow_forward, color: Colors.blue),
+                                    onPressed: () => context.read<MaterialCubit>().searchMaterials(_searchController.text),
+                                  ),
+                                ),
+                                onSubmitted: (value) => context.read<MaterialCubit>().searchMaterials(value),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)),
+                            child: const Icon(Icons.filter_list, color: Colors.grey, size: 20),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                Container(height: 1, color: Colors.grey.shade200),
+
+                // --- CONTENT ---
+                Expanded(
+                  child: Builder(
+                    builder: (context) {
+                      if (state is MaterialLoading) return Center(child: CircularProgressIndicator(color: _primaryColor));
+                      if (state is MaterialError) return Center(child: Text("${l10n.errorGeneric}: ${state.message}", style: const TextStyle(color: Colors.red)));
+                      
+                      if (state is MaterialLoaded) {
+                        if (displayedMaterials.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.inventory_2_outlined, size: 60, color: Colors.grey.shade300),
+                                const SizedBox(height: 16),
+                                Text(l10n.noMaterialFound, style: const TextStyle(color: Colors.grey)),
+                              ],
+                            ),
+                          );
+                        }
+                        return isDesktop
+                            ? _buildDesktopTable(context, displayedMaterials, l10n)
+                            : _buildMobileList(context, displayedMaterials, l10n);
+                      }
+                      return const SizedBox();
+                    },
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -214,7 +243,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
                           DataCell(Text(item.materialCode, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))),
                           DataCell(ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 200),
-                            child: Text(item.materialName, overflow: TextOverflow.ellipsis),
+                            child: Text(item.materialType.toString(), overflow: TextOverflow.ellipsis),
                           )),
                           DataCell(_buildTypeBadge(item.materialType)),
                           DataCell(Column(
@@ -239,8 +268,16 @@ class _MaterialScreenState extends State<MaterialScreen> {
                           )),
                           DataCell(Row(
                             children: [
-                              IconButton(icon: const Icon(Icons.edit_note, color: Colors.grey), onPressed: () => _showEditDialog(context, item, l10n)),
-                              IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent), onPressed: () => _confirmDelete(context, item, l10n)),
+                              IconButton(
+                                icon: const Icon(Icons.edit_note, color: Colors.grey),
+                                tooltip: l10n.editMaterial,
+                                onPressed: () => _showEditDialog(context, item, l10n)
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                tooltip: l10n.delete,
+                                onPressed: () => _confirmDelete(context, item, l10n)
+                              ),
                             ],
                           )),
                         ],
@@ -264,47 +301,97 @@ class _MaterialScreenState extends State<MaterialScreen> {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: materials.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         final item = materials[index];
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade100),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            leading: CircleAvatar(
-              backgroundColor: Colors.blue.shade50,
-              child: Text(item.materialCode.substring(0, 1), style: TextStyle(color: Colors.blue.shade800, fontWeight: FontWeight.bold)),
-            ),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(child: Text(item.materialCode, style: const TextStyle(fontWeight: FontWeight.bold))),
-                _buildTypeBadge(item.materialType, isChip: true),
-              ],
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text(item.materialName, style: const TextStyle(fontSize: 14, color: Colors.black87)),
-                const SizedBox(height: 8),
-                Row(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.layers, size: 14, color: Colors.grey.shade600),
-                    const SizedBox(width: 4),
-                    Text("${item.specDenier ?? '-'} / ${item.specFilament ?? '-'}F", style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
-                    const Spacer(),
-                    _buildUomChip(item.uomBase?.name, Colors.blue),
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: Colors.blue.shade50,
+                      child: Text(
+                        item.materialCode.isNotEmpty ? item.materialCode.substring(0, 1) : '?',
+                        style: TextStyle(color: Colors.blue.shade800, fontWeight: FontWeight.bold, fontSize: 18)
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(item.materialCode, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+                          const SizedBox(height: 4),
+                          _buildTypeBadge(item.materialType, isChip: true),
+                          const SizedBox(height: 8),
+                          Text("HS Code: ${item.hsCode ?? 'N/A'}", style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                    PopupMenuButton(
+                      icon: Icon(Icons.more_vert, color: Colors.grey.shade400),
+                      onSelected: (val) {
+                        if (val == 'edit') _showEditDialog(context, item, l10n);
+                        if (val == 'delete') _confirmDelete(context, item, l10n);
+                      },
+                      itemBuilder: (ctx) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(children: [const Icon(Icons.edit, size: 18), const SizedBox(width: 8), Text(l10n.editMaterial)])
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(children: [const Icon(Icons.delete, size: 18, color: Colors.red), const SizedBox(width: 8), Text(l10n.delete)])
+                        ),
+                      ],
+                    ),
                   ],
-                )
-              ],
-            ),
-            onTap: () => _showEditDialog(context, item, l10n),
+                ),
+              ),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Divider(height: 1, color: Colors.grey.shade100)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(Icons.layers, size: 16, color: Colors.grey.shade400),
+                          const SizedBox(width: 6),
+                          Text(
+                            "${item.specDenier ?? '-'} / ${item.specFilament ?? '-'}F",
+                            style: TextStyle(fontSize: 13, color: Colors.grey.shade700, fontWeight: FontWeight.w500)
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          _buildUomChip(item.uomBase?.name, Colors.blue),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_right_alt, size: 14, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          _buildUomChip(item.uomProduction?.name, Colors.orange),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            ],
           ),
         );
       },
@@ -314,7 +401,6 @@ class _MaterialScreenState extends State<MaterialScreen> {
   // --- EDIT DIALOG ---
   void _showEditDialog(BuildContext context, MaterialModel? item, AppLocalizations l10n) {
     final codeCtrl = TextEditingController(text: item?.materialCode ?? '');
-    final nameCtrl = TextEditingController(text: item?.materialName ?? '');
     final denierCtrl = TextEditingController(text: item?.specDenier ?? '');
     final filamentCtrl = TextEditingController(text: item?.specFilament?.toString() ?? '');
     final hsCtrl = TextEditingController(text: item?.hsCode ?? '');
@@ -328,6 +414,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
@@ -339,22 +426,17 @@ class _MaterialScreenState extends State<MaterialScreen> {
               content: Form(
                 key: formKey,
                 child: SizedBox(
-                  width: 600, 
+                  width: 500,
                   child: SingleChildScrollView(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Row 1: Code & Name
-                        Row(
-                          children: [
-                            Expanded(child: TextFormField(controller: codeCtrl, decoration: _inputDeco("${l10n.materialCode} *"), validator: (v) => v!.isEmpty ? l10n.required : null)),
-                            const SizedBox(width: 12),
-                            Expanded(flex: 2, child: TextFormField(controller: nameCtrl, decoration: _inputDeco("${l10n.materialName} *"), validator: (v) => v!.isEmpty ? l10n.required : null)),
-                          ],
-                        ),
+                        TextFormField(
+                            controller: codeCtrl,
+                            decoration: _inputDeco("${l10n.materialCode} *"),
+                            validator: (v) => v!.isEmpty ? l10n.required : null),
                         const SizedBox(height: 16),
-                        
-                        // Row 2: Type & HS Code
+
                         Row(
                           children: [
                             Expanded(
@@ -371,29 +453,35 @@ class _MaterialScreenState extends State<MaterialScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Row 3: Specs & Min Stock
                         Row(
                           children: [
                             Expanded(child: TextFormField(controller: denierCtrl, decoration: _inputDeco(l10n.denierHint))),
                             const SizedBox(width: 12),
-                            Expanded(child: TextFormField(controller: filamentCtrl, decoration: _inputDeco(l10n.filament), keyboardType: TextInputType.number)),
+                            Expanded(
+                                child: TextFormField(
+                                    controller: filamentCtrl,
+                                    decoration: _inputDeco(l10n.filament),
+                                    keyboardType: TextInputType.number)),
                             const SizedBox(width: 12),
-                            Expanded(child: TextFormField(controller: minStockCtrl, decoration: _inputDeco(l10n.minStock), keyboardType: TextInputType.number)),
+                            Expanded(
+                                child: TextFormField(
+                                    controller: minStockCtrl,
+                                    decoration: _inputDeco(l10n.minStock),
+                                    keyboardType: TextInputType.number)),
                           ],
                         ),
                         const SizedBox(height: 16),
 
-                        // Row 4: Units (Base & Production)
                         BlocBuilder<UnitCubit, UnitState>(
                           builder: (context, unitState) {
                             List<dynamic> units = [];
                             if (unitState is UnitLoaded) units = unitState.units;
 
                             List<DropdownMenuItem<int>> unitItems = units.map((u) {
-                                return DropdownMenuItem<int>(
-                                  value: u.id as int, 
-                                  child: Text(u.name), 
-                                );
+                              return DropdownMenuItem<int>(
+                                value: u.id as int,
+                                child: Text(u.name),
+                              );
                             }).toList();
 
                             return Row(
@@ -435,7 +523,6 @@ class _MaterialScreenState extends State<MaterialScreen> {
                       final newItem = MaterialModel(
                         id: item?.id ?? 0,
                         materialCode: codeCtrl.text,
-                        materialName: nameCtrl.text,
                         materialType: selectedType,
                         specDenier: denierCtrl.text,
                         specFilament: int.tryParse(filamentCtrl.text),
@@ -446,9 +533,14 @@ class _MaterialScreenState extends State<MaterialScreen> {
                       );
                       context.read<MaterialCubit>().saveMaterial(material: newItem, isEdit: item != null);
                       Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(item == null ? l10n.successAdded : l10n.successUpdated), backgroundColor: Colors.green));
                     }
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: _primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                   child: Text(l10n.save),
                 ),
               ],
@@ -462,9 +554,11 @@ class _MaterialScreenState extends State<MaterialScreen> {
   InputDecoration _inputDeco(String label) {
     return InputDecoration(
       labelText: label,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+      filled: true,
+      fillColor: Colors.grey.shade50,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      isDense: true,
     );
   }
 
@@ -485,13 +579,23 @@ class _MaterialScreenState extends State<MaterialScreen> {
 
   Widget _buildTypeBadge(String? type, {bool isChip = false}) {
     if (type == null || type.isEmpty) return const SizedBox();
-    
+
     Color bg = Colors.grey.shade100;
     Color text = Colors.black87;
 
-    if (type == 'Polyester') { bg = Colors.blue.shade50; text = Colors.blue.shade800; }
-    else if (type == 'Nylon') { bg = Colors.orange.shade50; text = Colors.orange.shade800; }
-    else if (type == 'Cotton') { bg = Colors.green.shade50; text = Colors.green.shade800; }
+    if (type == 'Polyester') {
+      bg = Colors.blue.shade50;
+      text = Colors.blue.shade800;
+    } else if (type == 'Polyamide 6' || type == 'Polyamide 66' || type == 'Nylon') {
+      bg = Colors.orange.shade50;
+      text = Colors.orange.shade800;
+    } else if (type == 'Polypropylene') {
+      bg = Colors.purple.shade50;
+      text = Colors.purple.shade800;
+    } else if (type == 'Cotton' || type == 'Viscose') {
+      bg = Colors.green.shade50;
+      text = Colors.green.shade800;
+    }
 
     if (isChip) {
       return Container(
@@ -512,10 +616,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        border: Border.all(color: color.withOpacity(0.5)),
-        borderRadius: BorderRadius.circular(4),
-        color: color.withOpacity(0.05)
-      ),
+          border: Border.all(color: color.withOpacity(0.5)), borderRadius: BorderRadius.circular(4), color: color.withOpacity(0.05)),
       child: Text(name, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
     );
   }
@@ -524,7 +625,8 @@ class _MaterialScreenState extends State<MaterialScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l10n.delete), 
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.red), const SizedBox(width: 8), Text(l10n.delete)]),
         content: Text(l10n.confirmDeleteMaterial(item.materialCode)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),

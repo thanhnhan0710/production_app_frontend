@@ -212,7 +212,7 @@ class _ImportDeclarationDetailScreenState extends State<ImportDeclarationDetailS
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(material?.materialName ?? "${l10n.materialLabel} #${detail.materialId}", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)),
+                  Text(material?.materialCode ?? "${l10n.materialLabel} #${detail.materialId}", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)),
                   const SizedBox(height: 6),
                   if (material != null) Text("${material.materialCode} • ${material.materialType ?? 'Raw'}", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                   if (detail.hsCodeActual != null) ...[
@@ -318,7 +318,7 @@ class _ImportDeclarationDetailScreenState extends State<ImportDeclarationDetailS
                           child: InputDecorator(
                             decoration: InputDecoration(labelText: "${l10n.materialLabel} (Material)", border: const OutlineInputBorder(), suffixIcon: const Icon(Icons.search)),
                             child: Text(
-                              selectedMaterial?.materialName ?? (isEdit ? "${l10n.materialLabel} #$selectedMaterialId" : l10n.selectMaterialPlaceholder), 
+                              selectedMaterial?.materialCode?? (isEdit ? "${l10n.materialLabel} #$selectedMaterialId" : l10n.selectMaterialPlaceholder), 
                               style: TextStyle(color: selectedMaterial != null ? Colors.black : Colors.grey, overflow: TextOverflow.ellipsis)
                             ),
                           ),
@@ -397,7 +397,7 @@ class _ImportDeclarationDetailScreenState extends State<ImportDeclarationDetailS
                           // ignore: curly_braces_in_flow_control_structures
                           if (val.isEmpty) filtered = List.from(list);
                           // ignore: curly_braces_in_flow_control_structures
-                          else filtered = list.where((m) => m.materialName.toLowerCase().contains(val.toLowerCase()) || m.materialCode.toLowerCase().contains(val.toLowerCase())).toList();
+                          else filtered = list.where((m) => m.materialCode.toLowerCase().contains(val.toLowerCase())).toList();
                         });
                       },
                     ),
@@ -409,8 +409,8 @@ class _ImportDeclarationDetailScreenState extends State<ImportDeclarationDetailS
                         itemBuilder: (context, index) {
                           final m = filtered[index];
                           return ListTile(
-                            title: Text(m.materialName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(m.materialCode),
+                            title: Text(m.materialCode, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text(m.materialType.toString()),
                             onTap: () => Navigator.pop(ctx, m),
                           );
                         },

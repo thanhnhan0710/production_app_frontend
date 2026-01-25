@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:dropdown_search/dropdown_search.dart'; // DropdownSearch v6.0.0
 
 // [IMPORT] Các module liên quan
 import 'package:production_app_frontend/features/inventory/import_declaration/domain/import_declaration_model.dart';
@@ -45,18 +46,23 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
   int? _selectedDeclarationId;
 
   List<MaterialReceiptDetail> _details = [];
-  bool _isFetchingNumber = false; // [MỚI] Loading state cho số phiếu
+  bool _isFetchingNumber = false; 
   
   @override
   void initState() {
     super.initState();
+    // Load các dữ liệu danh mục cần thiết
+    context.read<WarehouseCubit>().loadWarehouses();
+    context.read<PurchaseOrderCubit>().loadPurchaseOrders();
+    context.read<ImportDeclarationCubit>().loadDeclarations();
+    context.read<SupplierCubit>().loadSuppliers();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       
       if (widget.receiptId != null) {
         context.read<MaterialReceiptCubit>().getReceiptDetail(widget.receiptId!);
       } else {
-        // [MỚI] Gọi API lấy số phiếu từ Backend
         _fetchAndSetNextNumber();
         
         try {
@@ -69,7 +75,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
     });
   }
 
-  // [MỚI] Hàm riêng để lấy số phiếu
   Future<void> _fetchAndSetNextNumber() async {
     setState(() => _isFetchingNumber = true);
     final nextNumber = await context.read<MaterialReceiptCubit>().fetchNextReceiptNumber();
@@ -170,13 +175,12 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                                       controller: _receiptNumberCtrl,
                                       decoration: _inputDeco(
                                         l10n.receiptNumber,
-                                        // [MỚI] Hiển thị spinner nhỏ nếu đang load số
                                         suffixIcon: _isFetchingNumber 
                                           ? const Padding(padding: EdgeInsets.all(10), child: SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2))) 
                                           : null
                                       ),
                                       validator: (v) => v!.isEmpty ? l10n.required : null,
-                                      readOnly: _isFetchingNumber, // Chặn sửa khi đang load
+                                      readOnly: _isFetchingNumber,
                                     ),
                                   ),
                                   const SizedBox(width: 16),
@@ -194,8 +198,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                                         );
                                         if (picked != null) {
                                           _dateCtrl.text = DateFormat('yyyy-MM-dd').format(picked);
-                                          // [OPTIONAL] Nếu muốn đổi ngày thì sinh lại số phiếu (vì số phiếu theo tháng)
-                                          // _fetchAndSetNextNumber(); 
                                         }
                                       },
                                     ),
@@ -225,6 +227,8 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 16),
+                                  
+                                  // [DROPDOWN SEARCH PO]
                                   Expanded(
                                     child: BlocBuilder<PurchaseOrderCubit, PurchaseOrderState>(
                                       builder: (context, poState) {
@@ -235,29 +239,67 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                                             List<Supplier> suppliers = [];
                                             if (supState is SupplierLoaded) suppliers = supState.suppliers;
 
-                                            return DropdownButtonFormField<int>(
-                                              value: _selectedPoId,
-                                              decoration: _inputDeco(l10n.byPO),
-                                              items: pos.map((p) {
-                                                String vendorName = p.vendor?.name ?? '';
-                                                if (vendorName.isEmpty) {
-                                                   final s = suppliers.where((sup) => sup.id == p.vendorId).firstOrNull;
-                                                   if (s != null) vendorName = s.name;
-                                                }
-                                                if (vendorName.isEmpty) vendorName = "Unknown";
+                                            return DropdownSearch<PurchaseOrderHeader>(
+                                              // 1. Items Function (Filter logic)
+                                              items: (filter, props) {
+                                                if (filter.isEmpty) return pos;
+                                                return pos.where((p) {
+                                                  final poMatch = p.poNumber.toLowerCase().contains(filter.toLowerCase());
+                                                  final vendorName = p.vendor?.name ?? suppliers.where((s) => s.id == p.vendorId).firstOrNull?.name ?? '';
+                                                  final vendorMatch = vendorName.toLowerCase().contains(filter.toLowerCase());
+                                                  return poMatch || vendorMatch;
+                                                }).toList();
+                                              },
+                                              
+                                              // 2. Selected Item Match
+                                              selectedItem: pos.any((p) => p.poId == _selectedPoId)
+                                                  ? pos.firstWhere((p) => p.poId == _selectedPoId)
+                                                  : null,
+                                              compareFn: (i, s) => i.poId == s.poId,
+                                              
+                                              // 3. Display String
+                                              itemAsString: (p) => p.poNumber,
 
-                                                return DropdownMenuItem<int>(
-                                                  value: p.poId,
-                                                  child: Text("${p.poNumber} ($vendorName)", overflow: TextOverflow.ellipsis),
-                                                );
-                                              }).toList(),
-                                              onChanged: (val) {
-                                                setState(() => _selectedPoId = val);
-                                                if (val != null) {
-                                                  final selectedPO = pos.firstWhere((element) => element.poId == val, orElse: () => pos.first);
-                                                  String vName = selectedPO.vendor?.name ?? '';
+                                              // 4. Decoration
+                                              decoratorProps: DropDownDecoratorProps(
+                                                decoration: _inputDeco(l10n.byPO),
+                                              ),
+
+                                              // 5. Popup (Search & List)
+                                              popupProps: PopupProps.menu(
+                                                showSearchBox: true,
+                                                searchFieldProps: TextFieldProps(
+                                                  decoration: InputDecoration(
+                                                    hintText: "Search PO / Vendor...",
+                                                    prefixIcon: const Icon(Icons.search),
+                                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                                  )
+                                                ),
+                                                itemBuilder: (ctx, item, isDisabled, isSelected) {
+                                                  String vendorName = item.vendor?.name ?? '';
+                                                  if (vendorName.isEmpty) {
+                                                     final s = suppliers.where((sup) => sup.id == item.vendorId).firstOrNull;
+                                                     if (s != null) vendorName = s.name;
+                                                  }
+                                                  
+                                                  return ListTile(
+                                                    title: Text(item.poNumber, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                                                    subtitle: Text(vendorName),
+                                                    selected: isSelected,
+                                                    selectedTileColor: Colors.blue.withOpacity(0.1),
+                                                  );
+                                                },
+                                                menuProps: MenuProps(borderRadius: BorderRadius.circular(8)),
+                                              ),
+
+                                              // 6. OnChanged (Auto fill Supplier)
+                                              onChanged: (PurchaseOrderHeader? data) {
+                                                setState(() => _selectedPoId = data?.poId);
+                                                if (data != null) {
+                                                  String vName = data.vendor?.name ?? '';
                                                   if (vName.isEmpty) {
-                                                     final s = suppliers.where((sup) => sup.id == selectedPO.vendorId).firstOrNull;
+                                                     final s = suppliers.where((sup) => sup.id == data.vendorId).firstOrNull;
                                                      if (s != null) vName = s.name;
                                                   }
                                                   _supplierCtrl.text = vName;
@@ -265,7 +307,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                                                   _supplierCtrl.clear();
                                                 }
                                               },
-                                              isExpanded: true,
                                             );
                                           },
                                         );
@@ -395,7 +436,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
   }
 
   Widget _buildDetailsSection(bool isDesktop, AppLocalizations l10n) {
-    // Sắp xếp các dòng bị lệch số lượng lên đầu
     final sortedEntries = _details.asMap().entries.toList()
       ..sort((a, b) {
         final aMismatch = (a.value.receivedQuantityKg - a.value.poQuantityKg).abs() > 0.01;
@@ -477,7 +517,7 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                               DataCell(Text(item.material?.code ?? "${item.materialId}")),
                               DataCell(ConstrainedBox(
                                 constraints: const BoxConstraints(maxWidth: 200),
-                                child: Text(item.material?.name ?? "---", overflow: TextOverflow.ellipsis),
+                                child: Text(item.material?.code?? "---", overflow: TextOverflow.ellipsis),
                               )),
                               DataCell(Text(NumberFormat("#,##0.00").format(item.poQuantityKg))),
                               DataCell(
@@ -551,7 +591,7 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                             if (isMismatch) const Padding(padding: EdgeInsets.only(right: 4), child: Icon(Icons.warning, size: 16, color: Colors.red)),
                             Expanded(
                               child: Text(
-                                item.material?.name ?? "Material #${item.materialId}",
+                                item.material?.code ?? "Material #${item.materialId}",
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                               ),
                             ),
@@ -651,10 +691,22 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
     }
   }
 
+  // [UPDATED] Hàm mở dialog thêm chi tiết - Truyền danh sách PO details
   Future<void> _openAddDetailDialog() async {
+    // 1. Tìm PO object đang được chọn trong danh sách Cubit đã load
+    List<PurchaseOrderDetail>? selectedPoDetails;
+    if (_selectedPoId != null) {
+      final poState = context.read<PurchaseOrderCubit>().state;
+      if (poState is POListLoaded) {
+        final po = poState.list.where((p) => p.poId == _selectedPoId).firstOrNull;
+        selectedPoDetails = po?.details; // Lấy danh sách chi tiết của PO
+      }
+    }
+
     final MaterialReceiptDetail? result = await showDialog(
       context: context,
-      builder: (_) => const MaterialDetailDialog(),
+      // 2. Truyền vào Dialog để lọc vật tư
+      builder: (_) => MaterialDetailDialog(poDetails: selectedPoDetails),
     );
 
     if (result != null) {
@@ -669,9 +721,19 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
   }
 
   Future<void> _openEditDetailDialog(MaterialReceiptDetail item, int index) async {
+    // [UPDATED] Cũng nên truyền PO Details vào edit để hiển thị đúng list nếu cần đổi vật tư
+    List<PurchaseOrderDetail>? selectedPoDetails;
+    if (_selectedPoId != null) {
+      final poState = context.read<PurchaseOrderCubit>().state;
+      if (poState is POListLoaded) {
+        final po = poState.list.where((p) => p.poId == _selectedPoId).firstOrNull;
+        selectedPoDetails = po?.details;
+      }
+    }
+
     final MaterialReceiptDetail? result = await showDialog(
       context: context,
-      builder: (_) => MaterialDetailDialog(detail: item),
+      builder: (_) => MaterialDetailDialog(detail: item, poDetails: selectedPoDetails),
     );
 
     if (result != null) {

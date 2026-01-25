@@ -3,13 +3,17 @@ import 'package:production_app_frontend/l10n/app_localizations.dart';
 import '../../domain/material_receipt_model.dart';
 import '../../../material/data/material_repository.dart';
 import '../../../material/domain/material_model.dart';
+import '../../../purchase_order/domain/purchase_order_model.dart'; 
 
 class MaterialDetailDialog extends StatefulWidget {
   final MaterialReceiptDetail? detail;
+  // Danh sách chi tiết của PO đã chọn (để lọc vật tư)
+  final List<PurchaseOrderDetail>? poDetails; 
 
   const MaterialDetailDialog({
     super.key, 
     this.detail,
+    this.poDetails,
   });
 
   @override
@@ -39,17 +43,18 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
     super.initState();
     _loadMaterials();
 
-    // [MỚI] Tự động điền Thực nhận = PO khi tạo mới
-    // Chỉ áp dụng khi thêm mới (widget.detail == null) để tránh sửa đổi dữ liệu đã lưu
+    // [GIỮ NGUYÊN] Tự động điền Thực nhận = PO khi nhập liệu (Chỉ khi thêm mới)
     if (widget.detail == null) {
       _poQtyKgCtrl.addListener(() {
-        if (_poQtyKgCtrl.text.isNotEmpty) {
+        // Nếu người dùng nhập vào ô PO Kg, tự động copy sang Thực nhận Kg (nếu chưa nhập)
+        if (_poQtyKgCtrl.text.isNotEmpty && (_receivedQtyKgCtrl.text == "0" || _receivedQtyKgCtrl.text.isEmpty)) {
           _receivedQtyKgCtrl.text = _poQtyKgCtrl.text;
         }
       });
 
       _poQtyConesCtrl.addListener(() {
-         if (_poQtyConesCtrl.text.isNotEmpty) {
+         // Tương tự cho Cones
+         if (_poQtyConesCtrl.text.isNotEmpty && (_receivedQtyConesCtrl.text == "0" || _receivedQtyConesCtrl.text.isEmpty)) {
            _receivedQtyConesCtrl.text = _poQtyConesCtrl.text;
          }
       });
@@ -58,20 +63,36 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
 
   Future<void> _loadMaterials() async {
     try {
-      final repo = MaterialRepository();
-      final materials = await repo.getMaterials();
-      
-      if (mounted) {
-        setState(() {
-          _availableMaterials = materials.map((m) => ReceiptMaterial(
-            id: m.id,
-            name: m.materialName,
-            code: m.materialCode,
-            unit: m.uomBase?.name ?? 'N/A', 
-          )).toList();
-          _isLoading = false;
-          _initFormData(); 
-        });
+      if (widget.poDetails != null && widget.poDetails!.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _availableMaterials = widget.poDetails!.map((d) {
+              return ReceiptMaterial(
+                id: d.materialId,
+                code: d.material?.materialCode ?? "Item #${d.materialId}",
+                unit: d.uom?.name ?? 'N/A',
+              );
+            }).toList();
+            
+            _isLoading = false;
+            _initFormData();
+          });
+        }
+      } else {
+        final repo = MaterialRepository();
+        final materials = await repo.getMaterials();
+        
+        if (mounted) {
+          setState(() {
+            _availableMaterials = materials.map((m) => ReceiptMaterial(
+              id: m.id,
+              code: m.materialCode,
+              unit: m.uomBase?.name ?? 'N/A', 
+            )).toList();
+            _isLoading = false;
+            _initFormData(); 
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -94,7 +115,6 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
           _selectedMaterial = widget.detail!.material;
         }
       }
-
       _poQtyKgCtrl.text = widget.detail!.poQuantityKg.toString();
       _receivedQtyKgCtrl.text = widget.detail!.receivedQuantityKg.toString();
       _poQtyConesCtrl.text = widget.detail!.poQuantityCones.toString();
@@ -104,6 +124,21 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
       _originCtrl.text = widget.detail!.originCountry ?? "";
       _noteCtrl.text = widget.detail!.note ?? "";
     }
+  }
+
+  // [CẬP NHẬT] Hàm xử lý khi chọn vật tư
+  void _onMaterialSelected(ReceiptMaterial? val) {
+    setState(() {
+      _selectedMaterial = val;
+      
+      // Reset tất cả về 0 để người dùng tự nhập (Theo yêu cầu)
+      _poQtyKgCtrl.text = "0";
+      _poQtyConesCtrl.text = "0";
+      _receivedQtyKgCtrl.text = "0";
+      _receivedQtyConesCtrl.text = "0";
+      
+      // Không còn logic tự động điền số lượng từ PO nữa
+    });
   }
 
   @override
@@ -128,25 +163,31 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                   DropdownButtonFormField<ReceiptMaterial>(
                     value: _selectedMaterial,
                     isExpanded: true,
-                    decoration: InputDecoration(labelText: l10n.selectMaterialPlaceholder, border: const OutlineInputBorder()),
+                    decoration: InputDecoration(
+                      labelText: l10n.selectMaterialPlaceholder, 
+                      border: const OutlineInputBorder(),
+                      helperText: widget.poDetails != null && widget.poDetails!.isNotEmpty 
+                          ? "Filter by Selected PO" 
+                          : "All Materials"
+                    ),
                     items: _availableMaterials.map((m) {
                       return DropdownMenuItem(
                         value: m,
                         child: Text(
-                          "${m.code} - ${m.name} (${m.unit})", 
+                          "${m.code} - (${m.unit})", 
                           overflow: TextOverflow.ellipsis
                         ),
                       );
                     }).toList(),
                     onChanged: widget.detail == null 
-                        ? (val) => setState(() => _selectedMaterial = val) 
+                        ? _onMaterialSelected 
                         : null, 
                     validator: (v) => v == null ? l10n.errorSelectMaterial : null,
                   ),
                 
                 const SizedBox(height: 16),
                 
-                // PO Quantities
+                // PO Quantities (Người dùng nhập tay)
                 Row(
                   children: [
                     Expanded(
@@ -168,7 +209,7 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 ),
                 const SizedBox(height: 16),
 
-                // Actual Quantities
+                // Actual Quantities (Tự động copy từ PO nếu chưa nhập, hoặc nhập tay)
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -245,7 +286,6 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Origin
                 TextFormField(
                   controller: _originCtrl,
                   decoration: const InputDecoration(

@@ -69,7 +69,7 @@ class _BatchScreenState extends State<BatchScreen> {
     if (_isLoadingMaterials) return loc.processing;
     final material = _materials.where((m) => m.id == materialId).firstOrNull;
     if (material != null) {
-      return "${material.materialCode} - ${material.materialName}";
+      return material.materialCode;
     }
     // [FIX 1] Truyền int thay vì String (materialId.toString())
     return loc.unknownMaterial(materialId);
@@ -638,7 +638,7 @@ class _BatchScreenState extends State<BatchScreen> {
                             return DropdownMenuItem<int>(
                               value: m.id,
                               child: Text(
-                                "${m.materialCode} - ${m.materialName}",
+                                m.materialCode,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             );

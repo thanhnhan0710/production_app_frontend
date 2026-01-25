@@ -49,17 +49,14 @@ class ReceiptDeclaration {
 
 class ReceiptMaterial {
   final int id;
-  final String name;
   final String code;
   final String unit;
 
-  ReceiptMaterial({required this.id, required this.name, required this.code, required this.unit});
+  ReceiptMaterial({required this.id, required this.code, required this.unit});
 
   factory ReceiptMaterial.fromJson(Map<String, dynamic> json) {
     return ReceiptMaterial(
       id: json['id'] ?? 0,
-      // [FIX] Ưu tiên lấy 'material_name' trước, sau đó mới đến 'name'
-      name: json['material_name'] ?? json['name'] ?? '',
       // [FIX] Ưu tiên lấy 'material_code'
       code: json['material_code'] ?? json['code'] ?? '',
       // [FIX] Đơn vị tính thường nằm trong object uom_base
