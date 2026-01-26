@@ -1,3 +1,5 @@
+// D:\AppHeThong\production_app_frontend\lib\features\inventory\bom\presentation\screens\bom_screen.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,8 +16,8 @@ import 'package:production_app_frontend/features/inventory/product/domain/produc
 import 'package:production_app_frontend/features/inventory/product/presentation/bloc/product_cubit.dart';
 
 // Screens
-import 'bom_detail_screen.dart'; // Màn hình xem chi tiết
-import 'create_bom_screen.dart'; // [MỚI] Màn hình tạo/sửa trọn gói
+import 'bom_detail_screen.dart';
+import 'create_bom_screen.dart';
 
 class BOMScreen extends StatefulWidget {
   final int? filterProductId;
@@ -48,34 +50,31 @@ class _BOMScreenState extends State<BOMScreen> {
   }
 
   void _loadData() {
-    // [FIX 1] Dùng đúng tên hàm: loadBOMHeaders
-    context.read<BOMCubit>().loadBOMHeaders(productId: widget.filterProductId);
+    // Load mặc định
+    context.read<BOMCubit>().loadBOMHeaders();
   }
 
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      // Hiện tại reload lại list, nếu sau này có search API thì gọi ở đây
-      _loadData(); 
+      // Gọi hàm search thông minh trong Cubit (Tự detect Năm hoặc Mã SP)
+      context.read<BOMCubit>().searchBOMs(query);
     });
   }
 
-  // [UPDATED] Hàm điều hướng sang màn hình Tạo/Sửa BOM (Full màn hình)
   void _navigateToCreateOrEdit({BOMHeader? bom}) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CreateBOMScreen(existingBOM: bom), // Gọi màn hình mới
+        builder: (_) => CreateBOMScreen(existingBOM: bom),
       ),
     );
 
-    // Reload khi quay lại nếu có thay đổi (kết quả trả về true)
     if (result == true || result != null) {
       _loadData();
     }
   }
 
-  // Hàm điều hướng sang màn hình Chi tiết (Read-only hoặc chỉnh sửa nhanh)
   void _navigateToDetailView(BOMHeader bom) {
      Navigator.push(
       context,
@@ -107,19 +106,14 @@ class _BOMScreenState extends State<BOMScreen> {
 
             if (state is BOMLoading) {
               isLoading = true;
-            } else if (state is BOMListLoaded) { // [FIX 2] Dùng đúng tên State
+            } else if (state is BOMListLoaded) {
               boms = state.boms;
+              // Nếu có filter từ màn hình cha (Product Detail)
               if (widget.filterProductId != null) {
                 boms = boms.where((b) => b.productId == widget.filterProductId).toList();
               }
-              
-              // Filter client-side tạm thời cho search bar
-              if (_searchController.text.isNotEmpty) {
-                final k = _searchController.text.toLowerCase();
-                boms = boms.where((b) => b.bomCode.toLowerCase().contains(k) || b.bomName.toLowerCase().contains(k)).toList();
-              }
             } else if (state is BOMDetailViewLoaded) {
-               // Fallback state
+               // Fallback state nếu quay lại từ detail mà chưa refresh kịp
                return Center(child: CircularProgressIndicator(color: _primaryColor));
             }
 
@@ -160,7 +154,6 @@ class _BOMScreenState extends State<BOMScreen> {
                           const Spacer(),
                           if (isDesktop)
                             ElevatedButton.icon(
-                              // [UPDATED] Gọi màn hình Create Mới
                               onPressed: () => _navigateToCreateOrEdit(bom: null),
                               icon: const Icon(Icons.add, size: 18),
                               label: const Text("CREATE BOM"), 
@@ -189,7 +182,7 @@ class _BOMScreenState extends State<BOMScreen> {
                                 controller: _searchController,
                                 textInputAction: TextInputAction.search,
                                 decoration: InputDecoration(
-                                  hintText: "Search BOM Code...",
+                                  hintText: "Search Year (e.g. 2026) or Product Code...",
                                   prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
                                   border: InputBorder.none,
                                   contentPadding: const EdgeInsets.symmetric(vertical: 14),
@@ -222,7 +215,7 @@ class _BOMScreenState extends State<BOMScreen> {
 
                 // --- CONTENT ---
                 Expanded(
-                  child: isLoading && boms.isEmpty
+                  child: isLoading
                       ? Center(child: CircularProgressIndicator(color: _primaryColor))
                       : boms.isEmpty
                           ? Center(
@@ -247,7 +240,6 @@ class _BOMScreenState extends State<BOMScreen> {
       floatingActionButton: !isDesktop
           ? FloatingActionButton(
               backgroundColor: _primaryColor,
-              // [UPDATED] Gọi màn hình Create Mới
               onPressed: () => _navigateToCreateOrEdit(bom: null),
               child: const Icon(Icons.add, color: Colors.white),
             )
@@ -277,8 +269,10 @@ class _BOMScreenState extends State<BOMScreen> {
                     dataRowMinHeight: 60,
                     dataRowMaxHeight: 60,
                     columns: [
-                      DataColumn(label: Text(loc.bomCode.toUpperCase(), style: _headerStyle)),
+                      // [THAY ĐỔI] Hiển thị Năm và Tên
+                      DataColumn(label: Text("YEAR", style: _headerStyle)),
                       DataColumn(label: Text("PRODUCT", style: _headerStyle)),
+                      DataColumn(label: Text("DESCRIPTION", style: _headerStyle)), // Thay cho Code/Name cũ
                       DataColumn(label: Text("TARGET (g/m)", style: _headerStyle)),
                       DataColumn(label: Text("WIDTH (mm)", style: _headerStyle)),
                       DataColumn(label: Text(loc.version.toUpperCase(), style: _headerStyle)),
@@ -288,25 +282,32 @@ class _BOMScreenState extends State<BOMScreen> {
                     ],
                     rows: items.map((bom) {
                       return DataRow(
-                        // Nhấn vào hàng thì xem chi tiết
                         onSelectChanged: (_) => _navigateToDetailView(bom),
                         cells: [
-                          DataCell(Text(bom.bomCode, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87))),
-                          // Product Name
+                          // Cột Năm
+                          DataCell(Text(
+                            "${bom.applicableYear}", 
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)
+                          )),
+                          
+                          // Cột Sản phẩm
                           DataCell(
                             BlocBuilder<ProductCubit, ProductState>(
                               builder: (context, pState) {
                                 if (pState is ProductLoaded) {
-                                  // [FIX 3] Tìm sản phẩm an toàn
                                   final p = pState.products.where((e) => e.id == bom.productId).firstOrNull;
                                   if (p != null) {
-                                    return Text(p.itemCode, style: const TextStyle(fontWeight: FontWeight.w500));
+                                    return Text(p.itemCode, style: const TextStyle(fontWeight: FontWeight.bold));
                                   }
                                 }
                                 return Text("ID: ${bom.productId}");
                               },
                             ),
                           ),
+
+                          // Cột Description (Display Name từ Backend)
+                          DataCell(Text(bom.displayName ?? "-", style: const TextStyle(color: Colors.black87))),
+                          
                           DataCell(Text(bom.targetWeightGm.toStringAsFixed(2))),
                           DataCell(Text(bom.widthBehindLoom?.toString() ?? "-")),
                           DataCell(
@@ -328,7 +329,6 @@ class _BOMScreenState extends State<BOMScreen> {
                                 IconButton(
                                   icon: const Icon(Icons.edit_outlined, color: Colors.orange, size: 20),
                                   tooltip: "Edit BOM",
-                                  // [UPDATED] Nút Sửa gọi màn hình CreateBOMScreen để sửa toàn bộ
                                   onPressed: () => _navigateToCreateOrEdit(bom: bom),
                                 ),
                                 IconButton(
@@ -393,7 +393,8 @@ class _BOMScreenState extends State<BOMScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(bom.bomCode, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      // Hiển thị Năm
+                      Text("Year: ${bom.applicableYear}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
                       _buildStatusBadge(bom.isActive, loc),
                     ],
                   ),
@@ -428,11 +429,6 @@ class _BOMScreenState extends State<BOMScreen> {
                       Text("Width: ${bom.widthBehindLoom ?? '-'} mm", style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
                     ],
                   ),
-                  
-                  if (bom.bomName.isNotEmpty) ...[
-                    const Divider(height: 16),
-                    Text(bom.bomName, style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontStyle: FontStyle.italic)),
-                  ]
                 ],
               ),
             ),
@@ -448,7 +444,7 @@ class _BOMScreenState extends State<BOMScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(loc.deleteBOM),
-        content: Text("Confirm delete BOM ${item.bomCode}?"),
+        content: Text("Confirm delete BOM for Year ${item.applicableYear}?"),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
           TextButton(

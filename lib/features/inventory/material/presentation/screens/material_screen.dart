@@ -229,7 +229,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
                     dataRowMaxHeight: 60,
                     columns: [
                       _buildColHeader(l10n.materialCode),
-                      _buildColHeader(l10n.materialName),
+                      // Đã loại bỏ cột Tên vật tư (materialName) tại đây
                       _buildColHeader(l10n.materialType),
                       _buildColHeader(l10n.specs),
                       _buildColHeader(l10n.hsCode),
@@ -241,10 +241,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
                       return DataRow(
                         cells: [
                           DataCell(Text(item.materialCode, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))),
-                          DataCell(ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 200),
-                            child: Text(item.materialType.toString(), overflow: TextOverflow.ellipsis),
-                          )),
+                          // Đã loại bỏ DataCell hiển thị tên (trước đó là materialType dạng text)
                           DataCell(_buildTypeBadge(item.materialType)),
                           DataCell(Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -615,8 +612,8 @@ class _MaterialScreenState extends State<MaterialScreen> {
     if (name == null) return const SizedBox();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-          border: Border.all(color: color.withOpacity(0.5)), borderRadius: BorderRadius.circular(4), color: color.withOpacity(0.05)),
+      decoration:
+          BoxDecoration(border: Border.all(color: color.withOpacity(0.5)), borderRadius: BorderRadius.circular(4), color: color.withOpacity(0.05)),
       child: Text(name, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
     );
   }

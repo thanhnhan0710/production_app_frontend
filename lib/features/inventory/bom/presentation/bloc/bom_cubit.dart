@@ -37,20 +37,24 @@ class BOMCubit extends Cubit<BOMState> {
 
   BOMCubit(this._repo) : super(BOMInitial());
 
-  // 1. Load danh sách (BOM Headers only)
-  Future<void> loadBOMHeaders({int? productId}) async {
+  // 1. Load danh sách (Có hỗ trợ Filter Server-side)
+  Future<void> loadBOMHeaders({String? productCode, int? year}) async {
     emit(BOMLoading());
     try {
-      // Giả sử repo có hàm search hoặc get all. 
-      // Nếu backend hỗ trợ filter productId thì truyền vào, ko thì filter local
-      final list = await _repo.getBOMs(); 
-      
-      if (productId != null) {
-        final filtered = list.where((b) => b.productId == productId).toList();
-        emit(BOMListLoaded(filtered));
-      } else {
-        emit(BOMListLoaded(list));
-      }
+      // Gọi Repo với tham số filter mới
+      final list = await _repo.getBOMs(productCode: productCode, year: year);
+      emit(BOMListLoaded(list));
+    } catch (e) {
+      emit(BOMError(e.toString()));
+    }
+  }
+
+  // 1.1 Search (Hàm tìm kiếm từ Search Bar)
+  Future<void> searchBOMs(String keyword) async {
+    emit(BOMLoading());
+    try {
+      final list = await _repo.searchBOMs(keyword);
+      emit(BOMListLoaded(list));
     } catch (e) {
       emit(BOMError(e.toString()));
     }
@@ -76,11 +80,14 @@ class BOMCubit extends Cubit<BOMState> {
       } else {
         await _repo.createBOM(bom);
       }
-      emit(BOMOperationSuccess(isEdit ? "Updated Header" : "Created BOM"));
+      emit(BOMOperationSuccess(isEdit ? "Cập nhật thành công" : "Tạo BOM thành công"));
+      
       // Reload lại danh sách sau khi lưu
       loadBOMHeaders(); 
     } catch (e) {
-      emit(BOMError("Failed: $e"));
+      // Nếu lỗi là String (do ta throw Exception("message") ở repo) thì hiển thị gọn
+      final msg = e.toString().replaceAll("Exception: ", "");
+      emit(BOMError(msg));
     }
   }
 
@@ -107,12 +114,14 @@ class BOMCubit extends Cubit<BOMState> {
           updatedDetails.add(detail);
         }
 
-        // Tạo object BOM mới với list details mới
+        // [SỬA ĐỔI QUAN TRỌNG] Cập nhật constructor theo Model mới (bỏ bomCode/Name, thêm applicableYear)
         final newBOMHeader = BOMHeader(
           bomId: currentBOM.bomId,
           productId: currentBOM.productId,
-          bomCode: currentBOM.bomCode,
-          bomName: currentBOM.bomName,
+          
+          applicableYear: currentBOM.applicableYear, // <--- Field mới
+          displayName: currentBOM.displayName,       // <--- Field mới (giữ nguyên để hiển thị nếu cần)
+          
           targetWeightGm: currentBOM.targetWeightGm,
           totalScrapRate: currentBOM.totalScrapRate,
           totalShrinkageRate: currentBOM.totalShrinkageRate,
@@ -120,7 +129,7 @@ class BOMCubit extends Cubit<BOMState> {
           picks: currentBOM.picks,
           version: currentBOM.version,
           isActive: currentBOM.isActive,
-          bomDetails: updatedDetails, // <--- List mới
+          bomDetails: updatedDetails, // <--- List chi tiết mới
         );
 
         // Gọi API Update (Backend sẽ tính toán lại)
@@ -130,8 +139,9 @@ class BOMCubit extends Cubit<BOMState> {
         await loadBOMDetailView(currentBOM.bomId);
         
       } catch (e) {
-        emit(BOMError("Failed to save detail: $e"));
-        // Re-emit state cũ nếu lỗi
+        final msg = e.toString().replaceAll("Exception: ", "");
+        emit(BOMError("Lỗi lưu chi tiết: $msg"));
+        // Re-emit state cũ nếu lỗi để UI không bị treo ở Loading
         emit(BOMDetailViewLoaded(currentBOM)); 
       }
     }
@@ -148,11 +158,14 @@ class BOMCubit extends Cubit<BOMState> {
         List<BOMDetail> updatedDetails = List.from(currentBOM.bomDetails);
         updatedDetails.removeWhere((d) => d.detailId == detailId);
 
+        // [SỬA ĐỔI QUAN TRỌNG] Cập nhật constructor theo Model mới
         final newBOMHeader = BOMHeader(
           bomId: currentBOM.bomId,
           productId: currentBOM.productId,
-          bomCode: currentBOM.bomCode,
-          bomName: currentBOM.bomName,
+          
+          applicableYear: currentBOM.applicableYear, // <--- Field mới
+          displayName: currentBOM.displayName,
+          
           targetWeightGm: currentBOM.targetWeightGm,
           totalScrapRate: currentBOM.totalScrapRate,
           totalShrinkageRate: currentBOM.totalShrinkageRate,
@@ -167,7 +180,7 @@ class BOMCubit extends Cubit<BOMState> {
         await loadBOMDetailView(bomId);
 
       } catch (e) {
-        emit(BOMError("Failed to delete: $e"));
+        emit(BOMError("Lỗi xóa chi tiết: $e"));
         emit(BOMDetailViewLoaded(currentBOM));
       }
     }

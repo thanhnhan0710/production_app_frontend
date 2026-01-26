@@ -6,13 +6,18 @@ import 'package:production_app_frontend/l10n/app_localizations.dart';
 import '../../domain/bom_model.dart';
 import '../../../material/domain/material_model.dart';
 
-// Cubit - [FIX] Thêm 'as mat_bloc' để tránh trùng tên MaterialState
+// Cubit - Sử dụng alias mat_bloc
 import '../../../material/presentation/bloc/material_cubit.dart' as mat_bloc;
 
 class MaterialDetailDialog extends StatefulWidget {
   final BOMDetail? detail;
+  final int bomId; // [FIX 1] Thêm tham số bomId bắt buộc
 
-  const MaterialDetailDialog({super.key, this.detail});
+  const MaterialDetailDialog({
+    super.key, 
+    this.detail, 
+    required this.bomId
+  });
 
   @override
   State<MaterialDetailDialog> createState() => _MaterialDetailDialogState();
@@ -35,7 +40,6 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
   @override
   void initState() {
     super.initState();
-    // [FIX] Sử dụng prefix mat_bloc
     context.read<mat_bloc.MaterialCubit>().loadMaterials();
 
     if (widget.detail != null) {
@@ -53,9 +57,6 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // Nếu chưa có l10n key thì dùng text cứng hoặc check null
-    final loc = AppLocalizations.of(context); 
-
     return AlertDialog(
       title: Text(widget.detail == null ? "Add Component" : "Edit Component"),
       content: SizedBox(
@@ -76,11 +77,9 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 const SizedBox(height: 12),
 
                 // 2. Material Select
-                // [FIX] Sử dụng prefix mat_bloc cho BlocBuilder và State
                 BlocBuilder<mat_bloc.MaterialCubit, mat_bloc.MaterialState>(
                   builder: (context, state) {
                     List<MaterialModel> materials = [];
-                    // [FIX] Kiểm tra state với prefix
                     if (state is mat_bloc.MaterialLoaded) {
                       materials = state.materials;
                     }
@@ -95,7 +94,7 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                       onChanged: (val) {
                         setState(() {
                           _selectedMaterialId = val;
-                          // Tự động điền tên sợi vào ô Yarn Type nếu chọn material
+                          // Auto-fill tên sợi
                           final mat = materials.firstWhere((element) => element.id == val);
                           if (_yarnTypeCtrl.text.isEmpty) {
                             _yarnTypeCtrl.text = "${mat.materialCode} ${mat.specDenier ?? ''}";
@@ -108,7 +107,7 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 ),
                 const SizedBox(height: 12),
 
-                // 3. Yarn Name (Tên hiển thị/Màu)
+                // 3. Yarn Name
                 TextFormField(
                   controller: _yarnTypeCtrl,
                   decoration: const InputDecoration(labelText: "Yarn Name / Code", border: OutlineInputBorder()),
@@ -116,7 +115,7 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 ),
                 const SizedBox(height: 12),
 
-                // 4. Tech Specs Row 1
+                // 4. Tech Specs
                 Row(
                   children: [
                     Expanded(
@@ -138,7 +137,6 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 ),
                 const SizedBox(height: 12),
 
-                // 5. Tech Specs Row 2
                 Row(
                   children: [
                     Expanded(
@@ -160,7 +158,6 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 ),
                 const SizedBox(height: 12),
 
-                // 6. Note
                 TextFormField(
                   controller: _noteCtrl,
                   decoration: const InputDecoration(labelText: "Note", border: OutlineInputBorder()),
@@ -180,8 +177,9 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
             if (_formKey.currentState!.validate()) {
               final newDetail = BOMDetail(
                 detailId: widget.detail?.detailId ?? 0,
-                bomId: widget.detail?.bomId ?? 0,
-                materialId: _selectedMaterialId ?? 1, // Default ID nếu null
+                // [FIX 2] Sử dụng widget.bomId được truyền vào thay vì lấy từ detail (vì detail null khi tạo mới)
+                bomId: widget.bomId, 
+                materialId: _selectedMaterialId ?? 1,
                 componentType: _selectedType,
                 threads: int.tryParse(_threadsCtrl.text) ?? 0,
                 yarnTypeName: _yarnTypeCtrl.text,
@@ -189,6 +187,8 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 crossweaveRate: double.tryParse(_crossweaveCtrl.text) ?? 0.0,
                 actualLengthCm: double.tryParse(_actualLenCtrl.text) ?? 0.0,
                 note: _noteCtrl.text,
+                // Các trường computed để 0
+                yarnDtex: 0, weightPerYarnGm: 0, actualWeightCal: 0, weightPercentage: 0, bomGm: 0,
               );
               Navigator.pop(context, newDetail);
             }

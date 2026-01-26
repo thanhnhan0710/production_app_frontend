@@ -1,40 +1,46 @@
-
 enum BOMComponentType {
   ground,
   grdMarker,
   edge,
   binder,
   stuffer,
+  stufferMaker,
+  lock,
   catchCord,
   filling,
   secondFilling;
 
-  // Helper để map từ String (Backend) sang Enum (Frontend)
+  // Helper: Backend trả về "GROUND" -> Convert sang Enum
   static BOMComponentType fromString(String value) {
-    switch (value) {
-      case "Ground": return BOMComponentType.ground;
-      case "Grd. Marker": return BOMComponentType.grdMarker;
-      case "Edge": return BOMComponentType.edge;
-      case "Binder": return BOMComponentType.binder;
-      case "Stuffer": return BOMComponentType.stuffer;
-      case "Catch cord": return BOMComponentType.catchCord;
-      case "Filling": return BOMComponentType.filling;
-      case "2nd Filling": return BOMComponentType.secondFilling;
-      default: return BOMComponentType.ground; // Fallback
+    // Chuyển về chữ hoa để so sánh cho chắc chắn
+    switch (value.toUpperCase()) {
+      case "GROUND": return BOMComponentType.ground;
+      case "GRD. MARKER": return BOMComponentType.grdMarker;
+      case "EDGE": return BOMComponentType.edge;
+      case "BINDER": return BOMComponentType.binder;
+      case "STUFFER": return BOMComponentType.stuffer;
+      case "STUFFER MAKER": return BOMComponentType.stufferMaker;
+      case "LOCK": return BOMComponentType.lock;
+      case "CATCH CORD": return BOMComponentType.catchCord;
+      case "FILLING": return BOMComponentType.filling;
+      case "2ND FILLING": return BOMComponentType.secondFilling;
+      default: return BOMComponentType.ground;
     }
   }
 
-  // Helper để map từ Enum (Frontend) sang String (Backend) để gửi đi
+  // Helper: Gửi lên Backend -> Trả về "GROUND"
   String get value {
     switch (this) {
-      case BOMComponentType.ground: return "Ground";
-      case BOMComponentType.grdMarker: return "Grd. Marker";
-      case BOMComponentType.edge: return "Edge";
-      case BOMComponentType.binder: return "Binder";
-      case BOMComponentType.stuffer: return "Stuffer";
-      case BOMComponentType.catchCord: return "Catch cord";
-      case BOMComponentType.filling: return "Filling";
-      case BOMComponentType.secondFilling: return "2nd Filling";
+      case BOMComponentType.ground: return "GROUND";
+      case BOMComponentType.grdMarker: return "GRD. MARKER";
+      case BOMComponentType.edge: return "EDGE";
+      case BOMComponentType.binder: return "BINDER";
+      case BOMComponentType.stuffer: return "STUFFER";
+      case BOMComponentType.stufferMaker: return "STUFFER MAKER";
+      case BOMComponentType.lock: return "LOCK";
+      case BOMComponentType.catchCord: return "CATCH CORD";
+      case BOMComponentType.filling: return "FILLING";
+      case BOMComponentType.secondFilling: return "2ND FILLING";
     }
   }
 }
@@ -42,8 +48,12 @@ enum BOMComponentType {
 class BOMHeader {
   final int bomId;
   final int productId;
-  final String bomCode;
-  final String bomName;
+  
+  // [THAY ĐỔI] Thay Code/Name bằng Year
+  final int applicableYear; 
+  
+  // [THAY ĐỔI] Trường hiển thị từ Backend (computed_field: display_name)
+  final String? displayName; 
   
   // --- Thông số kỹ thuật chung ---
   final double targetWeightGm;      // target_weight_gm
@@ -62,8 +72,8 @@ class BOMHeader {
   BOMHeader({
     required this.bomId,
     required this.productId,
-    required this.bomCode,
-    required this.bomName,
+    required this.applicableYear, // Bắt buộc
+    this.displayName,
     required this.targetWeightGm,
     required this.totalScrapRate,
     required this.totalShrinkageRate,
@@ -84,8 +94,10 @@ class BOMHeader {
     return BOMHeader(
       bomId: json['bom_id'] ?? 0,
       productId: json['product_id'] ?? 0,
-      bomCode: json['bom_code'] ?? '',
-      bomName: json['bom_name'] ?? '',
+      
+      // Map trường năm và tên hiển thị
+      applicableYear: json['applicable_year'] ?? DateTime.now().year,
+      displayName: json['display_name'], // Backend trả về ví dụ: "BOM Năm 2026"
       
       targetWeightGm: (json['target_weight_gm'] ?? 0.0).toDouble(),
       totalScrapRate: (json['total_scrap_rate'] ?? 0.0).toDouble(),
@@ -106,15 +118,14 @@ class BOMHeader {
   Map<String, dynamic> toJson() {
     return {
       'product_id': productId,
-      'bom_code': bomCode,
-      'bom_name': bomName,
+      'applicable_year': applicableYear, // Gửi năm lên thay vì code
       'target_weight_gm': targetWeightGm,
       'total_scrap_rate': totalScrapRate,
       'total_shrinkage_rate': totalShrinkageRate,
       'width_behind_loom': widthBehindLoom,
       'picks': picks,
       'is_active': isActive,
-      // Gửi kèm danh sách chi tiết khi tạo/sửa (khớp với BOMHeaderCreate/Update)
+      // Gửi kèm danh sách chi tiết khi tạo/sửa
       'details': bomDetails.map((e) => e.toJson()).toList(),
     };
   }
@@ -189,10 +200,9 @@ class BOMDetail {
   }
 
   /// Map từ Object Dart -> JSON (Để gửi lên Backend)
-  /// Chỉ cần gửi các trường Input, Backend sẽ tự tính toán lại các trường Computed
   Map<String, dynamic> toJson() {
     return {
-      'detail_id': detailId, // Có thể cần khi update, nhưng create thì bỏ qua
+      'detail_id': detailId, 
       'material_id': materialId,
       'component_type': componentType.value, // Gửi string đúng định dạng
       'threads': threads,
@@ -227,7 +237,7 @@ class BOMDetail {
       twisted: twisted ?? this.twisted,
       crossweaveRate: crossweaveRate ?? this.crossweaveRate,
       actualLengthCm: actualLengthCm ?? this.actualLengthCm,
-      // Giữ nguyên các trường computed
+      // Giữ nguyên các trường computed (Vì copyWith thường dùng để user sửa input)
       yarnDtex: yarnDtex,
       weightPerYarnGm: weightPerYarnGm,
       actualWeightCal: actualWeightCal,
