@@ -1,4 +1,4 @@
-// D:\AppHeThong\production_app_frontend\lib\features\inventory\bom\presentation\screens\bom_detail_screen.dart
+// C:\Users\nhan_\Documents\production_app_frontend\lib\features\inventory\bom\presentation\screens\bom_detail_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -54,7 +54,7 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
       case BOMComponentType.stufferMaker: return Colors.blueGrey.shade400;
       case BOMComponentType.lock: return Colors.lightGreen.shade400;
       case BOMComponentType.catchCord: return Colors.teal;
-      }
+    }
   }
 
   // --- LOGIC: HIỂN THỊ DIALOG THÊM/SỬA ---
@@ -148,20 +148,18 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
               // --- 1. HEADER INFO ---
               _buildHeaderInfo(context, bom),
 
+              const Divider(height: 1, thickness: 1, color: Colors.grey),
+
               // --- 2. DETAILS LIST/TABLE ---
+              // [UPDATE] Full screen (Remove margins/box decoration)
               Expanded(
                 child: Container(
-                  margin: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
-                  ),
+                  color: Colors.white, // Nền trắng phẳng
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -176,6 +174,7 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFE3F2FD),
                                 foregroundColor: const Color(0xFF0055AA),
+                                elevation: 0,
                               ),
                             )
                           ],
@@ -204,7 +203,7 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
   // === 1. HEADER INFO WIDGET ===
   Widget _buildHeaderInfo(BuildContext context, BOMHeader bom) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       color: Colors.white,
       child: Column(
         children: [
@@ -221,14 +220,12 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)),
-                          // [UPDATE] Dùng applicableYear từ model mới
                           child: Text(
                             "Year ${bom.applicableYear}",
                             style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // [UPDATE] Dùng displayName từ model mới
                         Expanded(
                           child: Text(
                             bom.displayName ?? 'Production BOM', 
@@ -245,7 +242,7 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
                         if (state is ProductLoaded) {
                           final p = state.products.where((e) => e.id == bom.productId).firstOrNull;
                           if (p != null) {
-                            pName = p.itemCode; // Chỉ hiện ItemCode
+                            pName = p.itemCode;
                           }
                         }
                         return Text("Product Code: $pName", style: TextStyle(color: Colors.grey.shade600));
@@ -256,7 +253,7 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
               ),
               Expanded(
                 flex: 4,
-                child: Wrap( // Dùng Wrap để tránh overflow trên màn hình nhỏ
+                child: Wrap(
                   spacing: 20,
                   runSpacing: 10,
                   alignment: WrapAlignment.end,
@@ -288,7 +285,6 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
 
   // === 2. DESKTOP TABLE ===
   Widget _buildDesktopTable(List<BOMDetail> details, BOMHeader bom) {
-    // [UPDATE] Sort an toàn
     final sortedDetails = List<BOMDetail>.from(details)
       ..sort((a, b) => a.componentType.index.compareTo(b.componentType.index));
 
@@ -318,7 +314,6 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
             final typeColor = _getComponentColor(d.componentType);
             
             return DataRow(cells: [
-              // [FIX] Sử dụng .value thay vì .name
               DataCell(
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -364,7 +359,6 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
 
   // === 3. MOBILE LIST ===
   Widget _buildMobileList(List<BOMDetail> details, BOMHeader bom) {
-    // [UPDATE] Sort an toàn
     final sortedDetails = List<BOMDetail>.from(details)
       ..sort((a, b) => a.componentType.index.compareTo(b.componentType.index));
 
@@ -387,7 +381,6 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
                 Expanded(
                   child: Text(d.yarnTypeName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
-                // [FIX] Hiển thị Type bằng chip màu
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(color: typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
@@ -426,42 +419,78 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
     );
   }
 
-  // === 4. FOOTER SUMMARY ===
+  // === 4. FOOTER SUMMARY (UPDATED) ===
   Widget _buildFooterSummary(BOMHeader bom) {
-    // Tính tổng bomGm từ danh sách chi tiết
-    double totalBOM = bom.bomDetails.fold(0.0, (sum, item) => sum + item.bomGm);
+    // 1. Tính toán các tổng
+    double totalBOM = 0.0;
+    double totalWeightTheo = 0.0;
+    double totalActualCal = 0.0;
+
+    for (var d in bom.bomDetails) {
+      totalBOM += d.bomGm;
+      totalWeightTheo += d.weightPerYarnGm; // Tổng trọng lượng lý thuyết
+      totalActualCal += d.actualWeightCal;  // Tổng trọng lượng thực tế tính toán
+    }
+
     double ratio = bom.targetWeightGm > 0 ? (totalBOM / bom.targetWeightGm) : 0;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: Colors.black12))
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
-          const Text("Calculated Total:", style: TextStyle(color: Colors.grey)),
-          Column(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                "${_numberFormat.format(totalBOM)} g/m",
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
-              ),
-              if (bom.targetWeightGm > 0)
-                Text(
-                  "vs Target: ${_numberFormat.format(bom.targetWeightGm)} (${_percentFormat.format(ratio)})",
-                  style: TextStyle(
-                    fontSize: 12, 
-                    fontWeight: FontWeight.bold,
-                    color: totalBOM > bom.targetWeightGm ? Colors.red : Colors.green
+              // Cột 1: Total Actual Cal
+              _buildSummaryItem("Total Actual Cal", totalActualCal, Colors.black87),
+
+              // Cột 2: Total Weight (Theo)
+              _buildSummaryItem("Total Weight (Theo)", totalWeightTheo, Colors.black87),
+
+              // Cột 3: Total BOM (Final)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text("Calculated BOM:", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text(
+                    "${_numberFormat.format(totalBOM)} g/m",
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
                   ),
-                )
+                  if (bom.targetWeightGm > 0)
+                    Text(
+                      "vs Target: ${_numberFormat.format(bom.targetWeightGm)} (${_percentFormat.format(ratio)})",
+                      style: TextStyle(
+                        fontSize: 12, 
+                        fontWeight: FontWeight.bold,
+                        color: totalBOM > bom.targetWeightGm ? Colors.red : Colors.green
+                      ),
+                    )
+                ],
+              )
             ],
-          )
+          ),
         ],
       ),
+    );
+  }
+
+  // Widget con hỗ trợ hiển thị item trong footer
+  Widget _buildSummaryItem(String label, double value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        const SizedBox(height: 4),
+        Text(
+          "${_numberFormat.format(value)} g/m",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
+        ),
+      ],
     );
   }
 }
