@@ -37,6 +37,9 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
   final _batchCtrl = TextEditingController();
   final _originCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
+  
+  // [MỚI] Controller cho Location
+  final _locationCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -46,14 +49,12 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
     // [GIỮ NGUYÊN] Tự động điền Thực nhận = PO khi nhập liệu (Chỉ khi thêm mới)
     if (widget.detail == null) {
       _poQtyKgCtrl.addListener(() {
-        // Nếu người dùng nhập vào ô PO Kg, tự động copy sang Thực nhận Kg (nếu chưa nhập)
         if (_poQtyKgCtrl.text.isNotEmpty && (_receivedQtyKgCtrl.text == "0" || _receivedQtyKgCtrl.text.isEmpty)) {
           _receivedQtyKgCtrl.text = _poQtyKgCtrl.text;
         }
       });
 
       _poQtyConesCtrl.addListener(() {
-         // Tương tự cho Cones
          if (_poQtyConesCtrl.text.isNotEmpty && (_receivedQtyConesCtrl.text == "0" || _receivedQtyConesCtrl.text.isEmpty)) {
            _receivedQtyConesCtrl.text = _poQtyConesCtrl.text;
          }
@@ -123,21 +124,19 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
       _batchCtrl.text = widget.detail!.supplierBatchNo ?? "";
       _originCtrl.text = widget.detail!.originCountry ?? "";
       _noteCtrl.text = widget.detail!.note ?? "";
+      
+      // [MỚI] Load dữ liệu Location
+      _locationCtrl.text = widget.detail!.location ?? "";
     }
   }
 
-  // [CẬP NHẬT] Hàm xử lý khi chọn vật tư
   void _onMaterialSelected(ReceiptMaterial? val) {
     setState(() {
       _selectedMaterial = val;
-      
-      // Reset tất cả về 0 để người dùng tự nhập (Theo yêu cầu)
       _poQtyKgCtrl.text = "0";
       _poQtyConesCtrl.text = "0";
       _receivedQtyKgCtrl.text = "0";
       _receivedQtyConesCtrl.text = "0";
-      
-      // Không còn logic tự động điền số lượng từ PO nữa
     });
   }
 
@@ -187,7 +186,7 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 
                 const SizedBox(height: 16),
                 
-                // PO Quantities (Người dùng nhập tay)
+                // PO Quantities
                 Row(
                   children: [
                     Expanded(
@@ -209,7 +208,7 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 ),
                 const SizedBox(height: 16),
 
-                // Actual Quantities (Tự động copy từ PO nếu chưa nhập, hoặc nhập tay)
+                // Actual Quantities
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -277,7 +276,7 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                           labelText: l10n.supplierBatch, 
                           prefixIcon: const Icon(Icons.qr_code_2),
                           border: const OutlineInputBorder(),
-                          helperText: "Batch will be auto-created",
+                          helperText: "Batch auto-created",
                           helperStyle: const TextStyle(fontSize: 10, color: Colors.blueGrey),
                         ),
                       ),
@@ -286,17 +285,39 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 ),
                 const SizedBox(height: 12),
                 
-                TextFormField(
-                  controller: _originCtrl,
-                  decoration: const InputDecoration(
-                    labelText: "Origin (Xuất xứ)", 
-                    prefixIcon: Icon(Icons.public),
-                    border: OutlineInputBorder(),
-                    hintText: "VD: Vietnam, China...",
-                  ),
+                Row(
+                  children: [
+                    // [MỚI] Form nhập Location
+                    Expanded(
+                      flex: 1,
+                      child: TextFormField(
+                        controller: _locationCtrl,
+                        decoration: const InputDecoration(
+                          labelText: "Location", 
+                          prefixIcon: Icon(Icons.place),
+                          border: OutlineInputBorder(),
+                          hintText: "A-01-01",
+                        ),
+                        maxLength: 10,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        controller: _originCtrl,
+                        decoration: const InputDecoration(
+                          labelText: "Origin (Xuất xứ)", 
+                          prefixIcon: Icon(Icons.public),
+                          border: OutlineInputBorder(),
+                          hintText: "VD: Vietnam, China...",
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _noteCtrl,
                   decoration: InputDecoration(labelText: l10n.note, border: const OutlineInputBorder()),
@@ -327,6 +348,8 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 supplierBatchNo: _batchCtrl.text,
                 originCountry: _originCtrl.text,
                 note: _noteCtrl.text,
+                // [MỚI] Lưu location vào object chi tiết
+                location: _locationCtrl.text, 
               );
               Navigator.pop(context, newDetail);
             }

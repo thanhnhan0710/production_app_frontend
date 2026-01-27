@@ -71,7 +71,6 @@ class _BatchScreenState extends State<BatchScreen> {
     if (material != null) {
       return material.materialCode;
     }
-    // [FIX 1] Truyền int thay vì String (materialId.toString())
     return loc.unknownMaterial(materialId);
   }
 
@@ -266,6 +265,8 @@ class _BatchScreenState extends State<BatchScreen> {
                       DataColumn(label: Text(loc.internalCode, style: _headerStyle)),
                       DataColumn(label: Text(loc.supplierBatch, style: _headerStyle)),
                       DataColumn(label: Text(loc.materialLabel.toUpperCase(), style: _headerStyle)),
+                      // [MỚI] Cột Location
+                      DataColumn(label: Text("LOCATION", style: _headerStyle)), 
                       DataColumn(label: Text(loc.originCountry, style: _headerStyle)),
                       DataColumn(label: Text(loc.qcStatus, style: _headerStyle)),
                       DataColumn(label: Text(loc.qcNote, style: _headerStyle)), 
@@ -283,6 +284,15 @@ class _BatchScreenState extends State<BatchScreen> {
                             _getMaterialName(batch.materialId, context),
                             style: const TextStyle(fontWeight: FontWeight.w500),
                             overflow: TextOverflow.ellipsis,
+                          )),
+                          // [MỚI] Dữ liệu Location
+                          DataCell(Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.place, size: 16, color: Colors.grey.shade500),
+                              const SizedBox(width: 4),
+                              Text(batch.location ?? "--", style: const TextStyle(fontWeight: FontWeight.w500)),
+                            ],
                           )),
                           DataCell(Text(batch.originCountry ?? "--")),
                           DataCell(_StatusBadge(status: batch.qcStatus)),
@@ -403,6 +413,20 @@ class _BatchScreenState extends State<BatchScreen> {
                               children: [
                                 Text(batch.internalBatchCode, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)),
                                 const SizedBox(height: 4),
+                                
+                                // [MỚI] Hiển thị Location trên Mobile
+                                if (batch.location != null && batch.location!.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 4),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.place, size: 14, color: Colors.orange.shade700),
+                                        const SizedBox(width: 4),
+                                        Text("Loc: ${batch.location}", style: TextStyle(fontSize: 12, color: Colors.orange.shade800, fontWeight: FontWeight.w600)),
+                                      ],
+                                    ),
+                                  ),
+
                                 if (batch.originCountry != null)
                                   Padding(
                                     padding: const EdgeInsets.only(bottom: 4),
@@ -454,7 +478,6 @@ class _BatchScreenState extends State<BatchScreen> {
                                   if (val == 'delete') _confirmDelete(context, batch);
                                 },
                                 itemBuilder: (ctx) => [
-                                  // [FIX 2] Sử dụng "View Details" thay vì loc.viewDetails nếu key đó không tồn tại
                                   const PopupMenuItem(value: 'view', child: Row(children: [Icon(Icons.visibility, size: 18, color: Colors.blue), SizedBox(width: 8), Text("View Details")])),
                                   PopupMenuItem(value: 'edit', child: Row(children: [const Icon(Icons.edit, size: 18), const SizedBox(width: 8), Text(loc.edit)])),
                                   PopupMenuItem(value: 'delete', child: Row(children: [const Icon(Icons.delete, size: 18, color: Colors.red), const SizedBox(width: 8), Text(loc.delete)])),
@@ -539,6 +562,9 @@ class _BatchScreenState extends State<BatchScreen> {
     final qcNoteCtrl = TextEditingController(text: batch?.qcNote ?? '');
     final originCtrl = TextEditingController(text: batch?.originCountry ?? '');
     
+    // [MỚI] Controller cho Location
+    final locationCtrl = TextEditingController(text: batch?.location ?? '');
+    
     final receiptIdCtrl = TextEditingController(text: batch?.receiptDetailId?.toString() ?? '');
 
     bool isActive = batch?.isActive ?? true;
@@ -587,7 +613,7 @@ class _BatchScreenState extends State<BatchScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Hiển thị Receipt Number nếu có (Chỉ xem)
+                      // ... (Phần hiển thị Receipt Link giữ nguyên)
                       if (batch?.receiptNumber != null)
                         Container(
                           margin: const EdgeInsets.only(bottom: 16),
@@ -668,6 +694,16 @@ class _BatchScreenState extends State<BatchScreen> {
                         ],
                       ),
                       
+                      const SizedBox(height: 16),
+
+                      // [MỚI] Form nhập Location
+                      TextFormField(
+                        controller: locationCtrl,
+                        decoration: _inputDeco("Location / Bin Code").copyWith(
+                          prefixIcon: const Icon(Icons.place, color: Colors.grey),
+                        ),
+                        maxLength: 10, // Giới hạn 10 ký tự như backend
+                      ),
                       const SizedBox(height: 16),
 
                       Row(
@@ -766,6 +802,8 @@ class _BatchScreenState extends State<BatchScreen> {
                       note: noteCtrl.text,
                       receiptDetailId: int.tryParse(receiptIdCtrl.text),
                       originCountry: originCtrl.text, 
+                      // [MỚI] Thêm location khi lưu
+                      location: locationCtrl.text,
                       isActive: isActive,
                     );
                     

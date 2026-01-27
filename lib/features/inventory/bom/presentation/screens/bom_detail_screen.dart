@@ -27,13 +27,12 @@ class BOMDetailScreen extends StatefulWidget {
 }
 
 class _BOMDetailScreenState extends State<BOMDetailScreen> {
-  final _numberFormat = NumberFormat("#,##0.00");
-  final _percentFormat = NumberFormat("#,##0.00'%'");
+  final _numberFormat = NumberFormat("#,##0.000");
+  final _percentFormat = NumberFormat("#,##0.0'%'");
 
   @override
   void initState() {
     super.initState();
-    // Load dữ liệu ban đầu
     if (widget.bomId != null) {
       context.read<BOMCubit>().loadBOMDetailView(widget.bomId!);
     }
@@ -41,7 +40,6 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
     context.read<ProductCubit>().loadProducts();
   }
 
-  // --- HELPER: MÀU SẮC CHO TỪNG LOẠI COMPONENT ---
   Color _getComponentColor(BOMComponentType type) {
     switch (type) {
       case BOMComponentType.ground: return Colors.blue.shade700;
@@ -57,24 +55,21 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
     }
   }
 
-  // --- LOGIC: HIỂN THỊ DIALOG THÊM/SỬA ---
   void _showAddEditDetailDialog(BuildContext context, BOMDetail? detail, BOMHeader header) async {
     final BOMDetail? result = await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => MaterialDetailDialog(
         detail: detail, 
-        bomId: header.bomId, // Truyền bomId chính xác
+        bomId: header.bomId,
       ),
     );
 
     if (result != null && mounted) {
-      // Gọi Cubit để lưu
       context.read<BOMCubit>().saveBOMDetail(result, detail != null);
     }
   }
 
-  // --- LOGIC: XÓA ---
   void _confirmDeleteDetail(BuildContext context, BOMDetail detail, int bomId) {
     showDialog(
       context: context,
@@ -101,7 +96,6 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ignore: unused_local_variable
     final loc = AppLocalizations.of(context);
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
@@ -145,53 +139,50 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // --- 1. HEADER INFO ---
               _buildHeaderInfo(context, bom),
-
               const Divider(height: 1, thickness: 1, color: Colors.grey),
-
-              // --- 2. DETAILS LIST/TABLE ---
-              // [UPDATE] Full screen (Remove margins/box decoration)
+              
+              // [SELECTION AREA] Cho phép copy text trong bảng
               Expanded(
-                child: Container(
-                  color: Colors.white, // Nền trắng phẳng
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              "Components (${bom.bomDetails.length})",
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
-                            ),
-                            ElevatedButton.icon(
-                              onPressed: () => _showAddEditDetailDialog(context, null, bom!),
-                              icon: const Icon(Icons.add, size: 16),
-                              label: const Text("Add Component"),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFE3F2FD),
-                                foregroundColor: const Color(0xFF0055AA),
-                                elevation: 0,
+                child: SelectionArea( 
+                  child: Container(
+                    color: Colors.white,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "Components (${bom.bomDetails.length})",
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
                               ),
-                            )
-                          ],
+                              ElevatedButton.icon(
+                                onPressed: () => _showAddEditDetailDialog(context, null, bom!),
+                                icon: const Icon(Icons.add, size: 16),
+                                label: const Text("Add Component"),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFE3F2FD),
+                                  foregroundColor: const Color(0xFF0055AA),
+                                  elevation: 0,
+                                ),
+                              )
+                            ],
+                          ),
                         ),
-                      ),
-                      const Divider(height: 1),
-                      Expanded(
-                        child: isDesktop
-                            ? _buildDesktopTable(bom.bomDetails, bom)
-                            : _buildMobileList(bom.bomDetails, bom),
-                      ),
-                    ],
+                        const Divider(height: 1),
+                        Expanded(
+                          child: isDesktop
+                              ? _buildDesktopTable(bom.bomDetails, bom)
+                              : _buildMobileList(bom.bomDetails, bom),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-
-              // --- 3. FOOTER SUMMARY ---
               _buildFooterSummary(bom),
             ],
           );
@@ -200,7 +191,6 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
     );
   }
 
-  // === 1. HEADER INFO WIDGET ===
   Widget _buildHeaderInfo(BuildContext context, BOMHeader bom) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -241,9 +231,7 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
                         String pName = "PID: ${bom.productId}";
                         if (state is ProductLoaded) {
                           final p = state.products.where((e) => e.id == bom.productId).firstOrNull;
-                          if (p != null) {
-                            pName = p.itemCode;
-                          }
+                          if (p != null) pName = p.itemCode;
                         }
                         return Text("Product Code: $pName", style: TextStyle(color: Colors.grey.shade600));
                       },
@@ -283,81 +271,80 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
     );
   }
 
-  // === 2. DESKTOP TABLE ===
+  // [FIX] Sử dụng LayoutBuilder + ConstrainedBox để ép full width
   Widget _buildDesktopTable(List<BOMDetail> details, BOMHeader bom) {
     final sortedDetails = List<BOMDetail>.from(details)
       ..sort((a, b) => a.componentType.index.compareTo(b.componentType.index));
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.vertical,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingRowColor: MaterialStateProperty.all(Colors.grey.shade50),
-          columnSpacing: 24,
-          dataRowMinHeight: 50,
-          dataRowMaxHeight: 60,
-          columns: const [
-            DataColumn(label: Text("Type", style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text("Material / Yarn", style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text("Threads", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-            DataColumn(label: Text("Dtex", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-            DataColumn(label: Text("Twist", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-            DataColumn(label: Text("Actual Len (cm)", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-            DataColumn(label: Text("Actual (g/m) cal", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-            DataColumn(label: Text("Weight (g/m)", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-            DataColumn(label: Text("% Ratio", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-            DataColumn(label: Text("BOM (g/m)", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)), numeric: true),
-            DataColumn(label: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold))),
-          ],
-          rows: sortedDetails.map((d) {
-            final typeColor = _getComponentColor(d.componentType);
-            
-            return DataRow(cells: [
-              DataCell(
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: typeColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: typeColor.withOpacity(0.3))
-                  ),
-                  child: Text(
-                    d.componentType.value, 
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: typeColor)
-                  ),
-                )
-              ),
-              DataCell(Text(d.yarnTypeName, style: const TextStyle(fontWeight: FontWeight.w500))),
-              DataCell(Text("${d.threads}")),
-              DataCell(Text(d.yarnDtex.toStringAsFixed(0))),
-              DataCell(Text(d.twisted.toString())),
-              DataCell(Text(d.actualLengthCm.toString())),
-              DataCell(Text(d.actualWeightCal.toString())),
-              DataCell(Text(d.weightPerYarnGm.toString())),
-              DataCell(Text(_percentFormat.format(d.weightPercentage))),
-              DataCell(Text(_numberFormat.format(d.bomGm), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))),
-              DataCell(Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit, size: 18, color: Colors.orange),
-                    onPressed: () => _showAddEditDetailDialog(context, d, bom),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                    onPressed: () => _confirmDeleteDetail(context, d, bom.bomId),
-                  ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          scrollDirection: Axis.vertical,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth), // Ép chiều rộng tối thiểu
+              child: DataTable(
+                headingRowColor: MaterialStateProperty.all(Colors.grey.shade50),
+                columnSpacing: 24,
+                dataRowMinHeight: 50,
+                dataRowMaxHeight: 60,
+                columns: const [
+                  DataColumn(label: Text("Type", style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text("Material / Yarn", style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text("Threads", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                  DataColumn(label: Text("Dtex", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                  DataColumn(label: Text("Twist", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                  DataColumn(label: Text("Crossweave", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                  DataColumn(label: Text("Actual Len", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                  DataColumn(label: Text("Actual (g/m)", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                  DataColumn(label: Text("Weight (g/m)", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                  DataColumn(label: Text("% Ratio", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                  DataColumn(label: Text("BOM (g/m)", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)), numeric: true),
+                  DataColumn(label: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold))),
                 ],
-              )),
-            ]);
-          }).toList(),
-        ),
-      ),
+                rows: sortedDetails.map((d) {
+                  final typeColor = _getComponentColor(d.componentType);
+                  
+                  return DataRow(cells: [
+                    DataCell(Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: typeColor.withOpacity(0.3))),
+                      child: Text(d.componentType.value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: typeColor)),
+                    )),
+                    DataCell(Text(d.yarnTypeName, style: const TextStyle(fontWeight: FontWeight.w500))),
+                    DataCell(Text("${d.threads}")),
+                    DataCell(Text(d.yarnDtex.toStringAsFixed(0))),
+                    DataCell(Text(d.twisted.toString())),
+                    DataCell(Text(d.crossweaveRate.toString())),
+                    DataCell(Text(d.actualLengthCm.toString())),
+                    DataCell(Text(d.actualWeightCal.toString())),
+                    DataCell(Text(d.weightPerYarnGm.toString())),
+                    DataCell(Text(_percentFormat.format(d.weightPercentage))),
+                    DataCell(Text(_numberFormat.format(d.bomGm), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))),
+                    DataCell(Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, size: 18, color: Colors.orange),
+                          onPressed: () => _showAddEditDetailDialog(context, d, bom),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                          onPressed: () => _confirmDeleteDetail(context, d, bom.bomId),
+                        ),
+                      ],
+                    )),
+                  ]);
+                }).toList(),
+              ),
+            ),
+          ),
+        );
+      }
     );
   }
 
-  // === 3. MOBILE LIST ===
   Widget _buildMobileList(List<BOMDetail> details, BOMHeader bom) {
     final sortedDetails = List<BOMDetail>.from(details)
       ..sort((a, b) => a.componentType.index.compareTo(b.componentType.index));
@@ -378,9 +365,7 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(d.yarnTypeName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                ),
+                Expanded(child: Text(d.yarnTypeName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14))),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(color: typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
@@ -397,7 +382,7 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Len: ${d.actualLengthCm} cm"),
+                    Text("Act: ${d.actualWeightCal.toStringAsFixed(2)} g/m"),
                     Text("BOM: ${_numberFormat.format(d.bomGm)} g/m", style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
                   ],
                 )
@@ -419,17 +404,15 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
     );
   }
 
-  // === 4. FOOTER SUMMARY (UPDATED) ===
   Widget _buildFooterSummary(BOMHeader bom) {
-    // 1. Tính toán các tổng
     double totalBOM = 0.0;
     double totalWeightTheo = 0.0;
     double totalActualCal = 0.0;
 
     for (var d in bom.bomDetails) {
       totalBOM += d.bomGm;
-      totalWeightTheo += d.weightPerYarnGm; // Tổng trọng lượng lý thuyết
-      totalActualCal += d.actualWeightCal;  // Tổng trọng lượng thực tế tính toán
+      totalWeightTheo += d.weightPerYarnGm; 
+      totalActualCal += d.actualWeightCal; 
     }
 
     double ratio = bom.targetWeightGm > 0 ? (totalBOM / bom.targetWeightGm) : 0;
@@ -446,13 +429,8 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Cột 1: Total Actual Cal
               _buildSummaryItem("Total Actual Cal", totalActualCal, Colors.black87),
-
-              // Cột 2: Total Weight (Theo)
-              _buildSummaryItem("Total Weight (Theo)", totalWeightTheo, Colors.black87),
-
-              // Cột 3: Total BOM (Final)
+              _buildSummaryItem("Total Weight", totalWeightTheo, Colors.black87),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -479,7 +457,6 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
     );
   }
 
-  // Widget con hỗ trợ hiển thị item trong footer
   Widget _buildSummaryItem(String label, double value, Color color) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -6,6 +6,10 @@ class Batch {
   final String? manufactureDate;
   final String? expiryDate;
   final String? originCountry;
+  
+  // [MỚI] Vị trí kho
+  final String? location;
+
   final String qcStatus;
   final String? qcNote;
   final String? note;
@@ -13,7 +17,7 @@ class Batch {
   final int? receiptDetailId;
   final String? createdAt;
   
-  // [MỚI] Số phiếu nhập
+  // Số phiếu nhập
   final String? receiptNumber;
 
   Batch({
@@ -24,6 +28,7 @@ class Batch {
     this.manufactureDate,
     this.expiryDate,
     this.originCountry,
+    this.location, // [MỚI]
     this.qcStatus = 'Pending',
     this.qcNote,
     this.note,
@@ -42,13 +47,14 @@ class Batch {
       manufactureDate: json['manufacture_date'],
       expiryDate: json['expiry_date'],
       originCountry: json['origin_country'],
+      // [MỚI] Map location từ JSON
+      location: json['location'],
       qcStatus: json['qc_status'] ?? 'Pending',
       qcNote: json['qc_note'],
       note: json['note'],
       isActive: json['is_active'] ?? true,
       receiptDetailId: json['receipt_detail_id'],
       createdAt: json['created_at'],
-      // [MỚI] Map receipt_number
       receiptNumber: json['receipt_number'],
     );
   }
@@ -66,10 +72,51 @@ class Batch {
     if (manufactureDate != null) data['manufacture_date'] = manufactureDate;
     if (expiryDate != null) data['expiry_date'] = expiryDate;
     if (originCountry != null) data['origin_country'] = originCountry;
+    
+    // [MỚI] Thêm location vào JSON gửi đi
+    if (location != null) data['location'] = location;
+    
     if (qcNote != null) data['qc_note'] = qcNote;
     if (note != null) data['note'] = note;
     if (receiptDetailId != null) data['receipt_detail_id'] = receiptDetailId;
 
     return data;
+  }
+  
+  // Helper để copy object khi cần update 1 vài trường (Optional, nhưng rất hữu ích trong Flutter Bloc)
+  Batch copyWith({
+    int? batchId,
+    String? internalBatchCode,
+    String? supplierBatchNo,
+    int? materialId,
+    String? manufactureDate,
+    String? expiryDate,
+    String? originCountry,
+    String? location,
+    String? qcStatus,
+    String? qcNote,
+    String? note,
+    bool? isActive,
+    int? receiptDetailId,
+    String? createdAt,
+    String? receiptNumber,
+  }) {
+    return Batch(
+      batchId: batchId ?? this.batchId,
+      internalBatchCode: internalBatchCode ?? this.internalBatchCode,
+      supplierBatchNo: supplierBatchNo ?? this.supplierBatchNo,
+      materialId: materialId ?? this.materialId,
+      manufactureDate: manufactureDate ?? this.manufactureDate,
+      expiryDate: expiryDate ?? this.expiryDate,
+      originCountry: originCountry ?? this.originCountry,
+      location: location ?? this.location,
+      qcStatus: qcStatus ?? this.qcStatus,
+      qcNote: qcNote ?? this.qcNote,
+      note: note ?? this.note,
+      isActive: isActive ?? this.isActive,
+      receiptDetailId: receiptDetailId ?? this.receiptDetailId,
+      createdAt: createdAt ?? this.createdAt,
+      receiptNumber: receiptNumber ?? this.receiptNumber,
+    );
   }
 }

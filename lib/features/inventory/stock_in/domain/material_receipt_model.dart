@@ -85,6 +85,9 @@ class MaterialReceiptDetail {
   // [MỚI] Thêm trường Xuất xứ
   final String? originCountry;
   
+  // [FIX] Thêm trường Location để sửa lỗi UI
+  final String? location;
+  
   final String? note;
 
   MaterialReceiptDetail({
@@ -97,7 +100,8 @@ class MaterialReceiptDetail {
     this.receivedQuantityCones = 0,
     this.numberOfPallets = 0,
     this.supplierBatchNo,
-    this.originCountry, // [MỚI]
+    this.originCountry, 
+    this.location, // [FIX] Thêm vào constructor
     this.note,
   });
 
@@ -113,7 +117,8 @@ class MaterialReceiptDetail {
       receivedQuantityCones: json['received_quantity_cones'] ?? 0,
       numberOfPallets: json['number_of_pallets'] ?? 0,
       supplierBatchNo: json['supplier_batch_no'],
-      originCountry: json['origin_country'], // [MỚI]
+      originCountry: json['origin_country'], 
+      location: json['location'], // [FIX] Map từ JSON
       note: json['note'],
     );
   }
@@ -127,7 +132,8 @@ class MaterialReceiptDetail {
       'received_quantity_cones': receivedQuantityCones,
       'number_of_pallets': numberOfPallets,
       'supplier_batch_no': supplierBatchNo,
-      'origin_country': originCountry, // [MỚI]
+      'origin_country': originCountry, 
+      'location': location, // [FIX] Đưa vào JSON gửi lên server
       'note': note,
     };
     return data;

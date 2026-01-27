@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:dropdown_search/dropdown_search.dart'; // DropdownSearch v6.0.0
+import 'package:dropdown_search/dropdown_search.dart'; 
 
 // [IMPORT] Các module liên quan
 import 'package:production_app_frontend/features/inventory/import_declaration/domain/import_declaration_model.dart';
@@ -240,7 +240,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                                             if (supState is SupplierLoaded) suppliers = supState.suppliers;
 
                                             return DropdownSearch<PurchaseOrderHeader>(
-                                              // 1. Items Function (Filter logic)
                                               items: (filter, props) {
                                                 if (filter.isEmpty) return pos;
                                                 return pos.where((p) {
@@ -250,22 +249,14 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                                                   return poMatch || vendorMatch;
                                                 }).toList();
                                               },
-                                              
-                                              // 2. Selected Item Match
                                               selectedItem: pos.any((p) => p.poId == _selectedPoId)
                                                   ? pos.firstWhere((p) => p.poId == _selectedPoId)
                                                   : null,
                                               compareFn: (i, s) => i.poId == s.poId,
-                                              
-                                              // 3. Display String
                                               itemAsString: (p) => p.poNumber,
-
-                                              // 4. Decoration
                                               decoratorProps: DropDownDecoratorProps(
                                                 decoration: _inputDeco(l10n.byPO),
                                               ),
-
-                                              // 5. Popup (Search & List)
                                               popupProps: PopupProps.menu(
                                                 showSearchBox: true,
                                                 searchFieldProps: TextFieldProps(
@@ -279,8 +270,8 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                                                 itemBuilder: (ctx, item, isDisabled, isSelected) {
                                                   String vendorName = item.vendor?.name ?? '';
                                                   if (vendorName.isEmpty) {
-                                                     final s = suppliers.where((sup) => sup.id == item.vendorId).firstOrNull;
-                                                     if (s != null) vendorName = s.name;
+                                                      final s = suppliers.where((sup) => sup.id == item.vendorId).firstOrNull;
+                                                      if (s != null) vendorName = s.name;
                                                   }
                                                   
                                                   return ListTile(
@@ -292,15 +283,13 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                                                 },
                                                 menuProps: MenuProps(borderRadius: BorderRadius.circular(8)),
                                               ),
-
-                                              // 6. OnChanged (Auto fill Supplier)
                                               onChanged: (PurchaseOrderHeader? data) {
                                                 setState(() => _selectedPoId = data?.poId);
                                                 if (data != null) {
                                                   String vName = data.vendor?.name ?? '';
                                                   if (vName.isEmpty) {
-                                                     final s = suppliers.where((sup) => sup.id == data.vendorId).firstOrNull;
-                                                     if (s != null) vName = s.name;
+                                                      final s = suppliers.where((sup) => sup.id == data.vendorId).firstOrNull;
+                                                      if (s != null) vName = s.name;
                                                   }
                                                   _supplierCtrl.text = vName;
                                                 } else {
@@ -494,6 +483,10 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                           DataColumn(label: Text(l10n.poQtyKg, style: const TextStyle(fontWeight: FontWeight.bold))),
                           DataColumn(label: Text(l10n.actualQtyKg, style: const TextStyle(fontWeight: FontWeight.bold))),
                           DataColumn(label: Text(l10n.pallets, style: const TextStyle(fontWeight: FontWeight.bold))),
+                          
+                          // [MỚI] Cột Location
+                          const DataColumn(label: Text("Location", style: TextStyle(fontWeight: FontWeight.bold))),
+                          
                           DataColumn(label: Row(
                             children: [
                               const Icon(Icons.qr_code_2, size: 16, color: Colors.blueGrey),
@@ -536,6 +529,20 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                                 )
                               ),
                               DataCell(Text("${item.numberOfPallets}")),
+                              
+                              // [MỚI] Hiển thị Location
+                              DataCell(
+                                item.location != null && item.location!.isNotEmpty
+                                  ? Row(
+                                      children: [
+                                        Icon(Icons.place, size: 16, color: Colors.orange.shade700),
+                                        const SizedBox(width: 4),
+                                        Text(item.location!, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.orange.shade800)),
+                                      ],
+                                    )
+                                  : const Text("--", style: TextStyle(color: Colors.grey)),
+                              ),
+
                               DataCell(
                                 item.supplierBatchNo != null && item.supplierBatchNo!.isNotEmpty
                                 ? Container(
@@ -611,6 +618,20 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                         ),
                         Text(item.material?.code ?? "", style: const TextStyle(color: Colors.grey, fontSize: 12)),
                         const Divider(height: 16),
+                        
+                        // [MỚI] Hiển thị Location trên Mobile
+                        if (item.location != null && item.location!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Row(
+                              children: [
+                                Icon(Icons.place, size: 14, color: Colors.orange.shade700),
+                                const SizedBox(width: 4),
+                                Text("Loc: ${item.location}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.orange.shade800)),
+                              ],
+                            ),
+                          ),
+
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -691,21 +712,18 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
     }
   }
 
-  // [UPDATED] Hàm mở dialog thêm chi tiết - Truyền danh sách PO details
   Future<void> _openAddDetailDialog() async {
-    // 1. Tìm PO object đang được chọn trong danh sách Cubit đã load
     List<PurchaseOrderDetail>? selectedPoDetails;
     if (_selectedPoId != null) {
       final poState = context.read<PurchaseOrderCubit>().state;
       if (poState is POListLoaded) {
         final po = poState.list.where((p) => p.poId == _selectedPoId).firstOrNull;
-        selectedPoDetails = po?.details; // Lấy danh sách chi tiết của PO
+        selectedPoDetails = po?.details; 
       }
     }
 
     final MaterialReceiptDetail? result = await showDialog(
       context: context,
-      // 2. Truyền vào Dialog để lọc vật tư
       builder: (_) => MaterialDetailDialog(poDetails: selectedPoDetails),
     );
 
@@ -721,7 +739,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
   }
 
   Future<void> _openEditDetailDialog(MaterialReceiptDetail item, int index) async {
-    // [UPDATED] Cũng nên truyền PO Details vào edit để hiển thị đúng list nếu cần đổi vật tư
     List<PurchaseOrderDetail>? selectedPoDetails;
     if (_selectedPoId != null) {
       final poState = context.read<PurchaseOrderCubit>().state;
