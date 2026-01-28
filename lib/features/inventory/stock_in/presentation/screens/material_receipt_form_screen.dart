@@ -425,6 +425,19 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
   }
 
   Widget _buildDetailsSection(bool isDesktop, AppLocalizations l10n) {
+    // Logic để lấy Tên viết tắt của Supplier dựa trên PO đã chọn
+    String supplierShortName = '--';
+    final supState = context.read<SupplierCubit>().state;
+    final poState = context.read<PurchaseOrderCubit>().state;
+
+    if (supState is SupplierLoaded && poState is POListLoaded && _selectedPoId != null) {
+      final po = poState.list.where((p) => p.poId == _selectedPoId).firstOrNull;
+      if (po != null) {
+        final sup = supState.suppliers.where((s) => s.id == po.vendorId).firstOrNull;
+        supplierShortName = sup?.shortName ?? sup?.name ?? '--'; // Ưu tiên shortName, fallback name
+      }
+    }
+
     final sortedEntries = _details.asMap().entries.toList()
       ..sort((a, b) {
         final aMismatch = (a.value.receivedQuantityKg - a.value.poQuantityKg).abs() > 0.01;
@@ -479,12 +492,20 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                         columnSpacing: 20,
                         columns: [
                           DataColumn(label: Text(l10n.materialCode, style: const TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text(l10n.materialName, style: const TextStyle(fontWeight: FontWeight.bold))),
+                          
+                          const DataColumn(label: Text("Supplier (Short)", style: TextStyle(fontWeight: FontWeight.bold))),
+                          
                           DataColumn(label: Text(l10n.poQtyKg, style: const TextStyle(fontWeight: FontWeight.bold))),
+                          // [MỚI] Cột PO Rolls
+                          const DataColumn(label: Text("PO (Rolls)", style: TextStyle(fontWeight: FontWeight.bold))),
+                          
                           DataColumn(label: Text(l10n.actualQtyKg, style: const TextStyle(fontWeight: FontWeight.bold))),
+                          // [MỚI] Cột Act Rolls
+                          const DataColumn(label: Text("Act (Rolls)", style: TextStyle(fontWeight: FontWeight.bold))),
+                          
                           DataColumn(label: Text(l10n.pallets, style: const TextStyle(fontWeight: FontWeight.bold))),
                           
-                          // [MỚI] Cột Location
+                          const DataColumn(label: Text("Origin", style: TextStyle(fontWeight: FontWeight.bold))),
                           const DataColumn(label: Text("Location", style: TextStyle(fontWeight: FontWeight.bold))),
                           
                           DataColumn(label: Row(
@@ -508,11 +529,13 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                             color: isMismatch ? MaterialStateProperty.all(Colors.red.shade50) : null,
                             cells: [
                               DataCell(Text(item.material?.code ?? "${item.materialId}")),
-                              DataCell(ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 200),
-                                child: Text(item.material?.code?? "---", overflow: TextOverflow.ellipsis),
-                              )),
+                              
+                              DataCell(Text(supplierShortName, style: const TextStyle(fontWeight: FontWeight.w500))),
+                              
                               DataCell(Text(NumberFormat("#,##0.00").format(item.poQuantityKg))),
+                              // [MỚI] PO Rolls
+                              DataCell(Text("${item.poQuantityCones}")),
+                              
                               DataCell(
                                 Row(
                                   children: [
@@ -528,9 +551,15 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                                   ],
                                 )
                               ),
+                              // [MỚI] Actual Rolls
+                              DataCell(Text("${item.receivedQuantityCones}", style: TextStyle(fontWeight: FontWeight.bold, color: normalColor))),
+
                               DataCell(Text("${item.numberOfPallets}")),
                               
-                              // [MỚI] Hiển thị Location
+                              // Origin
+                              DataCell(Text(item.originCountry ?? '-', style: const TextStyle(fontSize: 13))),
+
+                              // Location
                               DataCell(
                                 item.location != null && item.location!.isNotEmpty
                                   ? Row(
@@ -572,7 +601,7 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                 }
               )
             else
-              // [MOBILE LIST]
+              // [MOBILE LIST] - FULL INFORMATION
               ListView.separated(
                 physics: const NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
@@ -593,6 +622,7 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Header: Code + Menu
                         Row(
                           children: [
                             if (isMismatch) const Padding(padding: EdgeInsets.only(right: 4), child: Icon(Icons.warning, size: 16, color: Colors.red)),
@@ -616,41 +646,73 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                             ),
                           ],
                         ),
-                        Text(item.material?.code ?? "", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                        
+                        Text(supplierShortName, style: const TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold, fontSize: 12)),
+                        
                         const Divider(height: 16),
                         
-                        // [MỚI] Hiển thị Location trên Mobile
-                        if (item.location != null && item.location!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: Row(
-                              children: [
-                                Icon(Icons.place, size: 14, color: Colors.orange.shade700),
-                                const SizedBox(width: 4),
-                                Text("Loc: ${item.location}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.orange.shade800)),
-                              ],
-                            ),
-                          ),
-
+                        // Row A: Quantities KG
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildMobileStat(l10n.poQtyKg, NumberFormat("#,##0").format(item.poQuantityKg)),
-                            Container(width: 1, height: 30, color: Colors.grey.shade300),
-                            _buildMobileStat(l10n.actualQtyKg, NumberFormat("#,##0.0").format(item.receivedQuantityKg), valueColor: isMismatch ? Colors.red : Colors.green.shade700),
+                            Expanded(child: _mobileInfoCol(l10n.poQtyKg, NumberFormat("#,##0").format(item.poQuantityKg))),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.arrow_forward, size: 14, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Expanded(child: _mobileInfoCol(l10n.actualQtyKg, NumberFormat("#,##0.0").format(item.receivedQuantityKg), valueColor: isMismatch ? Colors.red : Colors.green.shade700)),
                           ],
                         ),
-                        if (item.supplierBatchNo != null && item.supplierBatchNo!.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(Icons.qr_code_2, size: 14, color: Colors.blueGrey),
-                              const SizedBox(width: 4),
-                              Text("${l10n.supplierBatch}: ", style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                              Text(item.supplierBatchNo!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
-                            ],
-                          )
-                        ]
+                        const SizedBox(height: 8),
+
+                        // [MỚI] Row B: Quantities Rolls
+                        Row(
+                          children: [
+                            Expanded(child: _mobileInfoCol("PO (Rolls)", "${item.poQuantityCones}")),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.arrow_forward, size: 14, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Expanded(child: _mobileInfoCol("Act (Rolls)", "${item.receivedQuantityCones}", valueColor: Colors.green.shade700)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // Row C: Pallets & Location
+                        Row(
+                          children: [
+                            Expanded(child: _mobileInfoCol(l10n.pallets, "${item.numberOfPallets}", icon: Icons.layers)),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _mobileInfoCol(
+                                "Location", 
+                                item.location ?? '--', 
+                                icon: Icons.place, 
+                                valueColor: Colors.orange.shade800
+                              )
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Row D: Origin & Batch
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _mobileInfoCol(
+                                "Origin", 
+                                item.originCountry ?? '--', 
+                                icon: Icons.flag
+                              )
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _mobileInfoCol(
+                                l10n.supplierBatch, 
+                                item.supplierBatchNo ?? '--', 
+                                icon: Icons.qr_code_2,
+                                valueColor: Colors.blueGrey
+                              )
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   );
@@ -662,11 +724,17 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
     );
   }
 
-  Widget _buildMobileStat(String label, String value, {Color? valueColor}) {
+  // Updated Helper for Mobile Columns
+  Widget _mobileInfoCol(String label, String value, {Color? valueColor, IconData? icon}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        Row(
+          children: [
+            if (icon != null) ...[Icon(icon, size: 12, color: Colors.grey), const SizedBox(width: 4)],
+            Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+          ],
+        ),
         const SizedBox(height: 2),
         Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: valueColor ?? Colors.black87)),
       ],

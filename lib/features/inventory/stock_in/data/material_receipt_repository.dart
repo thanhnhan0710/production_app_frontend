@@ -51,15 +51,20 @@ class MaterialReceiptRepository {
     }
   }
 
-  // [MỚI] Lấy số phiếu tiếp theo từ Backend
   Future<String> getNextReceiptNumber() async {
     try {
+      // Gọi API Backend (Backend sẽ chạy logic Python ở trên)
       final response = await _dio.get('$_endpoint/next-number');
       return response.data['receipt_number'] ?? '';
     } catch (e) {
-      // Fallback nếu mất kết nối
+      // Fallback nếu mất kết nối: Tạo mã tạm thời đúng format YYYY/MM-OFF...
+      final now = DateTime.now();
+      final year = now.year;
+      final month = now.month.toString().padLeft(2, '0'); // Đảm bảo 2 chữ số (01, 11)
+      final milis = now.millisecondsSinceEpoch % 1000;
+      
       print("Error fetching next number: $e");
-      return "PN-OFFLINE-${DateTime.now().millisecondsSinceEpoch % 1000}"; 
+      return "$year/$month-OFF$milis"; // VD: 2025/11-OFF123
     }
   }
 

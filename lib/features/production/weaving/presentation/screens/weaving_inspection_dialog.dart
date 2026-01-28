@@ -142,7 +142,7 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
                       const Text("Standard & Product Info", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
                       const Spacer(),
                       // Hiển thị thêm thông tin lô sợi
-                      _YarnLotInfo(id: widget.ticket.yarnLotId),
+                      _YarnLotInfo(id: widget.ticket.batchId),
                     ],
                   ),
                   const Divider(),

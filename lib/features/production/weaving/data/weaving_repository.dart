@@ -28,7 +28,7 @@ class WeavingRepository {
         'machine_id': ticket.machineId,
         'machine_line': ticket.machineLine, 
         'yarn_load_date': ticket.yarnLoadDate, // YYYY-MM-DD
-        'yarn_lot_id': ticket.yarnLotId,
+        'batch_id': ticket.batchId,
         'basket_id': ticket.basketId,
         'employee_in_id': ticket.employeeInId,
         'time_in': ticket.timeIn,

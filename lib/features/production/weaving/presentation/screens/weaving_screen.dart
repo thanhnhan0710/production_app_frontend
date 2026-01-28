@@ -439,7 +439,7 @@ class _WeavingScreenState extends State<WeavingScreen> {
             
             // 4. Materials
             _buildInfoSection("Materials", [
-              _infoRow("Yarn Lot", _YarnLotInfo(id: ticket.yarnLotId)),
+              _infoRow("Yarn Lot", _YarnLotInfo(id: ticket.basketId)),
               _infoRow("Load Date", Text(ticket.yarnLoadDate)),
               _infoRow("Basket", Text("${ticket.basketCode} (ID: ${ticket.basketId})")),
               _infoRow("Tare Weight", Text("${ticket.tareWeight ?? 0} kg")),
@@ -792,7 +792,7 @@ class _WeavingScreenState extends State<WeavingScreen> {
     int? selectedStandardId = ticket?.standardId;
     int? selectedMachineId = ticket?.machineId;
     int? selectedBasketId = ticket?.basketId;
-    int? selectedYarnLotId = ticket?.yarnLotId;
+    int? selectedYarnLotId = ticket?.batchId;
     int? selectedEmpInId = ticket?.employeeInId;
 
     if (ticket == null) {
@@ -924,7 +924,7 @@ class _WeavingScreenState extends State<WeavingScreen> {
                     machineId: selectedMachineId ?? 0, 
                     machineLine: lineCtrl.text,
                     yarnLoadDate: dateCtrl.text,
-                    yarnLotId: selectedYarnLotId ?? 0, 
+                    batchId: selectedYarnLotId ?? 0, 
                     basketId: selectedBasketId ?? 0, 
                     timeIn: ticket?.timeIn ?? DateTime.now().toIso8601String(),
                     employeeInId: selectedEmpInId ?? 0,

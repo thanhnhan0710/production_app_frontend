@@ -71,7 +71,7 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
     required Basket basket,
     required int productId,
     required int standardId,
-    required int yarnLotId,
+    required int batchId,
     required int employeeId, 
   }) async {
     try {
@@ -86,7 +86,7 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
         machineId: machineId,
         machineLine: line,
         yarnLoadDate: todayDate,
-        yarnLotId: yarnLotId,   
+        batchId: batchId,   
         basketId: basket.id,
         timeIn: nowTime,
         grossWeight: 0,
@@ -122,7 +122,7 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
     required int ticketId,
     required int productId,
     required int standardId,
-    required int yarnLotId,
+    required int batchId,
     required int basketId,
   }) async {
     try {
@@ -143,7 +143,7 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
         // --- THÔNG TIN MỚI ---
         productId: productId,
         standardId: standardId,
-        yarnLotId: yarnLotId,
+        batchId: batchId,
         basketId: basketId,
         // --------------------
 
@@ -185,7 +185,7 @@ class MachineOperationCubit extends Cubit<MachineOpState> {
         machineId: ticket.machineId,
         machineLine: ticket.machineLine,
         yarnLoadDate: ticket.yarnLoadDate,
-        yarnLotId: ticket.yarnLotId,
+        batchId: ticket.batchId,
         basketId: ticket.basketId,
         timeIn: ticket.timeIn,
         employeeInId: ticket.employeeInId,

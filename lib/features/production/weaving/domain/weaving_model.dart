@@ -4,9 +4,12 @@ class WeavingTicket {
   final int productId;
   final int standardId;
   final int machineId;
-  final String machineLine;
+  final String machineLine; // Backend là int, nhưng Frontend convert sang String để hiển thị
   final String yarnLoadDate;
-  final int yarnLotId;
+  
+  // [CẬP NHẬT] Đổi từ yarnLotId sang batchId để khớp với Backend
+  final int batchId; 
+  
   final int basketId;
   final String timeIn;
   final int? employeeInId;
@@ -29,7 +32,7 @@ class WeavingTicket {
     required this.machineId,
     required this.machineLine,
     required this.yarnLoadDate,
-    required this.yarnLotId,
+    required this.batchId, // [CẬP NHẬT]
     required this.basketId,
     required this.timeIn,
     this.employeeInId,
@@ -53,7 +56,10 @@ class WeavingTicket {
       machineId: json['machine_id'] ?? 0,
       machineLine: json['machine_line']?.toString() ?? '',
       yarnLoadDate: json['yarn_load_date'] ?? '',
-      yarnLotId: json['yarn_lot_id'] ?? 0,
+      
+      // [CẬP NHẬT] Map key 'batch_id' từ API
+      batchId: json['batch_id'] ?? 0, 
+      
       basketId: json['basket_id'] ?? 0,
       timeIn: json['time_in'] ?? '',
       employeeInId: json['employee_in_id'],
@@ -76,7 +82,10 @@ class WeavingTicket {
       'machine_id': machineId,
       'machine_line': machineLine,
       'yarn_load_date': yarnLoadDate,
-      'yarn_lot_id': yarnLotId,
+      
+      // [CẬP NHẬT] Gửi key 'batch_id' lên API
+      'batch_id': batchId,
+      
       'basket_id': basketId,
       'time_in': timeIn,
       'employee_in_id': employeeInId,
@@ -90,7 +99,7 @@ class WeavingTicket {
   }
 }
 
-// [FIX QUAN TRỌNG] Class WeavingInspection phải có đúng các tham số này
+// Class WeavingInspection giữ nguyên như yêu cầu của bạn
 class WeavingInspection {
   final int id;
   final int ticketId; // Map với weaving_basket_ticket_id
@@ -114,15 +123,15 @@ class WeavingInspection {
 
   WeavingInspection({
     required this.id,
-    required this.ticketId, // Phải có tham số này trong constructor
+    required this.ticketId,
     required this.stageName,
     required this.employeeId,
     required this.shiftId,
     required this.widthMm,
-    required this.weftDensity, // Phải có
-    required this.tensionDan,  // Phải có
+    required this.weftDensity,
+    required this.tensionDan,
     required this.thicknessMm,
-    required this.weightGm,    // Phải có
+    required this.weightGm,
     required this.bowing,
     required this.inspectionTime,
     this.employeeName,
@@ -132,7 +141,6 @@ class WeavingInspection {
   factory WeavingInspection.fromJson(Map<String, dynamic> json) {
     return WeavingInspection(
       id: json['id'] ?? 0,
-      // Map từ JSON snake_case sang camelCase
       ticketId: json['weaving_basket_ticket_id'] ?? 0, 
       stageName: json['stage_name'] ?? '',
       employeeId: json['employee_id'] ?? 0,

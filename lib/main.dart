@@ -9,6 +9,12 @@ import 'package:production_app_frontend/features/inventory/batch/presentation/sc
 import 'package:production_app_frontend/features/inventory/import_declaration/data/import_declaration_repository.dart';
 import 'package:production_app_frontend/features/inventory/import_declaration/presentation/bloc/import_declaration_cubit.dart';
 import 'package:production_app_frontend/features/inventory/import_declaration/presentation/screens/import_declaration_screen.dart';
+import 'package:production_app_frontend/features/inventory/inventory/data/inventory_repository.dart';
+import 'package:production_app_frontend/features/inventory/inventory/presentation/bloc/inventory_cubit.dart';
+import 'package:production_app_frontend/features/inventory/inventory/presentation/screens/inventory_screen.dart';
+import 'package:production_app_frontend/features/inventory/material_export/data/material_export_repository.dart';
+import 'package:production_app_frontend/features/inventory/material_export/presentation/bloc/material_export_cubit.dart';
+import 'package:production_app_frontend/features/inventory/material_export/presentation/screens/material_export_list_screen.dart';
 import 'package:production_app_frontend/features/inventory/stock_in/presentation/screens/stock_in_screen.dart';
 import 'package:production_app_frontend/features/inventory/warehouse/data/warehouse_repository.dart';
 import 'package:production_app_frontend/features/inventory/warehouse/presentation/bloc/warehouse_cubit.dart';
@@ -134,6 +140,8 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => ImportDeclarationCubit(ImportDeclarationRepository())),
           BlocProvider(create: (context) => WarehouseCubit(WarehouseRepository())),
           BlocProvider(create: (context) => BatchCubit(BatchRepository())),
+          BlocProvider(create: (context) => InventoryCubit(InventoryRepository())),
+          BlocProvider(create: (context) => MaterialExportCubit(MaterialExportRepository())),
           
           // 4. Production Providers
           BlocProvider(create: (context) => MachineCubit(MachineRepository())),
@@ -211,6 +219,8 @@ class AppView extends StatelessWidget {
         GoRoute(path: '/warehouses', builder: (context, state) => const WarehouseScreen()),
         GoRoute(path: '/stock-in', builder: (context, state) => const StockInScreen()),
         GoRoute(path: '/batches', builder: (context, state) => const BatchScreen()),
+        GoRoute(path: '/inventorys', builder: (context, state) => const InventoryScreen()),
+        GoRoute(path: '/material-exports', builder: (context, state) => const MaterialExportListScreen()),
         
         
         // [NEW] Purchase Order Route
