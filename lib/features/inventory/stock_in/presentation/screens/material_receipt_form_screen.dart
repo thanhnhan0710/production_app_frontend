@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:dropdown_search/dropdown_search.dart'; 
+import 'package:dropdown_search/dropdown_search.dart';
 
 // [IMPORT] Các module liên quan
 import 'package:production_app_frontend/features/inventory/import_declaration/domain/import_declaration_model.dart';
@@ -31,7 +31,7 @@ class MaterialReceiptFormScreen extends StatefulWidget {
 
 class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controllers
   final _receiptNumberCtrl = TextEditingController();
   final _dateCtrl = TextEditingController(text: DateFormat('yyyy-MM-dd').format(DateTime.now()));
@@ -40,14 +40,18 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
   final _noteCtrl = TextEditingController();
   final _createdByCtrl = TextEditingController();
   final _supplierCtrl = TextEditingController();
-  
+
   int? _selectedWarehouseId;
   int? _selectedPoId;
   int? _selectedDeclarationId;
 
   List<MaterialReceiptDetail> _details = [];
-  bool _isFetchingNumber = false; 
-  
+  bool _isFetchingNumber = false;
+
+  // [AUTO-SAVE STATE]
+  bool _hasUnsavedChanges = false;
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
@@ -59,12 +63,12 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      
+
       if (widget.receiptId != null) {
         context.read<MaterialReceiptCubit>().getReceiptDetail(widget.receiptId!);
       } else {
         _fetchAndSetNextNumber();
-        
+
         try {
           final authState = context.read<AuthCubit>().state;
           if (authState is AuthAuthenticated) {
@@ -82,7 +86,71 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
       setState(() {
         _receiptNumberCtrl.text = nextNumber;
         _isFetchingNumber = false;
+        // Số phiếu tự sinh không tính là thay đổi của user nên không set dirty
       });
+    }
+  }
+
+  // [AUTO-SAVE LOGIC] Đánh dấu có thay đổi
+  void _markAsDirty() {
+    if (!_hasUnsavedChanges) {
+      setState(() {
+        _hasUnsavedChanges = true;
+      });
+    }
+  }
+
+  // [AUTO-SAVE LOGIC] Xử lý lưu và thoát
+  Future<void> _handleAutoSaveAndExit() async {
+    if (!_hasUnsavedChanges || _isSaving) return;
+
+    // Validate tối thiểu (Ví dụ: phải chọn kho mới lưu được)
+    if (_selectedWarehouseId == null) {
+      debugPrint("Auto-save skipped: Missing Warehouse ID");
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      await _saveDataInternal();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Auto-saved successfully"), backgroundColor: Colors.green, duration: Duration(seconds: 1)),
+        );
+      }
+    } catch (e) {
+      debugPrint("Auto-save failed: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+          _hasUnsavedChanges = false;
+        });
+      }
+    }
+  }
+
+  // [AUTO-SAVE LOGIC] Hàm lưu nội bộ dùng chung
+  Future<void> _saveDataInternal() async {
+    final header = MaterialReceipt(
+      id: widget.receiptId,
+      receiptNumber: _receiptNumberCtrl.text,
+      receiptDate: DateTime.tryParse(_dateCtrl.text) ?? DateTime.now(),
+      warehouseId: _selectedWarehouseId!,
+      poHeaderId: _selectedPoId,
+      declarationId: _selectedDeclarationId,
+      containerNo: _containerCtrl.text,
+      sealNo: _sealCtrl.text,
+      note: _noteCtrl.text,
+      createdBy: _createdByCtrl.text,
+      details: _details,
+    );
+
+    if (widget.receiptId == null) {
+      await context.read<MaterialReceiptCubit>().createReceipt(header);
+    } else {
+      await context.read<MaterialReceiptCubit>().updateReceipt(header);
     }
   }
 
@@ -91,321 +159,352 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
     final isDesktop = ResponsiveLayout.isDesktop(context);
     final l10n = AppLocalizations.of(context)!;
 
-    return BlocConsumer<MaterialReceiptCubit, MaterialReceiptState>(
-      listener: (context, state) {
-        if (state is MaterialReceiptOperationSuccess) {
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 8),
-                  Expanded(child: Text("Đã lưu phiếu nhập & Tự động khởi tạo Lô hàng (Batches).")),
-                ],
-              ),
-              backgroundColor: Colors.green.shade700,
-              behavior: SnackBarBehavior.floating,
-            )
-          );
-          Navigator.of(context).pop(); 
-        } else if (state is MaterialReceiptDetailLoaded) {
-          final r = state.receipt;
-          _receiptNumberCtrl.text = r.receiptNumber;
-          _dateCtrl.text = DateFormat('yyyy-MM-dd').format(r.receiptDate);
-          _containerCtrl.text = r.containerNo ?? "";
-          _sealCtrl.text = r.sealNo ?? "";
-          _noteCtrl.text = r.note ?? "";
-          _createdByCtrl.text = r.createdBy ?? ""; 
-          
-          _selectedWarehouseId = r.warehouseId;
-          _selectedPoId = r.poHeaderId;
-          _selectedDeclarationId = r.declarationId;
-          
-          if (r.poHeader != null) {
-             _supplierCtrl.text = r.poHeader!.vendorName;
-          }
+    // [AUTO-SAVE] Bọc PopScope để chặn thoát
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
 
-          _details = r.details;
-          if (mounted) setState(() {});
-        } else if (state is MaterialReceiptError) {
-           if (!context.mounted) return;
-           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+        if (_hasUnsavedChanges) {
+          await _handleAutoSaveAndExit();
+        }
+
+        if (context.mounted) {
+          Navigator.of(context).pop(result);
         }
       },
-      builder: (context, state) {
-        final isLoading = state is MaterialReceiptLoading && widget.receiptId != null && _details.isEmpty;
+      child: BlocConsumer<MaterialReceiptCubit, MaterialReceiptState>(
+        listener: (context, state) {
+          if (state is MaterialReceiptOperationSuccess) {
+            // Logic success xử lý ở _saveManual hoặc auto-save nên ở đây chỉ hiển thị thông báo nếu cần
+            // Tuy nhiên với cấu trúc hiện tại, listener này global cho màn hình
+            // Để tránh xung đột với auto-save thầm lặng, ta có thể check _isSaving hoặc để nguyên
+          } else if (state is MaterialReceiptDetailLoaded) {
+            final r = state.receipt;
+            _receiptNumberCtrl.text = r.receiptNumber;
+            _dateCtrl.text = DateFormat('yyyy-MM-dd').format(r.receiptDate);
+            _containerCtrl.text = r.containerNo ?? "";
+            _sealCtrl.text = r.sealNo ?? "";
+            _noteCtrl.text = r.note ?? "";
+            _createdByCtrl.text = r.createdBy ?? "";
 
-        return Scaffold(
-          backgroundColor: const Color(0xFFF5F7FA),
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 1,
-            title: Text(
-              widget.receiptId == null ? l10n.createReceiptTitle : l10n.editReceiptTitle,
-              style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+            _selectedWarehouseId = r.warehouseId;
+            _selectedPoId = r.poHeaderId;
+            _selectedDeclarationId = r.declarationId;
+
+            if (r.poHeader != null) {
+              _supplierCtrl.text = r.poHeader!.vendorName;
+            }
+
+            _details = r.details;
+            if (mounted) setState(() {});
+          } else if (state is MaterialReceiptError) {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+          }
+        },
+        builder: (context, state) {
+          final isLoading = state is MaterialReceiptLoading && widget.receiptId != null && _details.isEmpty;
+
+          return Scaffold(
+            backgroundColor: const Color(0xFFF5F7FA),
+            appBar: AppBar(
+              backgroundColor: Colors.white,
+              elevation: 1,
+              title: Row(
+                children: [
+                  Text(
+                    widget.receiptId == null ? l10n.createReceiptTitle : l10n.editReceiptTitle,
+                    style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+                  ),
+                  if (_hasUnsavedChanges)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: Text("(Unsaved)", style: TextStyle(color: Colors.orange.shade700, fontSize: 12)),
+                    )
+                ],
+              ),
+              actions: [
+                if (!isLoading)
+                  TextButton.icon(
+                    onPressed: _saveManual, // Đổi tên hàm
+                    icon: const Icon(Icons.save, color: Color(0xFF003366)),
+                    label: Text(l10n.saveReceipt, style: const TextStyle(color: Color(0xFF003366), fontWeight: FontWeight.bold)),
+                  )
+              ],
             ),
-            actions: [
-              if (!isLoading)
-                TextButton.icon(
-                  onPressed: _saveHeader,
-                  icon: const Icon(Icons.save, color: Color(0xFF003366)),
-                  label: Text(l10n.saveReceipt, style: const TextStyle(color: Color(0xFF003366), fontWeight: FontWeight.bold)),
-                )
-            ],
-          ),
-          body: isLoading 
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // --- SECTION 1: THÔNG TIN CHUNG ---
-                        _buildSectionCard(
-                          title: l10n.generalInfoTitle(""), 
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _receiptNumberCtrl,
-                                      decoration: _inputDeco(
-                                        l10n.receiptNumber,
-                                        suffixIcon: _isFetchingNumber 
-                                          ? const Padding(padding: EdgeInsets.all(10), child: SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2))) 
-                                          : null
+            body: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // --- SECTION 1: THÔNG TIN CHUNG ---
+                          _buildSectionCard(
+                            title: l10n.generalInfoTitle(""),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _receiptNumberCtrl,
+                                        decoration: _inputDeco(
+                                          l10n.receiptNumber,
+                                          suffixIcon: _isFetchingNumber
+                                              ? const Padding(padding: EdgeInsets.all(10), child: SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2)))
+                                              : null,
+                                        ),
+                                        validator: (v) => v!.isEmpty ? l10n.required : null,
+                                        readOnly: _isFetchingNumber,
+                                        onChanged: (_) => _markAsDirty(),
                                       ),
-                                      validator: (v) => v!.isEmpty ? l10n.required : null,
-                                      readOnly: _isFetchingNumber,
                                     ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _dateCtrl,
-                                      decoration: _inputDeco(l10n.importDate, icon: Icons.calendar_today),
-                                      readOnly: true,
-                                      onTap: () async {
-                                        DateTime? picked = await showDatePicker(
-                                          context: context,
-                                          initialDate: DateTime.now(),
-                                          firstDate: DateTime(2000),
-                                          lastDate: DateTime(2100),
-                                        );
-                                        if (picked != null) {
-                                          _dateCtrl.text = DateFormat('yyyy-MM-dd').format(picked);
-                                        }
-                                      },
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _dateCtrl,
+                                        decoration: _inputDeco(l10n.importDate, icon: Icons.calendar_today),
+                                        readOnly: true,
+                                        onTap: () async {
+                                          DateTime? picked = await showDatePicker(
+                                            context: context,
+                                            initialDate: DateTime.now(),
+                                            firstDate: DateTime(2000),
+                                            lastDate: DateTime(2100),
+                                          );
+                                          if (picked != null) {
+                                            _dateCtrl.text = DateFormat('yyyy-MM-dd').format(picked);
+                                            _markAsDirty();
+                                          }
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: BlocBuilder<WarehouseCubit, WarehouseState>(
-                                      builder: (context, whState) {
-                                        List<Warehouse> warehouses = [];
-                                        if (whState is WarehouseLoaded) warehouses = whState.warehouses;
-                                        return DropdownButtonFormField<int>(
-                                          value: _selectedWarehouseId,
-                                          decoration: _inputDeco(l10n.receivingWarehouse),
-                                          items: warehouses.map((w) => DropdownMenuItem<int>(
-                                            value: w.id,
-                                            child: Text(w.name, overflow: TextOverflow.ellipsis),
-                                          )).toList(),
-                                          onChanged: (val) => setState(() => _selectedWarehouseId = val),
-                                          validator: (v) => v == null ? l10n.selectWarehouse : null,
-                                          isExpanded: true,
-                                        );
-                                      },
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: BlocBuilder<WarehouseCubit, WarehouseState>(
+                                        builder: (context, whState) {
+                                          List<Warehouse> warehouses = [];
+                                          if (whState is WarehouseLoaded) warehouses = whState.warehouses;
+                                          return DropdownButtonFormField<int>(
+                                            value: _selectedWarehouseId,
+                                            decoration: _inputDeco(l10n.receivingWarehouse),
+                                            items: warehouses.map((w) => DropdownMenuItem<int>(
+                                              value: w.id,
+                                              child: Text(w.name, overflow: TextOverflow.ellipsis),
+                                            )).toList(),
+                                            onChanged: (val) {
+                                              setState(() => _selectedWarehouseId = val);
+                                              _markAsDirty();
+                                            },
+                                            validator: (v) => v == null ? l10n.selectWarehouse : null,
+                                            isExpanded: true,
+                                          );
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  
-                                  // [DROPDOWN SEARCH PO]
-                                  Expanded(
-                                    child: BlocBuilder<PurchaseOrderCubit, PurchaseOrderState>(
-                                      builder: (context, poState) {
-                                        return BlocBuilder<SupplierCubit, SupplierState>(
-                                          builder: (context, supState) {
-                                            List<PurchaseOrderHeader> pos = [];
-                                            if (poState is POListLoaded) pos = poState.list;
-                                            List<Supplier> suppliers = [];
-                                            if (supState is SupplierLoaded) suppliers = supState.suppliers;
+                                    const SizedBox(width: 16),
 
-                                            return DropdownSearch<PurchaseOrderHeader>(
-                                              items: (filter, props) {
-                                                if (filter.isEmpty) return pos;
-                                                return pos.where((p) {
-                                                  final poMatch = p.poNumber.toLowerCase().contains(filter.toLowerCase());
-                                                  final vendorName = p.vendor?.name ?? suppliers.where((s) => s.id == p.vendorId).firstOrNull?.name ?? '';
-                                                  final vendorMatch = vendorName.toLowerCase().contains(filter.toLowerCase());
-                                                  return poMatch || vendorMatch;
-                                                }).toList();
-                                              },
-                                              selectedItem: pos.any((p) => p.poId == _selectedPoId)
-                                                  ? pos.firstWhere((p) => p.poId == _selectedPoId)
-                                                  : null,
-                                              compareFn: (i, s) => i.poId == s.poId,
-                                              itemAsString: (p) => p.poNumber,
-                                              decoratorProps: DropDownDecoratorProps(
-                                                decoration: _inputDeco(l10n.byPO),
-                                              ),
-                                              popupProps: PopupProps.menu(
-                                                showSearchBox: true,
-                                                searchFieldProps: TextFieldProps(
-                                                  decoration: InputDecoration(
-                                                    hintText: "Search PO / Vendor...",
-                                                    prefixIcon: const Icon(Icons.search),
-                                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                                  )
+                                    // [DROPDOWN SEARCH PO]
+                                    Expanded(
+                                      child: BlocBuilder<PurchaseOrderCubit, PurchaseOrderState>(
+                                        builder: (context, poState) {
+                                          return BlocBuilder<SupplierCubit, SupplierState>(
+                                            builder: (context, supState) {
+                                              List<PurchaseOrderHeader> pos = [];
+                                              if (poState is POListLoaded) pos = poState.list;
+                                              List<Supplier> suppliers = [];
+                                              if (supState is SupplierLoaded) suppliers = supState.suppliers;
+
+                                              return DropdownSearch<PurchaseOrderHeader>(
+                                                items: (filter, props) {
+                                                  if (filter.isEmpty) return pos;
+                                                  return pos.where((p) {
+                                                    final poMatch = p.poNumber.toLowerCase().contains(filter.toLowerCase());
+                                                    final vendorName = p.vendor?.name ?? suppliers.where((s) => s.id == p.vendorId).firstOrNull?.name ?? '';
+                                                    final vendorMatch = vendorName.toLowerCase().contains(filter.toLowerCase());
+                                                    return poMatch || vendorMatch;
+                                                  }).toList();
+                                                },
+                                                selectedItem: pos.any((p) => p.poId == _selectedPoId)
+                                                    ? pos.firstWhere((p) => p.poId == _selectedPoId)
+                                                    : null,
+                                                compareFn: (i, s) => i.poId == s.poId,
+                                                itemAsString: (p) => p.poNumber,
+                                                decoratorProps: DropDownDecoratorProps(
+                                                  decoration: _inputDeco(l10n.byPO),
                                                 ),
-                                                itemBuilder: (ctx, item, isDisabled, isSelected) {
-                                                  String vendorName = item.vendor?.name ?? '';
-                                                  if (vendorName.isEmpty) {
+                                                popupProps: PopupProps.menu(
+                                                  showSearchBox: true,
+                                                  searchFieldProps: TextFieldProps(
+                                                    decoration: InputDecoration(
+                                                      hintText: "Search PO / Vendor...",
+                                                      prefixIcon: const Icon(Icons.search),
+                                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                                    )
+                                                  ),
+                                                  itemBuilder: (ctx, item, isDisabled, isSelected) {
+                                                    String vendorName = item.vendor?.name ?? '';
+                                                    if (vendorName.isEmpty) {
                                                       final s = suppliers.where((sup) => sup.id == item.vendorId).firstOrNull;
                                                       if (s != null) vendorName = s.name;
-                                                  }
-                                                  
-                                                  return ListTile(
-                                                    title: Text(item.poNumber, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                                                    subtitle: Text(vendorName),
-                                                    selected: isSelected,
-                                                    selectedTileColor: Colors.blue.withOpacity(0.1),
-                                                  );
-                                                },
-                                                menuProps: MenuProps(borderRadius: BorderRadius.circular(8)),
-                                              ),
-                                              onChanged: (PurchaseOrderHeader? data) {
-                                                setState(() => _selectedPoId = data?.poId);
-                                                if (data != null) {
-                                                  String vName = data.vendor?.name ?? '';
-                                                  if (vName.isEmpty) {
+                                                    }
+
+                                                    return ListTile(
+                                                      title: Text(item.poNumber, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                                                      subtitle: Text(vendorName),
+                                                      selected: isSelected,
+                                                      selectedTileColor: Colors.blue.withOpacity(0.1),
+                                                    );
+                                                  },
+                                                  menuProps: MenuProps(borderRadius: BorderRadius.circular(8)),
+                                                ),
+                                                onChanged: (PurchaseOrderHeader? data) {
+                                                  setState(() => _selectedPoId = data?.poId);
+                                                  _markAsDirty();
+                                                  if (data != null) {
+                                                    String vName = data.vendor?.name ?? '';
+                                                    if (vName.isEmpty) {
                                                       final s = suppliers.where((sup) => sup.id == data.vendorId).firstOrNull;
                                                       if (s != null) vName = s.name;
+                                                    }
+                                                    _supplierCtrl.text = vName;
+                                                  } else {
+                                                    _supplierCtrl.clear();
                                                   }
-                                                  _supplierCtrl.text = vName;
-                                                } else {
-                                                  _supplierCtrl.clear();
-                                                }
-                                              },
-                                            );
-                                          },
-                                        );
-                                      },
+                                                },
+                                              );
+                                            },
+                                          );
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              // Tờ khai hải quan
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: BlocBuilder<ImportDeclarationCubit, ImportDeclState>(
-                                      builder: (context, decState) {
-                                        List<ImportDeclaration> declarations = [];
-                                        if (decState is ImportDeclListLoaded) {
-                                          declarations = decState.list;
-                                        } 
-                                        
-                                        int? safeValue = _selectedDeclarationId;
-                                        if (safeValue != null && declarations.isNotEmpty && !declarations.any((d) => d.id == safeValue)) {
-                                          safeValue = null;
-                                        }
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
 
-                                        return DropdownButtonFormField<int>(
-                                          value: safeValue,
-                                          decoration: _inputDeco(l10n.customsDeclarationOptional),
-                                          items: [
-                                            DropdownMenuItem<int>(value: null, child: Text(l10n.noSelection)),
-                                            ...declarations.map((d) => DropdownMenuItem<int>(
-                                              value: d.id,
-                                              child: Text(d.declarationNo, overflow: TextOverflow.ellipsis),
-                                            ))
-                                          ],
-                                          onChanged: (val) => setState(() => _selectedDeclarationId = val),
-                                          isExpanded: true,
-                                        );
-                                      },
+                                // Tờ khai hải quan
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: BlocBuilder<ImportDeclarationCubit, ImportDeclState>(
+                                        builder: (context, decState) {
+                                          List<ImportDeclaration> declarations = [];
+                                          if (decState is ImportDeclListLoaded) {
+                                            declarations = decState.list;
+                                          }
+
+                                          int? safeValue = _selectedDeclarationId;
+                                          if (safeValue != null && declarations.isNotEmpty && !declarations.any((d) => d.id == safeValue)) {
+                                            safeValue = null;
+                                          }
+
+                                          return DropdownButtonFormField<int>(
+                                            value: safeValue,
+                                            decoration: _inputDeco(l10n.customsDeclarationOptional),
+                                            items: [
+                                              DropdownMenuItem<int>(value: null, child: Text(l10n.noSelection)),
+                                              ...declarations.map((d) => DropdownMenuItem<int>(
+                                                value: d.id,
+                                                child: Text(d.declarationNo, overflow: TextOverflow.ellipsis),
+                                              ))
+                                            ],
+                                            onChanged: (val) {
+                                              setState(() => _selectedDeclarationId = val);
+                                              _markAsDirty();
+                                            },
+                                            isExpanded: true,
+                                          );
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _supplierCtrl,
-                                      decoration: _inputDeco(l10n.supplierTitle, icon: Icons.store),
-                                      readOnly: true,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _supplierCtrl,
+                                        decoration: _inputDeco(l10n.supplierTitle, icon: Icons.store),
+                                        readOnly: true,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _createdByCtrl,
-                                      decoration: _inputDeco(l10n.createdBy, icon: Icons.person_outline),
-                                      readOnly: true,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _createdByCtrl,
+                                        decoration: _inputDeco(l10n.createdBy, icon: Icons.person_outline),
+                                        readOnly: true,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        
-                        const SizedBox(height: 16),
 
-                        // --- SECTION 2: LOGISTICS ---
-                        _buildSectionCard(
-                          title: l10n.logisticsInfo,
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(child: TextFormField(controller: _containerCtrl, decoration: _inputDeco(l10n.containerNumber))),
-                                  const SizedBox(width: 16),
-                                  Expanded(child: TextFormField(controller: _sealCtrl, decoration: _inputDeco(l10n.sealNumber))),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _noteCtrl,
-                                decoration: _inputDeco(l10n.note),
-                                maxLines: 2,
-                              ),
-                            ],
+                          const SizedBox(height: 16),
+
+                          // --- SECTION 2: LOGISTICS ---
+                          _buildSectionCard(
+                            title: l10n.logisticsInfo,
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(child: TextFormField(
+                                      controller: _containerCtrl, 
+                                      decoration: _inputDeco(l10n.containerNumber),
+                                      onChanged: (_) => _markAsDirty(),
+                                    )),
+                                    const SizedBox(width: 16),
+                                    Expanded(child: TextFormField(
+                                      controller: _sealCtrl, 
+                                      decoration: _inputDeco(l10n.sealNumber),
+                                      onChanged: (_) => _markAsDirty(),
+                                    )),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                TextFormField(
+                                  controller: _noteCtrl,
+                                  decoration: _inputDeco(l10n.note),
+                                  maxLines: 2,
+                                  onChanged: (_) => _markAsDirty(),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
 
-                        const SizedBox(height: 16),
+                          const SizedBox(height: 16),
 
-                        // --- SECTION 3: CHI TIẾT HÀNG HÓA ---
-                        _buildDetailsSection(isDesktop, l10n),
+                          // --- SECTION 3: CHI TIẾT HÀNG HÓA ---
+                          _buildDetailsSection(isDesktop, l10n),
 
-                        const SizedBox(height: 40),
-                      ],
+                          const SizedBox(height: 40),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
+  // ... (Giữ nguyên các hàm build UI: _buildSectionCard, _buildDetailsSection, _mobileInfoCol, _inputDeco)
   Widget _buildSectionCard({required String title, required Widget child}) {
     return Card(
       elevation: 0,
@@ -425,7 +524,7 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
   }
 
   Widget _buildDetailsSection(bool isDesktop, AppLocalizations l10n) {
-    // Logic để lấy Tên viết tắt của Supplier dựa trên PO đã chọn
+    // Logic lấy supplierShortName... (Giữ nguyên)
     String supplierShortName = '--';
     final supState = context.read<SupplierCubit>().state;
     final poState = context.read<PurchaseOrderCubit>().state;
@@ -434,7 +533,7 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
       final po = poState.list.where((p) => p.poId == _selectedPoId).firstOrNull;
       if (po != null) {
         final sup = supState.suppliers.where((s) => s.id == po.vendorId).firstOrNull;
-        supplierShortName = sup?.shortName ?? sup?.name ?? '--'; // Ưu tiên shortName, fallback name
+        supplierShortName = sup?.shortName ?? sup?.name ?? '--'; 
       }
     }
 
@@ -442,11 +541,12 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
       ..sort((a, b) {
         final aMismatch = (a.value.receivedQuantityKg - a.value.poQuantityKg).abs() > 0.01;
         final bMismatch = (b.value.receivedQuantityKg - b.value.poQuantityKg).abs() > 0.01;
-        if (aMismatch && !bMismatch) return -1; 
+        if (aMismatch && !bMismatch) return -1;
         if (!aMismatch && bMismatch) return 1;
         return 0;
       });
-
+    
+    // ... Phần return Widget UI giữ nguyên như code gốc, chỉ update nút xóa nếu cần
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.grey.shade200)),
@@ -472,7 +572,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            
             if (_details.isEmpty)
               Container(
                 padding: const EdgeInsets.all(30),
@@ -480,7 +579,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                 child: Center(child: Text(l10n.noMaterialsYet, style: TextStyle(color: Colors.grey.shade500))),
               )
             else if (isDesktop)
-              // [DESKTOP TABLE]
               LayoutBuilder(
                 builder: (context, constraints) {
                   return SingleChildScrollView(
@@ -491,24 +589,16 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                         headingRowColor: MaterialStateProperty.all(Colors.grey.shade100),
                         columnSpacing: 20,
                         columns: [
-                          DataColumn(label: Text(l10n.materialCode, style: const TextStyle(fontWeight: FontWeight.bold))),
-                          
-                          const DataColumn(label: Text("Supplier (Short)", style: TextStyle(fontWeight: FontWeight.bold))),
-                          
-                          DataColumn(label: Text(l10n.poQtyKg, style: const TextStyle(fontWeight: FontWeight.bold))),
-                          // [MỚI] Cột PO Rolls
-                          const DataColumn(label: Text("PO (Rolls)", style: TextStyle(fontWeight: FontWeight.bold))),
-                          
-                          DataColumn(label: Text(l10n.actualQtyKg, style: const TextStyle(fontWeight: FontWeight.bold))),
-                          // [MỚI] Cột Act Rolls
-                          const DataColumn(label: Text("Act (Rolls)", style: TextStyle(fontWeight: FontWeight.bold))),
-                          
-                          DataColumn(label: Text(l10n.pallets, style: const TextStyle(fontWeight: FontWeight.bold))),
-                          
-                          const DataColumn(label: Text("Origin", style: TextStyle(fontWeight: FontWeight.bold))),
-                          const DataColumn(label: Text("Location", style: TextStyle(fontWeight: FontWeight.bold))),
-                          
-                          DataColumn(label: Row(
+                           DataColumn(label: Text(l10n.materialCode, style: const TextStyle(fontWeight: FontWeight.bold))),
+                           const DataColumn(label: Text("Supplier (Short)", style: TextStyle(fontWeight: FontWeight.bold))),
+                           DataColumn(label: Text(l10n.poQtyKg, style: const TextStyle(fontWeight: FontWeight.bold))),
+                           const DataColumn(label: Text("PO (Rolls)", style: TextStyle(fontWeight: FontWeight.bold))),
+                           DataColumn(label: Text(l10n.actualQtyKg, style: const TextStyle(fontWeight: FontWeight.bold))),
+                           const DataColumn(label: Text("Act (Rolls)", style: TextStyle(fontWeight: FontWeight.bold))),
+                           DataColumn(label: Text(l10n.pallets, style: const TextStyle(fontWeight: FontWeight.bold))),
+                           const DataColumn(label: Text("Origin", style: TextStyle(fontWeight: FontWeight.bold))),
+                           const DataColumn(label: Text("Location", style: TextStyle(fontWeight: FontWeight.bold))),
+                           DataColumn(label: Row(
                             children: [
                               const Icon(Icons.qr_code_2, size: 16, color: Colors.blueGrey),
                               const SizedBox(width: 4),
@@ -518,24 +608,19 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                           DataColumn(label: Text(l10n.actions, style: const TextStyle(fontWeight: FontWeight.bold))),
                         ],
                         rows: sortedEntries.map((entry) {
-                          final index = entry.key; 
-                          final item = entry.value;
-                          
-                          final isMismatch = (item.receivedQuantityKg - item.poQuantityKg).abs() > 0.01;
-                          const mismatchColor = Colors.red;
-                          final normalColor = Colors.green.shade700;
-                          
-                          return DataRow(
+                           final index = entry.key;
+                           final item = entry.value;
+                           final isMismatch = (item.receivedQuantityKg - item.poQuantityKg).abs() > 0.01;
+                           const mismatchColor = Colors.red;
+                           final normalColor = Colors.green.shade700;
+
+                           return DataRow(
                             color: isMismatch ? MaterialStateProperty.all(Colors.red.shade50) : null,
                             cells: [
                               DataCell(Text(item.material?.code ?? "${item.materialId}")),
-                              
                               DataCell(Text(supplierShortName, style: const TextStyle(fontWeight: FontWeight.w500))),
-                              
                               DataCell(Text(NumberFormat("#,##0.00").format(item.poQuantityKg))),
-                              // [MỚI] PO Rolls
                               DataCell(Text("${item.poQuantityCones}")),
-                              
                               DataCell(
                                 Row(
                                   children: [
@@ -551,15 +636,9 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                                   ],
                                 )
                               ),
-                              // [MỚI] Actual Rolls
                               DataCell(Text("${item.receivedQuantityCones}", style: TextStyle(fontWeight: FontWeight.bold, color: normalColor))),
-
                               DataCell(Text("${item.numberOfPallets}")),
-                              
-                              // Origin
                               DataCell(Text(item.originCountry ?? '-', style: const TextStyle(fontSize: 13))),
-
-                              // Location
                               DataCell(
                                 item.location != null && item.location!.isNotEmpty
                                   ? Row(
@@ -571,7 +650,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                                     )
                                   : const Text("--", style: TextStyle(color: Colors.grey)),
                               ),
-
                               DataCell(
                                 item.supplierBatchNo != null && item.supplierBatchNo!.isNotEmpty
                                 ? Container(
@@ -593,7 +671,8 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                                   ),
                                 ],
                               )),
-                            ]);
+                            ]
+                           );
                         }).toList(),
                       ),
                     ),
@@ -601,17 +680,16 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                 }
               )
             else
-              // [MOBILE LIST] - FULL INFORMATION
+              // Mobile View
               ListView.separated(
                 physics: const NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
                 itemCount: sortedEntries.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, i) {
-                  final index = sortedEntries[i].key; 
+                  final index = sortedEntries[i].key;
                   final item = sortedEntries[i].value;
                   final isMismatch = (item.receivedQuantityKg - item.poQuantityKg).abs() > 0.01;
-
                   return Container(
                     decoration: BoxDecoration(
                       border: Border.all(color: isMismatch ? Colors.red.shade200 : Colors.grey.shade300),
@@ -622,7 +700,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header: Code + Menu
                         Row(
                           children: [
                             if (isMismatch) const Padding(padding: EdgeInsets.only(right: 4), child: Icon(Icons.warning, size: 16, color: Colors.red)),
@@ -646,12 +723,9 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                             ),
                           ],
                         ),
-                        
                         Text(supplierShortName, style: const TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold, fontSize: 12)),
-                        
                         const Divider(height: 16),
-                        
-                        // Row A: Quantities KG
+                        // Content Rows similar to original...
                         Row(
                           children: [
                             Expanded(child: _mobileInfoCol(l10n.poQtyKg, NumberFormat("#,##0").format(item.poQuantityKg))),
@@ -662,9 +736,7 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-
-                        // [MỚI] Row B: Quantities Rolls
-                        Row(
+                         Row(
                           children: [
                             Expanded(child: _mobileInfoCol("PO (Rolls)", "${item.poQuantityCones}")),
                             const SizedBox(width: 8),
@@ -674,43 +746,19 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        
-                        // Row C: Pallets & Location
                         Row(
                           children: [
                             Expanded(child: _mobileInfoCol(l10n.pallets, "${item.numberOfPallets}", icon: Icons.layers)),
                             const SizedBox(width: 16),
-                            Expanded(
-                              child: _mobileInfoCol(
-                                "Location", 
-                                item.location ?? '--', 
-                                icon: Icons.place, 
-                                valueColor: Colors.orange.shade800
-                              )
-                            ),
+                            Expanded(child: _mobileInfoCol("Location", item.location ?? '--', icon: Icons.place, valueColor: Colors.orange.shade800)),
                           ],
                         ),
                         const SizedBox(height: 8),
-
-                        // Row D: Origin & Batch
-                        Row(
+                         Row(
                           children: [
-                            Expanded(
-                              child: _mobileInfoCol(
-                                "Origin", 
-                                item.originCountry ?? '--', 
-                                icon: Icons.flag
-                              )
-                            ),
+                            Expanded(child: _mobileInfoCol("Origin", item.originCountry ?? '--', icon: Icons.flag)),
                             const SizedBox(width: 16),
-                            Expanded(
-                              child: _mobileInfoCol(
-                                l10n.supplierBatch, 
-                                item.supplierBatchNo ?? '--', 
-                                icon: Icons.qr_code_2,
-                                valueColor: Colors.blueGrey
-                              )
-                            ),
+                            Expanded(child: _mobileInfoCol(l10n.supplierBatch, item.supplierBatchNo ?? '--', icon: Icons.qr_code_2, valueColor: Colors.blueGrey)),
                           ],
                         ),
                       ],
@@ -724,7 +772,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
     );
   }
 
-  // Updated Helper for Mobile Columns
   Widget _mobileInfoCol(String label, String value, {Color? valueColor, IconData? icon}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -756,26 +803,25 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
 
   // --- LOGIC ---
 
-  void _saveHeader() {
+  // Hàm lưu thủ công (Nút Save)
+  void _saveManual() async {
     if (_formKey.currentState!.validate()) {
-      final header = MaterialReceipt(
-        id: widget.receiptId,
-        receiptNumber: _receiptNumberCtrl.text,
-        receiptDate: DateTime.parse(_dateCtrl.text),
-        warehouseId: _selectedWarehouseId!,
-        poHeaderId: _selectedPoId,
-        declarationId: _selectedDeclarationId,
-        containerNo: _containerCtrl.text,
-        sealNo: _sealCtrl.text,
-        note: _noteCtrl.text,
-        createdBy: _createdByCtrl.text,
-        details: _details, 
-      );
+      // Khi user bấm save thủ công, ta reset cờ unsaved
+      setState(() {
+        _hasUnsavedChanges = false;
+      });
 
-      if (widget.receiptId == null) {
-        context.read<MaterialReceiptCubit>().createReceipt(header);
-      } else {
-        context.read<MaterialReceiptCubit>().updateReceipt(header);
+      try {
+        await _saveDataInternal();
+        // Hiển thị thông báo thành công (Đã có BlocListener xử lý, hoặc thêm SnackBar tại đây)
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Saved successfully"), backgroundColor: Colors.green),
+          );
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        // Xử lý lỗi nếu cần
       }
     }
   }
@@ -786,7 +832,7 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
       final poState = context.read<PurchaseOrderCubit>().state;
       if (poState is POListLoaded) {
         final po = poState.list.where((p) => p.poId == _selectedPoId).firstOrNull;
-        selectedPoDetails = po?.details; 
+        selectedPoDetails = po?.details;
       }
     }
 
@@ -801,6 +847,7 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
       } else {
         setState(() {
           _details.add(result);
+          _markAsDirty(); // [AUTO-SAVE]
         });
       }
     }
@@ -827,6 +874,7 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
       } else {
         setState(() {
           _details[index] = result;
+          _markAsDirty(); // [AUTO-SAVE]
         });
       }
     }
@@ -837,16 +885,16 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text(l10n.confirmDeleteTitle), 
-          content: Text(l10n.confirmDeleteDetailMsg), 
+          title: Text(l10n.confirmDeleteTitle),
+          content: Text(l10n.confirmDeleteDetailMsg),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)), 
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(ctx);
                 context.read<MaterialReceiptCubit>().deleteDetailItem(widget.receiptId!, item.detailId!);
-              }, 
-              child: Text(l10n.delete) 
+              },
+              child: Text(l10n.delete)
             )
           ],
         )
@@ -854,6 +902,7 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
     } else {
       setState(() {
         _details.removeAt(index);
+        _markAsDirty(); // [AUTO-SAVE]
       });
     }
   }

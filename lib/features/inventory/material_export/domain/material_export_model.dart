@@ -1,8 +1,9 @@
 class MaterialExport {
-  final int? id; // ID có thể null khi tạo mới, nhưng sẽ có khi get từ API
+  final int? id;
   final String exportCode;
   final DateTime exportDate;
   final int warehouseId;
+  final int? exporterId; // [NEW] Người xuất kho
   final int receiverId; 
   final int? departmentId;
   final int? shiftId;
@@ -15,6 +16,7 @@ class MaterialExport {
     required this.exportCode,
     required this.exportDate,
     required this.warehouseId,
+    this.exporterId, // [NEW]
     required this.receiverId,
     this.departmentId,
     this.shiftId,
@@ -23,22 +25,20 @@ class MaterialExport {
     required this.details,
   });
 
-  // --- [FIX] THÊM HÀM FROMJSON ---
   factory MaterialExport.fromJson(Map<String, dynamic> json) {
     return MaterialExport(
       id: json['id'],
       exportCode: json['export_code'] ?? '',
-      // Xử lý parse ngày tháng an toàn
       exportDate: json['export_date'] != null 
           ? DateTime.tryParse(json['export_date'].toString()) ?? DateTime.now()
           : DateTime.now(),
       warehouseId: json['warehouse_id'] ?? 0,
+      exporterId: json['exporter_id'], // [NEW] Map từ API
       receiverId: json['receiver_id'] ?? 0,
       departmentId: json['department_id'],
       shiftId: json['shift_id'],
       note: json['note'],
       createdBy: json['created_by'],
-      // Map list details
       details: (json['details'] as List<dynamic>?)
               ?.map((e) => MaterialExportDetail.fromJson(e))
               .toList() ?? 
@@ -50,8 +50,9 @@ class MaterialExport {
     return {
       if (id != null) 'id': id,
       'export_code': exportCode,
-      'export_date': exportDate.toIso8601String().split('T')[0], // yyyy-MM-dd
+      'export_date': exportDate.toIso8601String().split('T')[0],
       'warehouse_id': warehouseId,
+      'exporter_id': exporterId, // [NEW] Gửi lên API
       'receiver_id': receiverId,
       'department_id': departmentId,
       'shift_id': shiftId,
@@ -72,8 +73,10 @@ class MaterialExportDetail {
   final int machineId;
   final int machineLine; 
   final int productId;
-  final int standardId;
-  final int basketId;
+  
+  // [FIX] Đổi thành int? để có thể gửi null
+  final int? standardId;
+  final int? basketId;
   
   final String? note;
 
@@ -85,12 +88,11 @@ class MaterialExportDetail {
     required this.machineId,
     required this.machineLine,
     required this.productId,
-    required this.standardId,
-    required this.basketId,
+    this.standardId, // Bỏ required
+    this.basketId,   // Bỏ required
     this.note,
   });
 
-  // --- [FIX] THÊM HÀM FROMJSON ---
   factory MaterialExportDetail.fromJson(Map<String, dynamic> json) {
     return MaterialExportDetail(
       detailId: json['detail_id'],
@@ -100,8 +102,8 @@ class MaterialExportDetail {
       machineId: json['machine_id'] ?? 0,
       machineLine: json['machine_line'] ?? 0,
       productId: json['product_id'] ?? 0,
-      standardId: json['standard_id'] ?? 0,
-      basketId: json['basket_id'] ?? 0,
+      standardId: json['standard_id'], // Không gán mặc định 0 nữa
+      basketId: json['basket_id'],     // Không gán mặc định 0 nữa
       note: json['note'],
     );
   }
@@ -115,8 +117,8 @@ class MaterialExportDetail {
       'machine_id': machineId,
       'machine_line': machineLine,
       'product_id': productId,
-      'standard_id': standardId,
-      'basket_id': basketId,
+      'standard_id': standardId, // Nếu null sẽ gửi null, DB sẽ chấp nhận
+      'basket_id': basketId,     // Nếu null sẽ gửi null, DB sẽ chấp nhận
       'note': note,
     };
   }

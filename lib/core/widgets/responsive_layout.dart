@@ -11,8 +11,13 @@ class ResponsiveLayout extends StatelessWidget {
   });
 
   // Breakpoint: Dưới 800px coi là mobile/tablet dọc, trên 800px là desktop
+  
   static bool isDesktop(BuildContext context) =>
       MediaQuery.of(context).size.width >= 800;
+
+  // --- BỔ SUNG HÀM NÀY ĐỂ SỬA LỖI ---
+  static bool isMobile(BuildContext context) =>
+      MediaQuery.of(context).size.width < 800;
 
   @override
   Widget build(BuildContext context) {

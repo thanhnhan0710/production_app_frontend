@@ -91,15 +91,23 @@ class MachineRepository {
   }
 
   // --- UPDATE STATUS & LOG (With Image URL) ---
-  Future<void> updateMachineStatus(int id, String status, {String? reason, String? imageUrl}) async {
+ Future<void> updateMachineStatus(int id, String status, {String? reason, String? imageUrl}) async {
     try {
-      await _dio.put('/api/v1/machines/$id/status', data: {
+      // [SỬA LỖI 422]
+      // Vì Backend dùng Form(...), ta bắt buộc phải gửi FormData 
+      // thay vì JSON map thông thường.
+      final formData = FormData.fromMap({
         'status': status,
-        'reason': reason,
-        'image_url': imageUrl, // Send image URL to backend
+        'reason': reason ?? '', // Gửi chuỗi rỗng nếu null để tránh lỗi backend
+        if (imageUrl != null) 'image_url': imageUrl,
       });
+
+      await _dio.put(
+        '/api/v1/machines/$id/status', 
+        data: formData, // Truyền FormData vào đây
+      );
+      
     } catch (e) {
-      // [Updated] English message
       throw Exception("Failed to update machine status: $e");
     }
   }

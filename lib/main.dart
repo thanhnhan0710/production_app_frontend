@@ -207,8 +207,6 @@ class AppView extends StatelessWidget {
 
         // --- INVENTORY ROUTES ---
         GoRoute(path: '/suppliers', builder: (context, state) => const SupplierScreen()),
-        GoRoute(path: '/yarns', builder: (context, state) => const YarnScreen()),
-        GoRoute(path: '/yarn-lots', builder: (context, state) => const YarnLotScreen()),
         GoRoute(path: '/materials', builder: (context, state) => const MaterialScreen()),
         GoRoute(path: '/units', builder: (context, state) => const UnitScreen()),
         GoRoute(path: '/baskets', builder: (context, state) => const BasketScreen()),

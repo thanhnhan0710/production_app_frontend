@@ -43,9 +43,14 @@ class MaterialExportRepository {
     }
   }
 
-  // Gen Code
-  String generateExportCode() {
-    final now = DateTime.now();
-    return "PX-${now.year}${now.month.toString().padLeft(2,'0')}-${now.millisecondsSinceEpoch % 10000}";
+  // [UPDATED] Fetch Next Code from API
+  Future<String> fetchNextExportCode() async {
+    try {
+      final response = await _dio.get('/api/v1/material-exports/next-number');
+      return response.data['export_code']?.toString() ?? '';
+    } catch (e) {
+      // Fallback nếu API lỗi (Optional)
+      return ''; 
+    }
   }
 }

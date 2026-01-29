@@ -5,7 +5,7 @@ import '../../domain/material_export_model.dart';
 abstract class MaterialExportState {}
 class MaterialExportInitial extends MaterialExportState {}
 class MaterialExportLoading extends MaterialExportState {}
-class MaterialExportSuccess extends MaterialExportState {} // Dùng cho Create/Delete thành công
+class MaterialExportSuccess extends MaterialExportState {}
 class MaterialExportListLoaded extends MaterialExportState {
   final List<MaterialExport> list;
   MaterialExportListLoaded(this.list);
@@ -52,5 +52,8 @@ class MaterialExportCubit extends Cubit<MaterialExportState> {
     }
   }
   
-  String getNewCode() => _repo.generateExportCode();
+  // [UPDATED] Đổi thành Future vì gọi API
+  Future<String> fetchNewCode() async {
+    return await _repo.fetchNextExportCode();
+  }
 }

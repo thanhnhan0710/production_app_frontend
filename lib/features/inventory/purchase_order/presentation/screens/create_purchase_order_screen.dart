@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:dropdown_search/dropdown_search.dart'; // Import DropdownSearch ^6.0.0
+import 'package:dropdown_search/dropdown_search.dart';
 
 // Import Models & Cubits
 import '../../domain/purchase_order_model.dart';
@@ -17,8 +17,7 @@ import '../../../supplier/presentation/bloc/supplier_cubit.dart';
 import '../../../../../l10n/app_localizations.dart';
 
 class CreatePurchaseOrderScreen extends StatefulWidget {
-  // Nhận PO cần sửa (null nếu tạo mới)
-  final PurchaseOrderHeader? existingPO; 
+  final PurchaseOrderHeader? existingPO;
 
   const CreatePurchaseOrderScreen({super.key, this.existingPO});
 
@@ -38,8 +37,8 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
   DateTime _selectedDate = DateTime.now();
   DateTime? _selectedEta;
   IncotermType _selectedIncoterm = IncotermType.EXW;
-  
-  // State Details (Lưu tạm trên UI)
+
+  // State Details
   List<PurchaseOrderDetail> _tempDetails = [];
 
   // Formatter
@@ -50,13 +49,18 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
 
   bool get _isEditMode => widget.existingPO != null;
 
+  // [NEW] Cờ đánh dấu có thay đổi chưa lưu
+  bool _hasUnsavedChanges = false;
+  // [NEW] Cờ đánh dấu đang auto-save để tránh xung đột
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
     context.read<SupplierCubit>().loadSuppliers();
     context.read<mat_bloc.MaterialCubit>().loadMaterials();
     context.read<UnitCubit>().loadUnits();
-    
+
     if (_isEditMode) {
       _initEditData();
     } else {
@@ -70,13 +74,12 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
     _currencyCtrl.text = po.currency;
     _rateCtrl.text = po.exchangeRate.toString();
     _noteCtrl.text = po.note ?? '';
-    
+
     _selectedVendorId = po.vendorId;
     _selectedDate = po.orderDate;
     _selectedEta = po.expectedArrivalDate;
     _selectedIncoterm = po.incoterm;
-    
-    // Clone list để không ảnh hưởng object gốc khi chưa save
+
     _tempDetails = List.from(po.details);
   }
 
@@ -90,8 +93,15 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
     });
   }
 
-  // --- GETTERS TÍNH TOÁN ---
-  
+  // [NEW] Hàm đánh dấu form đã bị thay đổi (Dirty)
+  void _markAsDirty() {
+    if (!_hasUnsavedChanges) {
+      setState(() {
+        _hasUnsavedChanges = true;
+      });
+    }
+  }
+
   double get _exchangeRate {
     double? rate = double.tryParse(_rateCtrl.text.replaceAll(',', ''));
     return (rate != null && rate > 0) ? rate : 1.0;
@@ -101,119 +111,198 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
 
   double get _totalAmountVND => _totalAmount * _exchangeRate;
 
+  // [NEW] Logic Auto-save khi thoát
+  Future<void> _handleAutoSaveAndExit() async {
+    // Nếu không có thay đổi hoặc đang lưu thì thoát luôn
+    if (!_hasUnsavedChanges || _isSaving) {
+      return;
+    }
+
+    // Kiểm tra điều kiện tối thiểu để lưu (ví dụ: phải có Vendor)
+    // Nếu dữ liệu quá thiếu thốn, ta có thể bỏ qua việc lưu nháp hoặc báo lỗi
+    if (_selectedVendorId == null) {
+      // Vendor là bắt buộc, không thể lưu nếu thiếu -> Thoát mà không lưu
+      debugPrint('Auto-save skipped: Missing Vendor');
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      // Gọi hàm lưu nội bộ
+      await _saveDataInternal(status: _isEditMode ? widget.existingPO!.status : POStatus.Draft);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+           const SnackBar(content: Text("Auto-saved draft successfully"), backgroundColor: Colors.green, duration: Duration(seconds: 1)),
+        );
+      }
+    } catch (e) {
+      debugPrint("Auto-save failed: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+          _hasUnsavedChanges = false; // Reset cờ sau khi lưu xong
+        });
+      }
+    }
+  }
+
+  // [NEW] Tách logic lưu vào hàm riêng để tái sử dụng
+  Future<void> _saveDataInternal({required POStatus status}) async {
+    final newPO = PurchaseOrderHeader(
+      poId: _isEditMode ? widget.existingPO!.poId : 0,
+      poNumber: _poNumberCtrl.text,
+      vendorId: _selectedVendorId!,
+      orderDate: _selectedDate,
+      expectedArrivalDate: _selectedEta,
+      incoterm: _selectedIncoterm,
+      currency: _currencyCtrl.text,
+      exchangeRate: _exchangeRate,
+      status: status,
+      note: _noteCtrl.text,
+      totalAmount: _totalAmount,
+      details: _tempDetails,
+    );
+
+    // Gọi Cubit (giả sử Cubit trả về Future, nếu không bạn cần chỉnh lại Cubit để await được)
+    await context.read<PurchaseOrderCubit>().savePurchaseOrder(po: newPO, isEdit: _isEditMode);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: Text(_isEditMode ? "Edit Purchase Order" : l10n.createPO), 
-        backgroundColor: const Color(0xFF003366),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          TextButton.icon(
-            onPressed: () => _submitOrder(context, l10n),
-            icon: const Icon(Icons.save, color: Colors.white),
-            label: Text(l10n.save, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            // --- HEADER ---
-            _buildHeaderForm(l10n),
+    // [NEW] Sử dụng PopScope để chặn thao tác thoát
+    return PopScope(
+      canPop: false, // Chặn thoát mặc định để xử lý logic
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
 
-            // --- ITEMS LIST ---
-            Expanded(
-              child: Container(
-                color: Colors.white,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "${l10n.orderItems} (${_tempDetails.length})", 
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF003366))
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () => _showAddItemDialog(context, l10n),
-                            icon: const Icon(Icons.add, size: 16),
-                            label: Text(l10n.addItem),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE3F2FD),
-                              foregroundColor: const Color(0xFF0055AA),
-                              elevation: 0,
+        // Nếu có thay đổi, thực hiện auto-save
+        if (_hasUnsavedChanges) {
+           await _handleAutoSaveAndExit();
+        }
+
+        if (context.mounted) {
+          // Sau khi xử lý xong, thoát màn hình thủ công
+          Navigator.of(context).pop(result);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
+        appBar: AppBar(
+          title: Text(_isEditMode ? "Edit Purchase Order" : l10n.createPO),
+          backgroundColor: const Color(0xFF003366),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          actions: [
+            // Hiển thị trạng thái "Unsaved" nhỏ nếu cần
+            if (_hasUnsavedChanges)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8.0),
+                child: Center(child: Text("Unsaved", style: TextStyle(fontSize: 10, color: Colors.orangeAccent))),
+              ),
+            TextButton.icon(
+              onPressed: () => _submitOrder(context, l10n),
+              icon: const Icon(Icons.save, color: Colors.white),
+              label: Text(l10n.save, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        body: Form(
+          key: _formKey,
+          // [UPDATED] Thêm WillPopScope cho web browser back button cũ (dự phòng) hoặc giữ PopScope ở trên là đủ cho Flutter > 3.12
+          child: Column(
+            children: [
+              // --- HEADER ---
+              _buildHeaderForm(l10n),
+
+              // --- ITEMS LIST ---
+              Expanded(
+                child: Container(
+                  color: Colors.white,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "${l10n.orderItems} (${_tempDetails.length})",
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
                             ),
-                          )
-                        ],
+                            ElevatedButton.icon(
+                              onPressed: () => _showAddItemDialog(context, l10n),
+                              icon: const Icon(Icons.add, size: 16),
+                              label: Text(l10n.addItem),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE3F2FD),
+                                foregroundColor: const Color(0xFF0055AA),
+                                elevation: 0,
+                              ),
+                            )
+                          ],
+                        ),
                       ),
-                    ),
-                    const Divider(height: 1),
-                    
-                    Expanded(
-                      child: _tempDetails.isEmpty 
-                        ? _buildEmptyState(l10n)
-                        : ListView.separated(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _tempDetails.length,
-                            separatorBuilder: (_,__) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              return _buildTempDetailItem(index, _tempDetails[index], l10n);
-                            },
+                      const Divider(height: 1),
+                      Expanded(
+                        child: _tempDetails.isEmpty
+                            ? _buildEmptyState(l10n)
+                            : ListView.separated(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: _tempDetails.length,
+                                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                                itemBuilder: (context, index) {
+                                  return _buildTempDetailItem(index, _tempDetails[index], l10n);
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // --- FOOTER TOTAL ---
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4))],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(l10n.totalAmount, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          "${_currencyFormat.format(_totalAmount)} ${_currencyCtrl.text}",
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
+                        ),
+                        if (_currencyCtrl.text.toUpperCase() != 'VND')
+                          Text(
+                            "≈ ${_vndFormat.format(_totalAmountVND)}",
+                            style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w500, fontStyle: FontStyle.italic),
                           ),
+                      ],
                     ),
                   ],
                 ),
-              ),
-            ),
-
-            // --- FOOTER TOTAL ---
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4))],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(l10n.totalAmount, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-                  
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      // Tiền gốc
-                      Text(
-                        "${_currencyFormat.format(_totalAmount)} ${_currencyCtrl.text}",
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
-                      ),
-                      // Tiền quy đổi VND
-                      if (_currencyCtrl.text.toUpperCase() != 'VND')
-                        Text(
-                          "≈ ${_vndFormat.format(_totalAmountVND)}",
-                          style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w500, fontStyle: FontStyle.italic),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            )
-          ],
+              )
+            ],
+          ),
         ),
       ),
     );
   }
-
-  // --- WIDGETS ---
 
   Widget _buildHeaderForm(AppLocalizations l10n) {
     return Container(
@@ -223,7 +312,7 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
       child: Column(
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start, 
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 flex: 2,
@@ -231,39 +320,31 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
                   controller: _poNumberCtrl,
                   decoration: _inputDeco(l10n.poNumber, icon: Icons.tag),
                   validator: (v) => v!.isEmpty ? l10n.required : null,
-                  readOnly: _isEditMode, 
+                  readOnly: _isEditMode,
+                  onChanged: (_) => _markAsDirty(), // [UPDATED]
                 ),
               ),
               const SizedBox(width: 12),
-              
-              // [UPDATED] DropdownSearch v6.0.0 Implementation
               Expanded(
                 flex: 3,
                 child: BlocBuilder<SupplierCubit, SupplierState>(
                   builder: (context, state) {
                     List<Supplier> suppliers = [];
                     if (state is SupplierLoaded) suppliers = state.suppliers;
-                    
+
                     return DropdownSearch<Supplier>(
-                      // 1. FIX: items phải là Function nhận filter
                       items: (filter, loadProps) {
                         if (filter.isEmpty) return suppliers;
                         return suppliers.where((s) => s.name.toLowerCase().contains(filter.toLowerCase())).toList();
                       },
                       itemAsString: (Supplier s) => s.name,
-                      
-                      selectedItem: suppliers.any((s) => s.id == _selectedVendorId) 
-                          ? suppliers.firstWhere((s) => s.id == _selectedVendorId) 
+                      selectedItem: suppliers.any((s) => s.id == _selectedVendorId)
+                          ? suppliers.firstWhere((s) => s.id == _selectedVendorId)
                           : null,
-                      
-                      compareFn: (i, s) => i.id == s.id, 
-                      
-                      // 2. Decorator Properties
+                      compareFn: (i, s) => i.id == s.id,
                       decoratorProps: DropDownDecoratorProps(
                         decoration: _inputDeco(l10n.vendor, icon: Icons.store),
                       ),
-
-                      // 3. Popup Properties
                       popupProps: PopupProps.menu(
                         showSearchBox: true,
                         searchFieldProps: TextFieldProps(
@@ -274,7 +355,6 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                         ),
-                        // 4. FIX: itemBuilder thêm tham số isDisabled
                         itemBuilder: (ctx, item, isDisabled, isSelected) {
                           return ListTile(
                             title: Text(item.name, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
@@ -285,10 +365,10 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
                         },
                         menuProps: MenuProps(borderRadius: BorderRadius.circular(8)),
                       ),
-                      
                       onChanged: (Supplier? data) {
                         setState(() {
                           _selectedVendorId = data?.id;
+                          _markAsDirty(); // [UPDATED]
                         });
                       },
                       validator: (Supplier? item) {
@@ -302,7 +382,6 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
             ],
           ),
           const SizedBox(height: 12),
-
           Row(
             children: [
               Expanded(
@@ -327,7 +406,6 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
             ],
           ),
           const SizedBox(height: 12),
-
           Row(
             children: [
               Expanded(
@@ -336,7 +414,10 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
                   value: _selectedIncoterm,
                   decoration: _inputDeco(l10n.incoterm, icon: Icons.handshake),
                   items: IncotermType.values.map((e) => DropdownMenuItem(value: e, child: Text(e.name))).toList(),
-                  onChanged: (val) => setState(() => _selectedIncoterm = val!),
+                  onChanged: (val) {
+                    setState(() => _selectedIncoterm = val!);
+                    _markAsDirty(); // [UPDATED]
+                  },
                 ),
               ),
               const SizedBox(width: 12),
@@ -345,7 +426,10 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
                 child: TextFormField(
                   controller: _currencyCtrl,
                   decoration: _inputDeco(l10n.currency, icon: Icons.attach_money),
-                  onChanged: (_) => setState((){}), 
+                  onChanged: (_) {
+                    setState(() {});
+                    _markAsDirty(); // [UPDATED]
+                  },
                 ),
               ),
               const SizedBox(width: 12),
@@ -355,29 +439,31 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
                   controller: _rateCtrl,
                   decoration: _inputDeco(l10n.exchangeRate, icon: Icons.currency_exchange),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (_) => setState((){}), // Rebuild để tính tiền quy đổi
+                  onChanged: (_) {
+                    setState(() {});
+                    _markAsDirty(); // [UPDATED]
+                  },
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          
           TextFormField(
             controller: _noteCtrl,
             decoration: _inputDeco(l10n.note, icon: Icons.note),
             maxLines: 1,
+            onChanged: (_) => _markAsDirty(), // [UPDATED]
           ),
         ],
       ),
     );
   }
 
+  // ... (Giữ nguyên phần Widget _buildTempDetailItem và _buildEmptyState)
   Widget _buildTempDetailItem(int index, PurchaseOrderDetail item, AppLocalizations l10n) {
-    // Tính giá quy đổi cho từng dòng
-    double convertedLineTotal = item.lineTotal * _exchangeRate;
-
+     double convertedLineTotal = item.lineTotal * _exchangeRate;
     return Dismissible(
-      key: ValueKey(item.hashCode), 
+      key: ValueKey(item.hashCode),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
@@ -388,10 +474,11 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
       onDismissed: (direction) {
         setState(() {
           _tempDetails.removeAt(index);
+          _markAsDirty(); // [UPDATED] Xóa item cũng là thay đổi
         });
       },
       child: Container(
-        padding: const EdgeInsets.all(12),
+         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
@@ -446,6 +533,7 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
               onPressed: () {
                 setState(() {
                   _tempDetails.removeAt(index);
+                  _markAsDirty(); // [UPDATED]
                 });
               },
             )
@@ -455,7 +543,8 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
     );
   }
 
-  Widget _buildEmptyState(AppLocalizations l10n) {
+  // ... (Giữ nguyên _buildEmptyState và _inputDeco)
+   Widget _buildEmptyState(AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -492,12 +581,14 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
         } else {
           _selectedDate = picked;
         }
+        _markAsDirty(); // [UPDATED]
       });
     }
   }
 
-  // --- DIALOG ADD ITEM ---
-  void _showAddItemDialog(BuildContext context, AppLocalizations l10n) {
+  // ... (Giữ nguyên _showAddItemDialog và _showMaterialSearch, CHÚ Ý thêm _markAsDirty khi add item)
+
+   void _showAddItemDialog(BuildContext context, AppLocalizations l10n) {
     int? selectedMaterialId;
     int? selectedUomId;
     MaterialModel? selectedMaterial;
@@ -511,15 +602,17 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
       builder: (ctx) {
         return StatefulBuilder(builder: (context, setStateDialog) {
           return AlertDialog(
-            title: Text(l10n.addItem),
-            content: SizedBox(
+             // ... (Code dialog giữ nguyên)
+             title: Text(l10n.addItem),
+             content: SizedBox(
               width: 500,
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 1. Chọn Material
-                    BlocBuilder<mat_bloc.MaterialCubit, mat_bloc.MaterialState>(
+                    // Code UI Dialog giữ nguyên như bản gốc
+                    // ...
+                     BlocBuilder<mat_bloc.MaterialCubit, mat_bloc.MaterialState>(
                       builder: (context, state) {
                         List<MaterialModel> materials = (state is mat_bloc.MaterialLoaded) ? state.materials : [];
                         return InkWell(
@@ -543,8 +636,6 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
                       },
                     ),
                     const SizedBox(height: 12),
-                    
-                    // 2. Nhập số lượng và Đơn vị
                     Row(
                       children: [
                         Expanded(
@@ -576,8 +667,6 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-
-                    // 3. Nhập giá
                     TextFormField(
                       controller: priceCtrl,
                       decoration: _inputDeco(l10n.unitPrice, icon: Icons.attach_money),
@@ -586,19 +675,18 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
                   ],
                 ),
               ),
-            ),
-            actions: [
+             ),
+             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
               ElevatedButton(
                 onPressed: () {
                   if (selectedMaterialId != null && qtyCtrl.text.isNotEmpty) {
                     final qty = double.tryParse(qtyCtrl.text) ?? 0;
                     final price = double.tryParse(priceCtrl.text) ?? 0;
-                    
                     final lineTotal = qty * price;
 
                     final newItem = PurchaseOrderDetail(
-                      poId: _isEditMode ? widget.existingPO!.poId : 0, 
+                      poId: _isEditMode ? widget.existingPO!.poId : 0,
                       materialId: selectedMaterialId!,
                       quantity: qty,
                       unitPrice: price,
@@ -610,12 +698,12 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
 
                     setState(() {
                       _tempDetails.add(newItem);
+                      _markAsDirty(); // [UPDATED] Thêm dòng này
                     });
                     Navigator.pop(ctx);
                   }
                 },
-                // [FIXED] Changed l10n.add to l10n.confirmAdd as .add might not exist
-                child: Text(l10n.confirmAdd), 
+                child: Text(l10n.confirmAdd),
               )
             ],
           );
@@ -624,8 +712,10 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
     );
   }
 
+  // ... (Giữ nguyên _showMaterialSearch)
   Future<MaterialModel?> _showMaterialSearch(BuildContext context, List<MaterialModel> list, AppLocalizations l10n) async {
-    return showDialog<MaterialModel>(
+    // Code giữ nguyên
+     return showDialog<MaterialModel>(
       context: context,
       builder: (ctx) {
         List<MaterialModel> filtered = List.from(list);
@@ -672,28 +762,19 @@ class _CreatePurchaseOrderScreenState extends State<CreatePurchaseOrderScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please add at least one item"), backgroundColor: Colors.orange));
         return;
       }
-
-      final newPO = PurchaseOrderHeader(
-        poId: _isEditMode ? widget.existingPO!.poId : 0, 
-        poNumber: _poNumberCtrl.text,
-        vendorId: _selectedVendorId!,
-        orderDate: _selectedDate,
-        expectedArrivalDate: _selectedEta,
-        incoterm: _selectedIncoterm,
-        currency: _currencyCtrl.text,
-        exchangeRate: _exchangeRate, // Sử dụng giá trị từ getter
-        status: _isEditMode ? widget.existingPO!.status : POStatus.Draft, 
-        note: _noteCtrl.text,
-        totalAmount: _totalAmount,
-        details: _tempDetails, 
-      );
-
-      context.read<PurchaseOrderCubit>().savePurchaseOrder(po: newPO, isEdit: _isEditMode);
       
+      // Submit chính thức thì đặt hasUnsavedChanges = false để PopScope không chặn
+      setState(() {
+        _hasUnsavedChanges = false; 
+      });
+
+      // Gọi hàm lưu nội bộ
+      _saveDataInternal(status: _isEditMode ? widget.existingPO!.status : POStatus.Draft);
+
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.processing), backgroundColor: Colors.blue));
     } else {
-       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${l10n.required}: Vendor"), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${l10n.required}: Vendor"), backgroundColor: Colors.red));
     }
   }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:dropdown_search/dropdown_search.dart';
-import 'package:production_app_frontend/features/inventory/basket/presentation/bloc/baket_cubit.dart';
+import 'package:production_app_frontend/features/production/machine/presentation/bloc/machine_cubit.dart';
 
 // --- IMPORTS CUBITS & MODELS ---
 import '../../../../../core/widgets/responsive_layout.dart';
@@ -15,7 +15,7 @@ import 'package:production_app_frontend/features/inventory/inventory/domain/inve
 import 'package:production_app_frontend/features/inventory/warehouse/presentation/bloc/warehouse_cubit.dart';
 import 'package:production_app_frontend/features/inventory/warehouse/domain/warehouse_model.dart';
 
-// HR (Nhân viên, Ca, Lịch làm việc)
+// HR
 import 'package:production_app_frontend/features/hr/employee/presentation/bloc/employee_cubit.dart';
 import 'package:production_app_frontend/features/hr/employee/domain/employee_model.dart';
 import 'package:production_app_frontend/features/hr/shift/presentation/bloc/shift_cubit.dart';
@@ -28,12 +28,15 @@ import 'package:production_app_frontend/features/production/machine/presentation
 import 'package:production_app_frontend/features/production/machine/domain/machine_model.dart';
 import 'package:production_app_frontend/features/inventory/product/presentation/bloc/product_cubit.dart';
 import 'package:production_app_frontend/features/inventory/product/domain/product_model.dart';
-import 'package:production_app_frontend/features/production/standard/presentation/bloc/standard_cubit.dart';
-import 'package:production_app_frontend/features/production/standard/domain/standard_model.dart';
-import 'package:production_app_frontend/features/inventory/basket/doamain/basket_model.dart';
+
+// Auth
+import 'package:production_app_frontend/features/auth/presentation/bloc/auth_cubit.dart';
 
 class MaterialExportScreen extends StatefulWidget {
-  const MaterialExportScreen({super.key});
+  // [QUAN TRỌNG] Thêm tham số này để sửa lỗi "undefined named parameter 'existingExport'"
+  final MaterialExport? existingExport; 
+
+  const MaterialExportScreen({super.key, this.existingExport});
 
   @override
   State<MaterialExportScreen> createState() => _MaterialExportScreenState();
@@ -43,6 +46,7 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
   final _formKey = GlobalKey<FormState>();
   final _codeCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
+  final _creatorCtrl = TextEditingController();
   
   // Ngày xuất mặc định là hôm nay
   final _dateCtrl = TextEditingController(text: DateFormat('yyyy-MM-dd').format(DateTime.now()));
@@ -55,25 +59,57 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
   // List Details
   final List<MaterialExportDetail> _details = [];
 
+  // [AUTO-SAVE STATE]
+  bool _hasUnsavedChanges = false;
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
     // 1. Load Master Data
     context.read<WarehouseCubit>().loadWarehouses();
-    
-    // Load nhân sự & Lịch làm việc để lọc người đứng máy
     context.read<EmployeeCubit>().loadEmployees();
     context.read<ShiftCubit>().loadShifts();
     context.read<WorkScheduleCubit>().loadSchedules();
-    
-    // 2. Load Production Data (cho dialog chi tiết)
     context.read<MachineOperationCubit>().loadDashboard();
     context.read<ProductCubit>().loadProducts();
-    context.read<StandardCubit>().loadStandards();
-    context.read<BasketCubit>().loadBaskets(); 
 
-    // 3. Gen Code
-    _codeCtrl.text = context.read<MaterialExportCubit>().getNewCode();
+    // 2. Init Data (Kiểm tra xem là Tạo mới hay Sửa)
+    if (widget.existingExport != null) {
+      _initEditData();
+    } else {
+      _initCreateData();
+    }
+  }
+
+  // [Hàm fill dữ liệu khi sửa]
+  void _initEditData() {
+    final item = widget.existingExport!;
+    _codeCtrl.text = item.exportCode;
+    _dateCtrl.text = DateFormat('yyyy-MM-dd').format(item.exportDate);
+    _selectedWarehouseId = item.warehouseId;
+    _selectedReceiverId = item.receiverId;
+    _selectedShiftId = item.shiftId;
+    _noteCtrl.text = item.note ?? "";
+    _creatorCtrl.text = item.createdBy ?? "";
+    
+    // Fill list chi tiết
+    _details.addAll(item.details);
+    
+    // Load tồn kho của kho đã chọn để sẵn sàng thêm chi tiết mới nếu cần
+    context.read<InventoryCubit>().loadInventories(warehouseId: item.warehouseId);
+  }
+
+  // [Hàm init khi tạo mới]
+  Future<void> _initCreateData() async {
+    // Lấy thông tin user
+    final authState = context.read<AuthCubit>().state;
+    if (authState is AuthAuthenticated) {
+      if (mounted) _creatorCtrl.text = authState.user.employeeName ?? authState.user.fullName;
+    }
+    // Lấy mã phiếu tự động
+    final newCode = await context.read<MaterialExportCubit>().fetchNewCode();
+    if (mounted) setState(() => _codeCtrl.text = newCode);
   }
 
   // Helper so sánh ngày
@@ -82,51 +118,149 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
+  // [AUTO-SAVE LOGIC]
+  void _markAsDirty() {
+    if (!_hasUnsavedChanges) {
+      setState(() {
+        _hasUnsavedChanges = true;
+      });
+    }
+  }
+
+  Future<void> _handleAutoSaveAndExit() async {
+    if (!_hasUnsavedChanges || _isSaving) return;
+
+    if (_selectedWarehouseId == null || _selectedReceiverId == null) {
+      debugPrint("Auto-save skipped: Missing required fields");
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      await _saveDataInternal();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Tự động lưu phiếu xuất kho."), backgroundColor: Colors.green, duration: Duration(seconds: 1)),
+        );
+      }
+    } catch (e) {
+      debugPrint("Auto-save failed: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+          _hasUnsavedChanges = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _saveDataInternal() async {
+    final exportData = MaterialExport(
+      id: widget.existingExport?.id, // Giữ ID nếu đang sửa
+      exportCode: _codeCtrl.text,
+      exportDate: DateFormat('yyyy-MM-dd').parse(_dateCtrl.text),
+      warehouseId: _selectedWarehouseId!,
+      receiverId: _selectedReceiverId!,
+      shiftId: _selectedShiftId,
+      note: _noteCtrl.text,
+      createdBy: _creatorCtrl.text,
+      details: _details,
+    );
+
+    if (widget.existingExport == null) {
+        await context.read<MaterialExportCubit>().createExport(exportData);
+    } else {
+        // Tạm dùng createExport nếu chưa có hàm update trong Cubit (Backend cần hỗ trợ update)
+        // Hoặc: await context.read<MaterialExportCubit>().updateExport(exportData);
+        await context.read<MaterialExportCubit>().createExport(exportData); 
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Xuất kho Sợi & Tạo phiếu Rổ"),
-        backgroundColor: const Color(0xFF003366),
-        foregroundColor: Colors.white,
-      ),
-      body: BlocListener<MaterialExportCubit, MaterialExportState>(
-        listener: (context, state) {
-          if (state is MaterialExportSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Xuất kho thành công! Đã tạo phiếu rổ dệt."), backgroundColor: Colors.green)
-            );
-            Navigator.pop(context);
-          } else if (state is MaterialExportError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Lỗi: ${state.message}"), backgroundColor: Colors.red)
-            );
-          }
-        },
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildHeaderSection(),
-                const SizedBox(height: 20),
-                _buildDetailListSection(),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: _submitExport,
-                  icon: const Icon(Icons.save),
-                  label: const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Text("XÁC NHẬN XUẤT KHO", style: TextStyle(fontSize: 16)),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF003366),
-                    foregroundColor: Colors.white,
-                  ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (_hasUnsavedChanges) {
+          await _handleAutoSaveAndExit();
+        }
+        if (context.mounted) {
+          Navigator.of(context).pop(result);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Text(widget.existingExport == null ? "Tạo phiếu xuất kho" : "Sửa phiếu xuất kho"),
+              if (_hasUnsavedChanges) 
+                const Padding(
+                  padding: EdgeInsets.only(left: 8.0),
+                  child: Text("(Chưa lưu)", style: TextStyle(fontSize: 12, color: Colors.orangeAccent)),
                 )
-              ],
+            ],
+          ),
+          backgroundColor: const Color(0xFF003366),
+          foregroundColor: Colors.white,
+        ),
+        body: MultiBlocListener(
+          listeners: [
+            // Listener tự động chọn kho B3
+            BlocListener<WarehouseCubit, WarehouseState>(
+              listener: (context, state) {
+                // Chỉ tự chọn khi tạo mới và chưa chọn kho nào
+                if (state is WarehouseLoaded && _selectedWarehouseId == null && widget.existingExport == null) {
+                  try {
+                    final b3Warehouse = state.warehouses.firstWhere(
+                      (w) => w.name.toUpperCase().contains("B3"),
+                    );
+                    setState(() {
+                      _selectedWarehouseId = b3Warehouse.id;
+                      // Không mark dirty ở đây để tránh auto-save khi vừa vào
+                    });
+                    context.read<InventoryCubit>().loadInventories(warehouseId: b3Warehouse.id);
+                  } catch (_) {}
+                }
+              },
+            ),
+            BlocListener<MaterialExportCubit, MaterialExportState>(
+              listener: (context, state) {
+                if (state is MaterialExportError) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Lỗi: ${state.message}"), backgroundColor: Colors.red)
+                  );
+                }
+              },
+            ),
+          ],
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildHeaderSection(),
+                  const SizedBox(height: 20),
+                  _buildDetailListSection(),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: _submitExportManual,
+                    icon: const Icon(Icons.save),
+                    label: const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Text("XÁC NHẬN / LƯU", style: TextStyle(fontSize: 16)),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF003366),
+                      foregroundColor: Colors.white,
+                    ),
+                  )
+                ],
+              ),
             ),
           ),
         ),
@@ -134,7 +268,7 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
     );
   }
 
-  // --- HEADER: Thông tin chung ---
+  // --- HEADER SECTION ---
   Widget _buildHeaderSection() {
     return Card(
       elevation: 2,
@@ -150,8 +284,13 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                 Expanded(
                   child: TextFormField(
                     controller: _codeCtrl,
-                    decoration: const InputDecoration(labelText: "Mã phiếu", border: OutlineInputBorder()),
-                    readOnly: true,
+                    decoration: const InputDecoration(
+                      labelText: "Mã phiếu", 
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.edit, size: 16, color: Colors.grey)
+                    ),
+                    readOnly: false, // Cho phép sửa mã
+                    onChanged: (_) => _markAsDirty(),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -174,8 +313,8 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                       if (picked != null) {
                         setState(() {
                           _dateCtrl.text = DateFormat('yyyy-MM-dd').format(picked);
-                          // Reset người nhận khi đổi ngày vì lịch làm việc thay đổi
-                          _selectedReceiverId = null;
+                          _selectedReceiverId = null; 
+                          _markAsDirty();
                         });
                       }
                     },
@@ -196,9 +335,9 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                   onChanged: (val) {
                     setState(() {
                       _selectedWarehouseId = val;
-                      _details.clear(); // Xóa chi tiết nếu đổi kho
+                      _details.clear();
+                      _markAsDirty();
                     });
-                    // Load tồn kho của kho này để chọn ở detail
                     if (val != null) {
                       context.read<InventoryCubit>().loadInventories(warehouseId: val);
                     }
@@ -206,6 +345,20 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                   validator: (v) => v == null ? "Chọn kho" : null,
                 );
               },
+            ),
+            const SizedBox(height: 16),
+
+            // Người tạo phiếu (Read-only)
+            TextFormField(
+              controller: _creatorCtrl,
+              decoration: const InputDecoration(
+                labelText: "Người tạo phiếu", 
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person),
+                filled: true,
+                fillColor: Color(0xFFF5F5F5)
+              ),
+              readOnly: true,
             ),
             const SizedBox(height: 16),
 
@@ -220,7 +373,6 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                         builder: (context, empState) {
                           List<Employee> availableEmployees = [];
                           
-                          // Logic lọc nhân viên theo lịch làm việc
                           if (scheduleState is WorkScheduleLoaded && empState is EmployeeLoaded) {
                             DateTime selectedDate = DateFormat('yyyy-MM-dd').parse(_dateCtrl.text);
                             final validEmpIds = scheduleState.schedules
@@ -244,11 +396,16 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                               decoration: InputDecoration(
                                 labelText: "Người nhận (Đứng máy) *", 
                                 border: OutlineInputBorder(),
-                                helperText: "Chỉ hiển thị nhân viên có lịch làm việc ngày này"
+                                helperText: "Chỉ hiện NV có lịch làm việc"
                               ),
                             ),
                             popupProps: const PopupProps.menu(showSearchBox: true),
-                            onChanged: (val) => setState(() => _selectedReceiverId = val?.id),
+                            onChanged: (val) {
+                                setState(() {
+                                    _selectedReceiverId = val?.id;
+                                    _markAsDirty();
+                                });
+                            },
                             validator: (v) => v == null ? "Chọn người nhận" : null,
                           );
                         },
@@ -265,7 +422,12 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                         value: _selectedShiftId,
                         decoration: const InputDecoration(labelText: "Ca làm việc", border: OutlineInputBorder()),
                         items: list.map((e) => DropdownMenuItem(value: e.id, child: Text(e.name))).toList(),
-                        onChanged: (val) => _selectedShiftId = val,
+                        onChanged: (val) {
+                            setState(() {
+                                _selectedShiftId = val;
+                                _markAsDirty();
+                            });
+                        },
                       );
                     },
                   ),
@@ -276,6 +438,7 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
             TextFormField(
               controller: _noteCtrl,
               decoration: const InputDecoration(labelText: "Ghi chú", border: OutlineInputBorder()),
+              onChanged: (_) => _markAsDirty(),
             ),
           ],
         ),
@@ -283,7 +446,7 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
     );
   }
 
-  // --- DETAILS: Danh sách vật tư ---
+  // --- DETAIL LIST SECTION ---
   Widget _buildDetailListSection() {
     return Card(
       elevation: 2,
@@ -319,17 +482,22 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                   final item = _details[index];
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text("Batch :${item.basketId} - Qty: ${item.quantity}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text("Qty: ${item.quantity} kg", style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Máy: ${item.machineId} (Line ${item.machineLine})"),
-                        Text("SP: ${item.productId} - Rổ: ${item.basketId}"),
+                        Text("BatchID: ${item.batchId}"),
+                        Text("Máy: ${item.machineId} (Line ${item.machineLine}) - SP: ${item.productId}"),
                       ],
                     ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => setState(() => _details.removeAt(index)),
+                      onPressed: () {
+                          setState(() {
+                              _details.removeAt(index);
+                              _markAsDirty();
+                          });
+                      },
                     ),
                   );
                 },
@@ -340,18 +508,14 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
     );
   }
 
-  // --- DIALOG: Thêm chi tiết ---
+  // --- DIALOG: ADD DETAIL ---
   Future<void> _openAddDetailDialog() async {
-    // Các biến tạm để lưu giá trị trong Dialog
     InventoryStock? selectedStock;
     double inputQty = 0;
     
     Machine? selectedMachine;
-    int selectedLine = 1; // Default Line 1
-    
+    int selectedLine = 1;
     Product? selectedProduct;
-    Standard? selectedStandard;
-    Basket? selectedBasket;
 
     final dialogFormKey = GlobalKey<FormState>();
 
@@ -371,17 +535,15 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // --- 1. CHỌN LÔ SỢI (TỪ KHO) ---
+                        // 1. CHỌN LÔ SỢI
                         const Text("1. CHỌN LÔ SỢI (TỪ KHO)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                         BlocBuilder<InventoryCubit, InventoryState>(
                           builder: (context, state) {
                             List<InventoryStock> stocks = (state is InventoryListLoaded) ? state.stocks : [];
-                            // Lọc những lô có số lượng > 0
                             stocks = stocks.where((s) => s.availableQuantity > 0).toList();
                             
                             return DropdownSearch<InventoryStock>(
                               items: (filter, props) => stocks,
-                              // [UPDATED] Hiển thị đầy đủ thông tin: Mã vật tư, Lô NCC, Lô hệ thống, Vị trí, Tồn kho
                               itemAsString: (s) => "${s.material?.materialCode} - ${s.batch?.supplierBatchNo} (${s.availableQuantity} kg)",
                               compareFn: (i, s) => i.id == s.id,
                               onChanged: (val) => setStateDialog(() => selectedStock = val),
@@ -390,52 +552,15 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                               popupProps: PopupProps.menu(
                                 showSearchBox: true,
                                 searchFieldProps: const TextFieldProps(
-                                  decoration: InputDecoration(
-                                    hintText: "Tìm theo mã sợi, lô...",
-                                    prefixIcon: Icon(Icons.search),
-                                  ),
+                                  decoration: InputDecoration(hintText: "Tìm theo mã sợi, lô...", prefixIcon: Icon(Icons.search)),
                                 ),
                                 itemBuilder: (context, item, isSelected, isDisabled) {
-                                  return ListTile(
-                                    selected: isSelected,
-                                    title: Text(
-                                      "${item.material?.materialCode ?? 'N/A'}}",
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                    ),
-                                    subtitle: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            const Icon(Icons.qr_code_2, size: 14, color: Colors.blueGrey),
-                                            const SizedBox(width: 4),
-                                            // Hiển thị Lô NCC
-                                            Text("Sup: ${item.batch?.internalBatchCode}", style: const TextStyle(color: Colors.black87, fontSize: 12)),
-                                            const SizedBox(width: 8),
-                                            // Hiển thị Lô Hệ thống
-                                            Text("Sys: ${item.batch?.supplierBatchNo}", style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Row(
-                                          children: [
-                                            Icon(Icons.place, size: 14, color: Colors.orange.shade700),
-                                            const SizedBox(width: 4),
-                                            // Hiển thị Vị trí kho
-                                            Text(item.batch?.location ?? '--', style: const TextStyle(color: Colors.black87, fontSize: 12)),
-                                            const Spacer(),
-                                            // Hiển thị Số lượng tồn
-                                            Text(
-                                              "${item.availableQuantity} kg",
-                                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green.shade700),
-                                            ),
-                                          ],
-                                        )
-                                      ],
-                                    ),
-                                  );
-                                },
+                                    return ListTile(
+                                        selected: isSelected,
+                                        title: Text("${item.material?.materialCode ?? 'N/A'}}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                        subtitle: Text("Qty: ${item.availableQuantity} kg | Loc: ${item.batch?.location ?? '--'}"),
+                                    );
+                                }
                               ),
                             );
                           },
@@ -457,8 +582,8 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                         ),
                         const Divider(height: 30, thickness: 2),
 
-                        // --- 2. THÔNG TIN SẢN XUẤT ---
-                        const Text("2. THÔNG TIN SẢN XUẤT (ĐỂ TẠO PHIẾU RỔ)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        // 2. THÔNG TIN SẢN XUẤT
+                        const Text("2. THÔNG TIN SẢN XUẤT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                         Row(
                           children: [
                             Expanded(
@@ -494,7 +619,6 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                         ),
                         const SizedBox(height: 10),
                         
-                        // Sản phẩm & Tiêu chuẩn
                         BlocBuilder<ProductCubit, ProductState>(
                           builder: (context, state) {
                              List<Product> products = (state is ProductLoaded) ? state.products : [];
@@ -502,54 +626,14 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                                items: (filter, props) => products,
                                itemAsString: (p) => p.itemCode,
                                compareFn: (i, s) => i.id == s.id,
-                               onChanged: (val) => setStateDialog(() {
-                                 selectedProduct = val;
-                                 selectedStandard = null; // Reset standard
-                               }),
+                               onChanged: (val) => setStateDialog(() => selectedProduct = val),
                                validator: (v) => v == null ? "Chọn sản phẩm" : null,
                                decoratorProps: const DropDownDecoratorProps(decoration: InputDecoration(labelText: "Sản phẩm")),
                                popupProps: const PopupProps.menu(showSearchBox: true),
                              );
                           },
                         ),
-                        const SizedBox(height: 10),
                         
-                        BlocBuilder<StandardCubit, StandardState>(
-                          builder: (context, state) {
-                             List<Standard> standards = [];
-                             if (state is StandardLoaded && selectedProduct != null) {
-                               standards = state.standards.where((s) => s.productId == selectedProduct!.id).toList();
-                             }
-                             return DropdownButtonFormField<Standard>(
-                               value: selectedStandard,
-                               decoration: const InputDecoration(labelText: "Tiêu chuẩn"),
-                               items: standards.map((s) => DropdownMenuItem(value: s, child: Text("W:${s.widthMm} | T:${s.thicknessMm}"))).toList(),
-                               onChanged: (val) => setStateDialog(() => selectedStandard = val),
-                               validator: (v) => v == null ? "Chọn tiêu chuẩn" : null,
-                             );
-                          },
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Rổ (Chỉ hiện rổ READY)
-                        BlocBuilder<BasketCubit, BasketState>(
-                          builder: (context, state) {
-                            List<Basket> baskets = [];
-                            if (state is BasketLoaded) {
-                              // Filter chỉ lấy rổ READY
-                              baskets = state.baskets.where((b) => b.status == "READY").toList();
-                            }
-                            return DropdownSearch<Basket>(
-                               items: (filter, props) => baskets,
-                               itemAsString: (b) => "${b.code} (${b.tareWeight}kg)",
-                               compareFn: (i, s) => i.id == s.id,
-                               onChanged: (val) => setStateDialog(() => selectedBasket = val),
-                               validator: (v) => v == null ? "Chọn rổ (READY)" : null,
-                               decoratorProps: const DropDownDecoratorProps(decoration: InputDecoration(labelText: "Rổ chứa")),
-                               popupProps: const PopupProps.menu(showSearchBox: true),
-                            );
-                          },
-                        ),
                       ],
                     ),
                   ),
@@ -560,21 +644,21 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                 ElevatedButton(
                   onPressed: () {
                     if (dialogFormKey.currentState!.validate()) {
-                      // Tạo object detail
                       final newDetail = MaterialExportDetail(
                         materialId: selectedStock!.materialId,
                         batchId: selectedStock!.batchId,
                         quantity: inputQty,
-                        
                         machineId: selectedMachine!.id,
                         machineLine: selectedLine,
                         productId: selectedProduct!.id,
-                        standardId: selectedStandard!.id,
-                        basketId: selectedBasket!.id,
+                        // Truyền null cho các trường đã bỏ
+                        standardId: null, 
+                        basketId: null, 
                       );
                       
                       setState(() {
                         _details.add(newDetail);
+                        _markAsDirty();
                       });
                       Navigator.pop(ctx);
                     }
@@ -589,25 +673,25 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
     );
   }
 
-  // --- SUBMIT ---
-  void _submitExport() {
+  void _submitExportManual() async {
     if (_formKey.currentState!.validate()) {
       if (_details.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Chưa có chi tiết hàng hóa!")));
         return;
       }
 
-      final exportData = MaterialExport(
-        exportCode: _codeCtrl.text,
-        exportDate: DateFormat('yyyy-MM-dd').parse(_dateCtrl.text),
-        warehouseId: _selectedWarehouseId!,
-        receiverId: _selectedReceiverId!,
-        shiftId: _selectedShiftId,
-        note: _noteCtrl.text,
-        details: _details,
-      );
+      setState(() {
+        _hasUnsavedChanges = false;
+      });
 
-      context.read<MaterialExportCubit>().createExport(exportData);
+      await _saveDataInternal();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Thao tác thành công!"), backgroundColor: Colors.green)
+        );
+        Navigator.pop(context);
+      }
     }
   }
 }

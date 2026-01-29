@@ -1,7 +1,10 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:dropdown_search/dropdown_search.dart'; 
+import 'package:dropdown_search/dropdown_search.dart';
+import 'package:image_picker/image_picker.dart'; 
 // Thư viện quét mã
 import 'package:mobile_scanner/mobile_scanner.dart'; 
 
@@ -514,70 +517,149 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     );
   }
 
-  // --- DIALOG ĐỔI TRẠNG THÁI MÁY (Giữ nguyên) ---
-  void _showStatusDialog(BuildContext context, Machine machine, String newStatus, AppLocalizations l10n) {
+void _showStatusDialog(BuildContext context, Machine machine, String newStatus, AppLocalizations l10n) {
     final reasonCtrl = TextEditingController();
     bool isIssue = newStatus == 'STOPPED' || newStatus == 'MAINTENANCE';
     final formKey = GlobalKey<FormState>();
     final localizedNewStatus = _getLocalizedStatus(newStatus, l10n);
+    
+    // [THÊM] Biến lưu ảnh tạm thời trong Dialog
+    XFile? capturedImage;
+    final ImagePicker picker = ImagePicker();
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          l10n.changeStatusTitle(localizedNewStatus), 
-          style: TextStyle(color: _getMachineStatusColor(newStatus), fontSize: 18)
-        ),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(l10n.confirmStatusChangeMsg(machine.name, localizedNewStatus)),
-              if (isIssue) ...[
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: reasonCtrl,
-                  decoration: InputDecoration(
-                    labelText: l10n.reasonIssue,
-                    hintText: l10n.enterReason,
-                    border: const OutlineInputBorder(),
-                  ),
-                  validator: (v) => v!.isEmpty ? l10n.reasonRequired : null,
-                  maxLines: 2,
+      builder: (ctx) => StatefulBuilder( // [QUAN TRỌNG] Dùng StatefulBuilder để update UI trong Dialog
+        builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: Text(
+              l10n.changeStatusTitle(localizedNewStatus), 
+              style: TextStyle(color: _getMachineStatusColor(newStatus), fontSize: 18)
+            ),
+            content: Form(
+              key: formKey,
+              child: SingleChildScrollView( // Bọc để tránh lỗi tràn màn hình khi hiện ảnh
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(l10n.confirmStatusChangeMsg(machine.name, localizedNewStatus)),
+                    
+                    if (isIssue) ...[
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: reasonCtrl,
+                        decoration: InputDecoration(
+                          labelText: l10n.reasonIssue,
+                          hintText: l10n.enterReason,
+                          border: const OutlineInputBorder(),
+                        ),
+                        validator: (v) => v!.isEmpty ? l10n.required : null,
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      // --- KHU VỰC HIỂN THỊ ẢNH ĐÃ CHỤP ---
+                      if (capturedImage != null) ...[
+                        Stack(
+                          alignment: Alignment.topRight,
+                          children: [
+                            Container(
+                              height: 150,
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 10),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: kIsWeb
+                                    ? Image.network(
+                                        capturedImage!.path, // Trên Web, path là blob URL
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Image.file(
+                                        File(capturedImage!.path), // Trên Mobile, path là đường dẫn máy
+                                        fit: BoxFit.cover,
+                                      ),
+                              ),
+                            ),
+                            // Nút xóa ảnh
+                            IconButton(
+                              onPressed: () {
+                                setStateDialog(() {
+                                  capturedImage = null;
+                                });
+                              },
+                              icon: const CircleAvatar(
+                                backgroundColor: Colors.white,
+                                radius: 12,
+                                child: Icon(Icons.close, size: 16, color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+
+                      // --- NÚT CHỤP ẢNH ---
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          try {
+                            // Gọi Camera hệ thống
+                            final XFile? photo = await picker.pickImage(
+                              source: ImageSource.camera,
+                              imageQuality: 50, // Nén ảnh để upload nhanh hơn
+                            );
+                            
+                            if (photo != null) {
+                              // Cập nhật lại giao diện Dialog
+                              setStateDialog(() {
+                                capturedImage = photo;
+                              });
+                            }
+                          } catch (e) {
+                            debugPrint("Lỗi chụp ảnh: $e");
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Lỗi Camera: $e")),
+                            );
+                          }
+                        },
+                        icon: Icon(capturedImage == null ? Icons.camera_alt : Icons.camera_alt_outlined),
+                        label: Text(capturedImage == null ? l10n.captureEvidence : "Mở camera"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade200,
+                          foregroundColor: Colors.black87,
+                        ),
+                      )
+                    ]
+                  ],
                 ),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.cameraFeatureDev)));
-                  },
-                  icon: const Icon(Icons.camera_alt),
-                  label: Text(l10n.captureEvidence),
-                )
-              ]
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+              ElevatedButton(
+                onPressed: () {
+                  if (isIssue && !formKey.currentState!.validate()) return;
+                  
+                  // [ĐÃ SỬA] Truyền thẳng XFile (capturedImage) thay vì File
+                  context.read<MachineOperationCubit>().updateMachineStatus(
+                    machineId: machine.id, 
+                    status: newStatus,
+                    reason: reasonCtrl.text,
+                    imageFile: capturedImage, // Truyền XFile
+                  );
+                  Navigator.pop(ctx);
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: _getMachineStatusColor(newStatus), foregroundColor: Colors.white),
+                child: Text(l10n.confirm),
+              ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
-          ElevatedButton(
-            onPressed: () {
-              if (isIssue && !formKey.currentState!.validate()) return;
-              context.read<MachineOperationCubit>().updateMachineStatus(
-                machineId: machine.id, 
-                status: newStatus,
-                reason: reasonCtrl.text
-              );
-              Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: _getMachineStatusColor(newStatus), foregroundColor: Colors.white),
-            child: Text(l10n.confirm),
-          ),
-        ],
+          );
+        }
       ),
     );
   }
-
   // --- DIALOG KẾT THÚC PHIẾU (Giữ nguyên logic nhập kết quả) ---
   void _showReleaseDialog(BuildContext context, WeavingTicket ticket, AppLocalizations l10n) {
     final grossCtrl = TextEditingController();
