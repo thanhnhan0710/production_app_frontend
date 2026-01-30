@@ -33,7 +33,6 @@ import 'package:production_app_frontend/features/inventory/product/domain/produc
 import 'package:production_app_frontend/features/auth/presentation/bloc/auth_cubit.dart';
 
 class MaterialExportScreen extends StatefulWidget {
-  // [QUAN TRỌNG] Thêm tham số này để sửa lỗi "undefined named parameter 'existingExport'"
   final MaterialExport? existingExport; 
 
   const MaterialExportScreen({super.key, this.existingExport});
@@ -71,7 +70,8 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
     context.read<EmployeeCubit>().loadEmployees();
     context.read<ShiftCubit>().loadShifts();
     context.read<WorkScheduleCubit>().loadSchedules();
-    context.read<MachineOperationCubit>().loadDashboard();
+    context.read<MachineOperationCubit>().loadDashboard(); // Load trạng thái máy
+    
     context.read<ProductCubit>().loadProducts();
 
     // 2. Init Data (Kiểm tra xem là Tạo mới hay Sửa)
@@ -172,8 +172,6 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
     if (widget.existingExport == null) {
         await context.read<MaterialExportCubit>().createExport(exportData);
     } else {
-        // Tạm dùng createExport nếu chưa có hàm update trong Cubit (Backend cần hỗ trợ update)
-        // Hoặc: await context.read<MaterialExportCubit>().updateExport(exportData);
         await context.read<MaterialExportCubit>().createExport(exportData); 
     }
   }
@@ -482,7 +480,7 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                   final item = _details[index];
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text("Qty: ${item.quantity} kg", style: const TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text("Qty: ${item.quantity} kg | Loại: ${item.componentType ?? 'N/A'}", style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -516,6 +514,12 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
     Machine? selectedMachine;
     int selectedLine = 1;
     Product? selectedProduct;
+    String? selectedComponentType; 
+
+    final List<String> componentTypes = [
+      "GROUND", "GRD. MARKER", "EDGE", "BINDER", "STUFFER",
+      "STUFFER MAKER", "LOCK", "CATCH CORD", "FILLING", "2ND FILLING"
+    ];
 
     final dialogFormKey = GlobalKey<FormState>();
 
@@ -525,6 +529,33 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
+
+            // Helper để kiểm tra máy đang chạy & tự chọn sản phẩm
+            // ignore: no_leading_underscores_for_local_identifiers
+            void _checkAndSelectActiveProduct(Machine? machine, int line) {
+              if (machine == null) return;
+              
+              final machineOpState = context.read<MachineOperationCubit>().state;
+              final productState = context.read<ProductCubit>().state;
+              
+              if (machineOpState is MachineOpLoaded && productState is ProductLoaded) {
+                 // Check active ticket
+                 final checkKey = "${machine.id}_$line";
+                 if (machineOpState.activeTickets.containsKey(checkKey)) {
+                     final ticket = machineOpState.activeTickets[checkKey];
+                     if (ticket != null) {
+                         // Tìm sản phẩm đang chạy
+                         final activeProduct = productState.products.where((p) => p.id == ticket.productId).firstOrNull;
+                         if (activeProduct != null) {
+                            setStateDialog(() {
+                               selectedProduct = activeProduct;
+                            });
+                         }
+                     }
+                 }
+              }
+            }
+
             return AlertDialog(
               title: const Text("Thêm chi tiết xuất"),
               content: Form(
@@ -566,6 +597,16 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                           },
                         ),
                         const SizedBox(height: 10),
+                        
+                        DropdownButtonFormField<String>(
+                          value: selectedComponentType,
+                          decoration: const InputDecoration(labelText: "Loại sợi (Mục đích sử dụng) *"),
+                          items: componentTypes.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                          onChanged: (val) => setStateDialog(() => selectedComponentType = val),
+                          validator: (v) => v == null ? "Vui lòng chọn loại sợi" : null,
+                        ),
+                        const SizedBox(height: 10),
+
                         TextFormField(
                           decoration: const InputDecoration(labelText: "Số lượng xuất (Kg)"),
                           keyboardType: TextInputType.number,
@@ -595,7 +636,11 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                                     items: (filter, props) => machines,
                                     itemAsString: (m) => m.name,
                                     compareFn: (i, s) => i.id == s.id,
-                                    onChanged: (val) => setStateDialog(() => selectedMachine = val),
+                                    onChanged: (val) {
+                                        setStateDialog(() => selectedMachine = val);
+                                        // [AUTO-FILL] Kiểm tra nếu máy đang chạy, tự điền sản phẩm
+                                        _checkAndSelectActiveProduct(val, selectedLine);
+                                    },
                                     validator: (v) => v == null ? "Chọn máy" : null,
                                     decoratorProps: const DropDownDecoratorProps(decoration: InputDecoration(labelText: "Máy dệt")),
                                     popupProps: const PopupProps.menu(showSearchBox: true),
@@ -612,7 +657,11 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                                   DropdownMenuItem(value: 1, child: Text("Line 1")),
                                   DropdownMenuItem(value: 2, child: Text("Line 2")),
                                 ],
-                                onChanged: (val) => setStateDialog(() => selectedLine = val!),
+                                onChanged: (val) {
+                                   setStateDialog(() => selectedLine = val!);
+                                   // [AUTO-FILL] Check lại khi đổi line
+                                   _checkAndSelectActiveProduct(selectedMachine, val!);
+                                },
                               ),
                             ),
                           ],
@@ -626,6 +675,7 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                                items: (filter, props) => products,
                                itemAsString: (p) => p.itemCode,
                                compareFn: (i, s) => i.id == s.id,
+                               selectedItem: selectedProduct, // Tự động bind nếu đã được set từ _checkActive
                                onChanged: (val) => setStateDialog(() => selectedProduct = val),
                                validator: (v) => v == null ? "Chọn sản phẩm" : null,
                                decoratorProps: const DropDownDecoratorProps(decoration: InputDecoration(labelText: "Sản phẩm")),
@@ -644,14 +694,36 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                 ElevatedButton(
                   onPressed: () {
                     if (dialogFormKey.currentState!.validate()) {
+                      
+                      // [MỚI] KIỂM TRA DUY NHẤT LOẠI SỢI TRONG DANH SÁCH CHI TIẾT
+                      // Với cùng 1 Máy & Line & Phiếu xuất này, mỗi loại sợi chỉ xuất 1 lô.
+                      bool isDuplicateType = _details.any((d) => 
+                          d.machineId == selectedMachine!.id &&
+                          d.machineLine == selectedLine &&
+                          d.componentType == selectedComponentType
+                      );
+
+                      if (isDuplicateType) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                             SnackBar(
+                               content: Text("Loại sợi '$selectedComponentType' đã được chọn cho Máy ${selectedMachine!.name} Line $selectedLine rồi!"), 
+                               backgroundColor: Colors.orange
+                             )
+                          );
+                          return;
+                      }
+
+                      // [ĐÃ SỬA] Xóa bỏ đoạn code chặn "Máy đang chạy" ở đây.
+                      // Cho phép thêm bình thường dù máy có Active Ticket hay không.
+
                       final newDetail = MaterialExportDetail(
                         materialId: selectedStock!.materialId,
                         batchId: selectedStock!.batchId,
                         quantity: inputQty,
+                        componentType: selectedComponentType, 
                         machineId: selectedMachine!.id,
                         machineLine: selectedLine,
                         productId: selectedProduct!.id,
-                        // Truyền null cho các trường đã bỏ
                         standardId: null, 
                         basketId: null, 
                       );

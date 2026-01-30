@@ -5,6 +5,7 @@ import 'package:production_app_frontend/core/widgets/responsive_layout.dart';
 import 'package:production_app_frontend/features/hr/work_schedule/presentation/bloc/work_schedule_cubit.dart';
 import 'package:production_app_frontend/features/inventory/basket/doamain/basket_model.dart';
 import 'package:production_app_frontend/features/inventory/basket/presentation/bloc/baket_cubit.dart';
+import 'package:production_app_frontend/features/inventory/bom/presentation/bloc/bom_cubit.dart';
 import 'package:production_app_frontend/l10n/app_localizations.dart';
 
 import '../../domain/weaving_model.dart';
@@ -16,8 +17,11 @@ import 'package:production_app_frontend/features/inventory/product/domain/produc
 import 'package:production_app_frontend/features/inventory/product/presentation/bloc/product_cubit.dart';
 import 'package:production_app_frontend/features/production/machine/presentation/bloc/machine_cubit.dart';
 import 'package:production_app_frontend/features/production/machine/domain/machine_model.dart';
-import 'package:production_app_frontend/features/inventory/yarn_lot/presentation/bloc/yarn_lot_cubit.dart';
-import 'package:production_app_frontend/features/inventory/yarn_lot/domain/yarn_lot_model.dart';
+
+// Import Batch thay cho YarnLot
+import 'package:production_app_frontend/features/inventory/batch/presentation/bloc/batch_cubit.dart';
+import 'package:production_app_frontend/features/inventory/batch/domain/batch_model.dart';
+
 import 'package:production_app_frontend/features/production/standard/presentation/bloc/standard_cubit.dart';
 import 'package:production_app_frontend/features/production/standard/domain/standard_model.dart';
 import 'package:production_app_frontend/features/hr/employee/presentation/bloc/employee_cubit.dart';
@@ -50,10 +54,14 @@ class _WeavingScreenState extends State<WeavingScreen> {
     context.read<ProductCubit>().loadProducts();
     context.read<MachineCubit>().loadMachines();
     context.read<BasketCubit>().loadBaskets();
-    context.read<YarnLotCubit>().loadYarnLots();
+    
+    // Load Batch
+    context.read<BatchCubit>().loadBatches();
+    
     context.read<StandardCubit>().loadStandards();
     context.read<EmployeeCubit>().loadEmployees();
     context.read<DyeColorCubit>().loadColors();
+    context.read<BOMCubit>().loadBOMHeaders();
   }
 
   // Lọc phiếu theo ngày VÀ từ khóa tìm kiếm
@@ -142,7 +150,6 @@ class _WeavingScreenState extends State<WeavingScreen> {
                           separatorBuilder: (_,__) => const SizedBox(height: 12),
                           itemBuilder: (context, index) {
                              final ticket = filteredTickets[index];
-                             // Mobile list items
                              return _buildTicketCardMobile(ticket, l10n);
                           },
                         ),
@@ -238,7 +245,6 @@ class _WeavingScreenState extends State<WeavingScreen> {
           ),
           const SizedBox(height: 12),
           
-          // Row chứa Date Picker & Search
           Row(
             children: [
               InkWell(
@@ -394,7 +400,7 @@ class _WeavingScreenState extends State<WeavingScreen> {
                       label: Text(l10n.newInspection),
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                       onPressed: () {
-                         showDialog(context: context, builder: (ctx) => WeavingInspectionDialog(ticket: ticket));
+                          showDialog(context: context, builder: (ctx) => WeavingInspectionDialog(ticket: ticket));
                       },
                     ),
                     const SizedBox(width: 8),
@@ -437,15 +443,16 @@ class _WeavingScreenState extends State<WeavingScreen> {
               ),
             ),
             
-            // 4. Materials
+            // 4. Materials (CẬP NHẬT: Hiển thị danh sách Batch chi tiết)
             _buildInfoSection("Materials", [
-              _infoRow("Yarn Lot", _YarnLotInfo(id: ticket.basketId)),
+              // [UPDATED] Sử dụng _TicketBatchList để hiển thị nhiều lô và số lượng
+              _infoRow("Yarn Batches", _TicketBatchList(yarns: ticket.yarns)),
               _infoRow("Load Date", Text(ticket.yarnLoadDate)),
-              _infoRow("Basket", Text("${ticket.basketCode} (ID: ${ticket.basketId})")),
+              _infoRow("Basket", Text("${ticket.basketCode ?? 'N/A'} (ID: ${ticket.basketId ?? '-'})")),
               _infoRow("Tare Weight", Text("${ticket.tareWeight ?? 0} kg")),
             ]),
 
-            // [CẬP NHẬT] 5. Time & Personnel (Hiển thị chi tiết)
+            // 5. Time & Personnel
             Card(
               margin: const EdgeInsets.only(bottom: 16),
               elevation: 0,
@@ -466,13 +473,11 @@ class _WeavingScreenState extends State<WeavingScreen> {
                         const SizedBox(width: 8),
                         Expanded(child: _infoRow("Start Time", Text(_formatDateTimeFull(ticket.timeIn)))),
                         
-                        // [SỬA LỖI Ở ĐÂY]
-                        // Dùng ticket.employeeInId và ticket.timeIn cho Operator In
                         Expanded(child: _infoRow("Operator In", 
                           ticket.employeeInId != null 
                             ? _EmployeeAndShiftInfo(
-                                employeeId: ticket.employeeInId!, // Dùng employeeInId
-                                dateTimeStr: ticket.timeIn        // Dùng timeIn (vì timeIn luôn có giá trị)
+                                employeeId: ticket.employeeInId!,
+                                dateTimeStr: ticket.timeIn
                               ) 
                             : const Text("-")
                         )),
@@ -485,18 +490,15 @@ class _WeavingScreenState extends State<WeavingScreen> {
                         const Icon(Icons.logout, size: 18, color: Colors.red),
                         const SizedBox(width: 8),
                         
-                        // Kiểm tra null an toàn cho timeOut
                         Expanded(child: _infoRow("Finish Time", Text(ticket.timeOut != null ? _formatDateTimeFull(ticket.timeOut!) : "---"))),
                         
-                        // [SỬA LỖI Ở ĐÂY]
-                        // Kiểm tra kỹ ticket.employeeOutId và ticket.timeOut trước khi dùng
                         Expanded(child: _infoRow("Operator Out", 
                           (ticket.employeeOutId != null && ticket.timeOut != null)
                             ? _EmployeeAndShiftInfo(
                                 employeeId: ticket.employeeOutId!, 
                                 dateTimeStr: ticket.timeOut!
                               ) 
-                            : const Text("-") // Nếu chưa kết thúc thì hiện dấu gạch ngang
+                            : const Text("-")
                         )),
                       ],
                     ),
@@ -515,7 +517,7 @@ class _WeavingScreenState extends State<WeavingScreen> {
 
             const SizedBox(height: 24),
             
-            // [CẬP NHẬT] 7. Inspection History (Hiển thị chi tiết từng lần)
+            // 7. Inspection History
             Text(l10n.inspectionHistory, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
             const SizedBox(height: 12),
             
@@ -593,31 +595,30 @@ class _WeavingScreenState extends State<WeavingScreen> {
               children: [
                 Row(
                   children: [
-                     CircleAvatar(
+                      CircleAvatar(
                         backgroundColor: Colors.blue.shade50, radius: 14,
                         child: Text("QC", style: TextStyle(fontSize: 10, color: Colors.blue.shade900, fontWeight: FontWeight.bold)),
-                     ),
-                     const SizedBox(width: 8),
-                     Text(item.stageName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                     const SizedBox(width: 8),
-                     Text(_formatDateTimeFull(item.inspectionTime), style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(item.stageName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      const SizedBox(width: 8),
+                      Text(_formatDateTimeFull(item.inspectionTime), style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                   ],
                 ),
                 Text("${item.employeeName ?? ''} (${item.shiftName ?? ''})", style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
               ],
             ),
             const Divider(),
-            // Hiển thị lưới thông số kiểm tra
             Wrap(
               spacing: 16,
               runSpacing: 8,
               children: [
-                 _specBadge("W: ${item.widthMm}mm"),
-                 _specBadge("Dens: ${item.weftDensity}"),
-                 _specBadge("Tens: ${item.tensionDan}N"),
-                 _specBadge("Thick: ${item.thicknessMm}mm"),
-                 _specBadge("Weight: ${item.weightGm}g"),
-                 _specBadge("Bow: ${item.bowing}%"),
+                  _specBadge("W: ${item.widthMm}mm"),
+                  _specBadge("Dens: ${item.weftDensity}"),
+                  _specBadge("Tens: ${item.tensionDan}N"),
+                  _specBadge("Thick: ${item.thicknessMm}mm"),
+                  _specBadge("Weight: ${item.weightGm}g"),
+                  _specBadge("Bow: ${item.bowing}%"),
               ],
             )
           ],
@@ -792,7 +793,9 @@ class _WeavingScreenState extends State<WeavingScreen> {
     int? selectedStandardId = ticket?.standardId;
     int? selectedMachineId = ticket?.machineId;
     int? selectedBasketId = ticket?.basketId;
-    int? selectedYarnLotId = ticket?.batchId;
+    
+    int? selectedBatchId = ticket != null && ticket.yarns.isNotEmpty ? ticket.yarns.first.batchId : null;
+    
     int? selectedEmpInId = ticket?.employeeInId;
 
     if (ticket == null) {
@@ -867,12 +870,13 @@ class _WeavingScreenState extends State<WeavingScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                       Expanded(child: BlocBuilder<YarnLotCubit, YarnLotState>(builder: (c, s) {
-                        List<YarnLot> items = (s is YarnLotLoaded) ? s.yarnLots : [];
+                        // Sử dụng BatchCubit để load danh sách Batch
+                        Expanded(child: BlocBuilder<BatchCubit, BatchState>(builder: (c, s) {
+                        List<Batch> items = (s is BatchLoaded) ? s.batches : [];
                         return DropdownButtonFormField<int>(
-                          value: selectedYarnLotId, decoration: _inputDeco(l10n.yarnLotTitle),
-                          items: items.map((e) => DropdownMenuItem(value: e.id, child: Text(e.lotCode))).toList(),
-                          onChanged: (v) => selectedYarnLotId = v,
+                          value: selectedBatchId, decoration: _inputDeco(l10n.yarnLotTitle),
+                          items: items.map((e) => DropdownMenuItem(value: e.batchId, child: Text(e.internalBatchCode))).toList(),
+                          onChanged: (v) => selectedBatchId = v,
                         );
                       })),
                       const SizedBox(width: 12),
@@ -884,27 +888,27 @@ class _WeavingScreenState extends State<WeavingScreen> {
                   Text(l10n.timeAndPersonnel, style: const TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   BlocBuilder<EmployeeCubit, EmployeeState>(builder: (c, s) {
-                     List<Employee> items = (s is EmployeeLoaded) ? s.employees : [];
-                     return DropdownButtonFormField<int>(
-                       value: selectedEmpInId, decoration: _inputDeco(l10n.empIn),
-                       items: items.map((e) => DropdownMenuItem(value: e.id, child: Text(e.fullName))).toList(),
-                       onChanged: (v) => selectedEmpInId = v,
-                     );
+                      List<Employee> items = (s is EmployeeLoaded) ? s.employees : [];
+                      return DropdownButtonFormField<int>(
+                        value: selectedEmpInId, decoration: _inputDeco(l10n.empIn),
+                        items: items.map((e) => DropdownMenuItem(value: e.id, child: Text(e.fullName))).toList(),
+                        onChanged: (v) => selectedEmpInId = v,
+                      );
                   }),
                   
                   if (ticket != null) ...[
-                     const SizedBox(height: 16),
-                     Text(l10n.output, style: const TextStyle(fontWeight: FontWeight.bold)),
-                     const SizedBox(height: 8),
-                     Row(children: [
-                       Expanded(child: TextFormField(controller: grossCtrl, decoration: _inputDeco(l10n.gross))),
-                       const SizedBox(width: 12),
-                       Expanded(child: TextFormField(controller: netCtrl, decoration: _inputDeco(l10n.netWeight))),
-                       const SizedBox(width: 12),
-                       Expanded(child: TextFormField(controller: lenCtrl, decoration: _inputDeco(l10n.length))),
-                       const SizedBox(width: 12),
-                       Expanded(child: TextFormField(controller: knotCtrl, decoration: _inputDeco(l10n.splice))),
-                     ]),
+                      const SizedBox(height: 16),
+                      Text(l10n.output, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Row(children: [
+                        Expanded(child: TextFormField(controller: grossCtrl, decoration: _inputDeco(l10n.gross))),
+                        const SizedBox(width: 12),
+                        Expanded(child: TextFormField(controller: netCtrl, decoration: _inputDeco(l10n.netWeight))),
+                        const SizedBox(width: 12),
+                        Expanded(child: TextFormField(controller: lenCtrl, decoration: _inputDeco(l10n.length))),
+                        const SizedBox(width: 12),
+                        Expanded(child: TextFormField(controller: knotCtrl, decoration: _inputDeco(l10n.splice))),
+                      ]),
                   ]
                 ],
               ),
@@ -916,6 +920,12 @@ class _WeavingScreenState extends State<WeavingScreen> {
           ElevatedButton(
             onPressed: () {
                if (formKey.currentState!.validate()) {
+                  // Tạo list yarns nếu chọn batch
+                  List<WeavingTicketYarn> yarns = ticket?.yarns ?? [];
+                  if (selectedBatchId != null && yarns.isEmpty) {
+                      yarns = [WeavingTicketYarn(batchId: selectedBatchId!, componentType: "UNKNOWN")];
+                  }
+
                   final newTicket = WeavingTicket(
                     id: ticket?.id ?? 0,
                     code: codeCtrl.text,
@@ -924,7 +934,10 @@ class _WeavingScreenState extends State<WeavingScreen> {
                     machineId: selectedMachineId ?? 0, 
                     machineLine: lineCtrl.text,
                     yarnLoadDate: dateCtrl.text,
-                    batchId: selectedYarnLotId ?? 0, 
+                    
+                    // Truyền yarns
+                    yarns: yarns, 
+                    
                     basketId: selectedBasketId ?? 0, 
                     timeIn: ticket?.timeIn ?? DateTime.now().toIso8601String(),
                     employeeInId: selectedEmpInId ?? 0,
@@ -984,8 +997,7 @@ class _ProductInfo extends StatelessWidget {
   }
 }
 
-// [MỚI] Widget hiển thị đầy đủ thông tin Sản phẩm (Ảnh + Mã + Tên)
-// ignore: unused_element
+// Widget hiển thị đầy đủ thông tin Sản phẩm
 class _ProductFullDetails extends StatelessWidget {
   final int id;
   const _ProductFullDetails({required this.id});
@@ -1044,13 +1056,11 @@ class _ProductFullDetails extends StatelessWidget {
   }
 }
 
-
-// [CẬP NHẬT] Widget hiển thị đầy đủ thông số Standard + Hình ảnh Sản phẩm
+// Widget hiển thị đầy đủ thông số Standard
 class _StandardFullDetails extends StatelessWidget {
   final int standardId;
   const _StandardFullDetails({required this.standardId});
 
-  // Helper chuyển Hex
   Color _hexToColor(String? hexString) {
     if (hexString == null || hexString.isEmpty) return Colors.grey;
     try {
@@ -1074,49 +1084,48 @@ class _StandardFullDetails extends StatelessWidget {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-               // [THÔNG TIN CHI TIẾT]
                Expanded(
                  child: Column(
                    crossAxisAlignment: CrossAxisAlignment.start,
                    children: [
-                      // Specs Grid
-                      Wrap(
-                        spacing: 16,
-                        runSpacing: 8,
-                        children: [
-                           _specItem(Icons.straighten, "W", "${item.widthMm} mm"),
-                           _specItem(Icons.line_weight, "T", "${item.thicknessMm} mm"),
-                           _specItem(Icons.scale, "G/m", "${item.weightGm} g/m"),
-                           _specItem(Icons.bolt, "Str", "${item.breakingStrength} daN", color: Colors.red.shade700),
-                           _specItem(Icons.expand, "El", "${item.elongation} %", color: Colors.indigo),
-                           _specItem(Icons.grid_on, "Den", "${item.weftDensity} pick/10cm"),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Color
-                      Column(
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 14, height: 14,
-                                decoration: BoxDecoration(color: _hexToColor(item.colorHex), shape: BoxShape.circle, border: Border.all(color: Colors.grey.shade300)),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(item.colorName ?? "N/A", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                              if (item.deltaE.isNotEmpty) ...[
-                                 const SizedBox(width: 12),
-                                 Text("ΔE: ${item.deltaE}", style: const TextStyle(fontSize: 12, color: Colors.purple, fontWeight: FontWeight.bold)),
-                              ],
-                              
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                              if (item.appearance.isNotEmpty)
-                                        Text("Appr: ${item.appearance}", style: const TextStyle(fontSize: 11, color: Colors.black87, fontWeight: FontWeight.w500), maxLines: 2, overflow: TextOverflow.ellipsis),
-                        ],
-                      )
+                     // Specs Grid
+                     Wrap(
+                       spacing: 16,
+                       runSpacing: 8,
+                       children: [
+                          _specItem(Icons.straighten, "W", "${item.widthMm} mm"),
+                          _specItem(Icons.line_weight, "T", "${item.thicknessMm} mm"),
+                          _specItem(Icons.scale, "G/m", "${item.weightGm} g/m"),
+                          _specItem(Icons.bolt, "Str", "${item.breakingStrength} daN", color: Colors.red.shade700),
+                          _specItem(Icons.expand, "El", "${item.elongation} %", color: Colors.indigo),
+                          _specItem(Icons.grid_on, "Den", "${item.weftDensity} pick/10cm"),
+                       ],
+                     ),
+                     const SizedBox(height: 8),
+                     
+                     // Color
+                     Column(
+                       children: [
+                         Row(
+                           children: [
+                             Container(
+                               width: 14, height: 14,
+                               decoration: BoxDecoration(color: _hexToColor(item.colorHex), shape: BoxShape.circle, border: Border.all(color: Colors.grey.shade300)),
+                             ),
+                             const SizedBox(width: 6),
+                             Text(item.colorName ?? "N/A", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                             if (item.deltaE.isNotEmpty) ...[
+                                const SizedBox(width: 12),
+                                Text("ΔE: ${item.deltaE}", style: const TextStyle(fontSize: 12, color: Colors.purple, fontWeight: FontWeight.bold)),
+                             ],
+                             
+                           ],
+                         ),
+                         const SizedBox(height: 8),
+                             if (item.appearance.isNotEmpty)
+                                     Text("Appr: ${item.appearance}", style: const TextStyle(fontSize: 11, color: Colors.black87, fontWeight: FontWeight.w500), maxLines: 2, overflow: TextOverflow.ellipsis),
+                       ],
+                     )
                    ],
                  ),
                ),
@@ -1141,12 +1150,6 @@ class _StandardFullDetails extends StatelessWidget {
   }
 }
 
-// ignore: unused_element
-class _StandardInfo extends StatelessWidget {
-  final int id; const _StandardInfo({required this.id});
-  @override Widget build(BuildContext context) => BlocBuilder<StandardCubit, StandardState>(builder: (c,s)=>Text(s is StandardLoaded ? "STD-$id" : "$id", style: const TextStyle(fontWeight: FontWeight.bold)));
-}
-
 class _MachineInfo extends StatelessWidget {
   final int id; final String line; const _MachineInfo({required this.id, required this.line});
   @override Widget build(BuildContext context) => BlocBuilder<MachineCubit, MachineState>(builder: (c,s) {
@@ -1156,19 +1159,81 @@ class _MachineInfo extends StatelessWidget {
   });
 }
 
-class _YarnLotInfo extends StatelessWidget {
-  final int id; const _YarnLotInfo({required this.id});
-  @override Widget build(BuildContext context) => BlocBuilder<YarnLotCubit, YarnLotState>(builder: (c,s)=>Text(s is YarnLotLoaded ? (s.yarnLots.where((e)=>e.id==id).firstOrNull?.lotCode ?? "$id") : "$id", style: const TextStyle(fontWeight: FontWeight.bold)));
+// [CẬP NHẬT] Widget hiển thị danh sách Batch chi tiết
+// Không cần dùng BatchCubit nữa vì dữ liệu đã có sẵn trong WeavingTicketYarn
+class _TicketBatchList extends StatelessWidget {
+  final List<WeavingTicketYarn> yarns;
+  const _TicketBatchList({required this.yarns});
+
+  @override
+  Widget build(BuildContext context) {
+    if (yarns.isEmpty) return const Text("-", style: TextStyle(color: Colors.grey));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: yarns.map((yarnItem) {
+        // 1. Lấy thông tin trực tiếp từ Model (Backend đã join sẵn)
+        final internalCode = yarnItem.internalBatchCode ?? "ID:${yarnItem.batchId}";
+        final supplierName = yarnItem.supplierShortName;
+
+        // 2. Format hiển thị: "Mã_Lô (NCC)"
+        // Ví dụ: B001 (VNP)
+        final displayCode = (supplierName != null && supplierName.isNotEmpty)
+            ? "$internalCode ($supplierName)"
+            : internalCode;
+
+        // 3. Lấy số lượng
+        final quantity = yarnItem.quantity;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 4.0),
+          child: RichText(
+            text: TextSpan(
+              style: const TextStyle(color: Colors.black87, fontSize: 13, fontFamily: 'Roboto'),
+              children: [
+                // Loại sợi (VD: GROUND)
+                TextSpan(
+                  text: "${yarnItem.componentType}: ",
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey, fontSize: 11),
+                ),
+                // Mã lô + NCC
+                TextSpan(
+                  text: displayCode,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                // Số lượng (Màu xanh lá)
+                const TextSpan(text: "  "),
+                TextSpan(
+                  text: "($quantity kg)",
+                  style: TextStyle(color: Colors.green.shade700, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
 }
 
+// Widget BatchInfo cho hiển thị lẻ (nếu cần dùng chỗ khác)
 // ignore: unused_element
-class _EmployeeInfo extends StatelessWidget {
-  final int id; const _EmployeeInfo({required this.id});
-  @override Widget build(BuildContext context) => BlocBuilder<EmployeeCubit, EmployeeState>(builder: (c,s)=>Text(s is EmployeeLoaded ? (s.employees.where((e)=>e.id==id).firstOrNull?.fullName ?? "$id") : "$id", style: const TextStyle(fontWeight: FontWeight.bold)));
+class _BatchInfo extends StatelessWidget {
+  final int id; const _BatchInfo({required this.id});
+  @override Widget build(BuildContext context) => BlocBuilder<BatchCubit, BatchState>(
+    builder: (c,s) {
+       if (s is BatchLoaded) {
+           final b = s.batches.where((e)=>e.batchId==id).firstOrNull;
+           return Text(b?.internalBatchCode ?? "$id", style: const TextStyle(fontWeight: FontWeight.bold));
+       }
+       return Text("$id");
+    }
+  );
 }
+
 class _EmployeeAndShiftInfo extends StatelessWidget {
   final int employeeId;
-  final String dateTimeStr; // Thời điểm làm việc để tra cứu lịch
+  final String dateTimeStr; 
 
   const _EmployeeAndShiftInfo({required this.employeeId, required this.dateTimeStr});
 
@@ -1182,17 +1247,14 @@ class _EmployeeAndShiftInfo extends StatelessWidget {
           if (e != null) empName = e.fullName;
         }
 
-        // Sau khi có tên nhân viên, tìm Ca làm việc
         return BlocBuilder<WorkScheduleCubit, WorkScheduleState>(
           builder: (context, scheduleState) {
             String shiftInfo = "";
             if (scheduleState is WorkScheduleLoaded) {
               try {
-                // Parse ngày làm việc từ chuỗi thời gian (chỉ lấy yyyy-MM-dd)
                 final date = DateTime.parse(dateTimeStr);
                 final dateKey = DateFormat('yyyy-MM-dd').format(date);
 
-                // Tìm lịch làm việc khớp User + Ngày
                 final schedule = scheduleState.schedules.where((s) => 
                   s.employeeId == employeeId && s.workDate == dateKey
                 ).firstOrNull;
@@ -1200,8 +1262,8 @@ class _EmployeeAndShiftInfo extends StatelessWidget {
                 if (schedule != null && schedule.shiftName != null) {
                   shiftInfo = " (${schedule.shiftName})";
                 }
+              // ignore: empty_catches
               } catch (e) {
-                // Lỗi parse date hoặc không tìm thấy
               }
             }
 

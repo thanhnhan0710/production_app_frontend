@@ -5,12 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:image_picker/image_picker.dart'; 
-// Thư viện quét mã
 import 'package:mobile_scanner/mobile_scanner.dart'; 
 
 import 'package:production_app_frontend/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:production_app_frontend/features/hr/work_schedule/presentation/bloc/work_schedule_cubit.dart';
 import 'package:production_app_frontend/features/inventory/basket/doamain/basket_model.dart';
+import 'package:production_app_frontend/features/inventory/basket/presentation/bloc/baket_cubit.dart';
+import 'package:production_app_frontend/features/inventory/bom/presentation/bloc/bom_cubit.dart'; 
+
 import 'package:production_app_frontend/features/production/weaving/presentation/bloc/weaving_cubit.dart';
 import 'package:production_app_frontend/features/production/weaving/presentation/screens/weaving_inspection_dialog.dart';
 import 'package:production_app_frontend/l10n/app_localizations.dart';
@@ -22,12 +24,16 @@ import 'package:production_app_frontend/features/inventory/product/domain/produc
 import 'package:production_app_frontend/features/inventory/product/presentation/bloc/product_cubit.dart';
 import 'package:production_app_frontend/features/production/standard/domain/standard_model.dart';
 import 'package:production_app_frontend/features/production/standard/presentation/bloc/standard_cubit.dart';
-import 'package:production_app_frontend/features/inventory/yarn_lot/domain/yarn_lot_model.dart';
-import 'package:production_app_frontend/features/inventory/yarn_lot/presentation/bloc/yarn_lot_cubit.dart';
+
+// [THAY ĐỔI] Import Batch thay vì YarnLot
+import 'package:production_app_frontend/features/inventory/batch/presentation/bloc/batch_cubit.dart';
+import 'package:production_app_frontend/features/inventory/batch/domain/batch_model.dart';
+
 import 'package:production_app_frontend/features/hr/employee/domain/employee_model.dart';
 import 'package:production_app_frontend/features/hr/employee/presentation/bloc/employee_cubit.dart';
 import 'package:production_app_frontend/features/hr/shift/presentation/bloc/shift_cubit.dart';
 import 'package:production_app_frontend/features/production/machine/presentation/screens/machine_history_dialog.dart';
+
 
 class MachineOperationScreen extends StatefulWidget {
   const MachineOperationScreen({super.key});
@@ -47,10 +53,32 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     context.read<MachineOperationCubit>().loadDashboard();
     context.read<ProductCubit>().loadProducts();
     context.read<StandardCubit>().loadStandards();
-    context.read<YarnLotCubit>().loadYarnLots();
+    
+    // [THAY ĐỔI] Load Batch
+    context.read<BatchCubit>().loadBatches();
+    
     context.read<EmployeeCubit>().loadEmployees();
     context.read<ShiftCubit>().loadShifts();
     context.read<WorkScheduleCubit>().loadSchedules();
+    context.read<BasketCubit>().loadBaskets();
+    context.read<BOMCubit>().loadBOMHeaders(); 
+  }
+
+  // Hàm tính toán Ca làm việc tự động theo giờ
+  String _calculateCurrentShift() {
+    final hour = DateTime.now().hour;
+    // Ca A: 06:00 - 14:00 (tức < 14h)
+    if (hour >= 6 && hour < 14) {
+      return "Ca A";
+    } 
+    // Ca B: 14:00 - 22:00 (tức < 22h)
+    else if (hour >= 14 && hour < 22) {
+      return "Ca B";
+    } 
+    // Ca C: 22:00 - 06:00
+    else {
+      return "Ca C";
+    }
   }
 
   @override
@@ -311,38 +339,38 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
 
   // --- WIDGET SLOT TRỤC ---
   Widget _buildLineSlot(BuildContext context, Machine machine, String lineCode, WeavingTicket? ticket, List<Basket> readyBaskets, AppLocalizations l10n) {
-    final bool isActive = ticket != null;
+    bool hasTicket = ticket != null;
+    
+    // Check nếu rổ chưa được gán (null hoặc 0)
+    bool isPendingBasket = hasTicket && (ticket.basketId == null || ticket.basketId == 0);
+    bool isFullyActive = hasTicket && !isPendingBasket;
+
+    Color slotColor = Colors.transparent;
+    
+    if (isPendingBasket) slotColor = const Color(0xFFFFF9C4); // Vàng nhạt
+    if (isFullyActive) slotColor = Colors.green.shade50;
 
     return Container(
-      color: isActive ? Colors.green.shade50 : Colors.transparent,
+      color: slotColor,
       child: Stack(
         children: [
           Positioned.fill(
             child: InkWell(
               onTap: () {
-                if (!isActive) {
-                  // [THAY ĐỔI] Không cho phép gán rổ thủ công nữa. 
-                  // Phải xuất kho mới có phiếu.
+                if (!hasTicket) {
+                  // Chưa có phiếu -> Báo user
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text("Vui lòng tạo phiếu xuất kho để gán rổ vào máy."),
+                      content: Text("Vui lòng tạo phiếu xuất kho để khởi tạo lệnh chạy."),
                       backgroundColor: Colors.orange,
                     )
                   );
+                } else if (isPendingBasket) {
+                  // Có phiếu nhưng chưa có rổ -> Mở dialog chọn rổ & tiêu chuẩn
+                  _showAssignBasketDialog(context, ticket, l10n);
                 } else {
-                  // Đang chạy -> Mở Inspection
-                  context.read<WeavingCubit>().loadInspections(ticket.id);
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (ctx) => WeavingInspectionDialog(
-                      ticket: ticket,
-                      onRelease: () {
-                        Navigator.pop(ctx);
-                        _showReleaseDialog(context, ticket, l10n);
-                      },
-                    ),
-                  );
+                  // Đã có đủ -> Menu Inspect/Release
+                  _showTicketActionMenu(context, ticket, l10n);
                 }
               },
               child: Column(
@@ -354,7 +382,8 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                   ),
                   const SizedBox(height: 2),
                   
-                  if (isActive) ...[
+                  if (isFullyActive) ...[
+                    // Hiển thị Rổ như cũ
                     const Icon(Icons.settings_backup_restore, color: Colors.green, size: 16),
                     const SizedBox(height: 2),
                     Text(
@@ -366,8 +395,16 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                       "#${ticket.code.substring(ticket.code.length > 4 ? ticket.code.length - 4 : 0)}", 
                       style: const TextStyle(fontSize: 9, color: Colors.grey)
                     ),
+                  ] else if (isPendingBasket) ...[
+                    const Icon(Icons.warning_amber_rounded, color: Colors.deepOrange, size: 24),
+                    const SizedBox(height: 2),
+                    const Text(
+                      "Chưa gán rổ",
+                      style: TextStyle(fontSize: 10, color: Colors.deepOrange, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
                   ] else ...[
-                    // [THAY ĐỔI] Thay icon (+) bằng icon chờ, thể hiện đang chờ kho xuất hàng
+                    // Không có phiếu
                     Icon(Icons.hourglass_empty, color: Colors.grey.shade300, size: 24),
                     const Text(
                       "---",
@@ -379,16 +416,16 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
             ),
           ),
 
-          if (isActive)
+          if (hasTicket)
             Positioned(
               right: -2,
               top: -2,
               child: Tooltip(
-                message: l10n.viewTicket, // Đổi tooltip từ "Edit" thành "View"
+                message: l10n.viewTicket,
                 child: InkWell(
                   customBorder: const CircleBorder(),
                   onTap: () {
-                    // [THAY ĐỔI] Mở dialog chỉ xem (Read-only)
+                    // Xem thông tin chi tiết
                     _showAssignOrEditDialog(context, machine, lineCode, readyBaskets, l10n, existingTicket: ticket);
                   },
                   child: Container(
@@ -403,7 +440,186 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     );
   }
 
-  // --- DIALOG XEM THÔNG TIN PHIẾU (READ ONLY) ---
+  // --- DIALOG: GÁN RỔ & TIÊU CHUẨN ---
+  void _showAssignBasketDialog(BuildContext context, WeavingTicket ticket, AppLocalizations l10n) async {
+    // Load Data
+    final standardState = context.read<StandardCubit>().state;
+    final basketState = context.read<BasketCubit>().state;
+    
+    // Lọc tiêu chuẩn theo ProductID của ticket
+    List<Standard> availableStandards = [];
+    if (standardState is StandardLoaded && ticket.productId != 0) {
+      availableStandards = standardState.standards.where((s) => s.productId == ticket.productId).toList();
+    }
+
+    // Lọc rổ Ready
+    List<Basket> readyBaskets = [];
+    if (basketState is BasketLoaded) {
+      readyBaskets = basketState.baskets.where((b) => b.status == "READY").toList();
+    }
+
+    Standard? selectedStandard;
+    Basket? selectedBasket;
+    final formKey = GlobalKey<FormState>();
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text("Gán Rổ & Tiêu chuẩn", style: TextStyle(color: Color(0xFF003366))),
+              content: Form(
+                key: formKey,
+                child: SizedBox(
+                  width: 400,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.info_outline, color: Colors.orange, size: 16),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text("Đang chạy sản phẩm ID: ${ticket.productId}", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade800))),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            // [MỚI] Hiển thị danh sách lô sợi trong dialog gán rổ
+                            const Text("Lô sợi sử dụng:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            _TicketBatchList(yarns: ticket.yarns),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 1. Chọn Tiêu chuẩn (Lọc theo Product)
+                      DropdownButtonFormField<Standard>(
+                        decoration: const InputDecoration(labelText: "Tiêu chuẩn *", border: OutlineInputBorder()),
+                        items: availableStandards.map((s) => DropdownMenuItem(value: s, child: Text("W:${s.widthMm} | T:${s.thicknessMm}"))).toList(),
+                        onChanged: (val) => setStateDialog(() => selectedStandard = val),
+                        validator: (v) => v == null ? "Vui lòng chọn tiêu chuẩn" : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 2. Chọn Rổ (Có nút Scan)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: DropdownSearch<Basket>(
+                              items: (filter, props) => readyBaskets,
+                              itemAsString: (b) => "${b.code} (${b.tareWeight}kg)",
+                              compareFn: (i, s) => i.id == s.id,
+                              selectedItem: selectedBasket,
+                              onChanged: (val) => setStateDialog(() => selectedBasket = val),
+                              validator: (v) => v == null ? "Vui lòng chọn rổ" : null,
+                              decoratorProps: const DropDownDecoratorProps(decoration: InputDecoration(labelText: "Rổ chứa *", border: OutlineInputBorder())),
+                              popupProps: const PopupProps.menu(showSearchBox: true),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: IconButton.filled(
+                              style: IconButton.styleFrom(backgroundColor: const Color(0xFF003366)),
+                              icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+                              onPressed: () async {
+                                final code = await Navigator.push(context, MaterialPageRoute(builder: (_) => const SimpleBarcodeScanner()));
+                                if (code != null) {
+                                  final found = readyBaskets.where((b) => b.code == code).firstOrNull;
+                                  if (found != null) {
+                                    setStateDialog(() => selectedBasket = found);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Không tìm thấy rổ hoặc rổ đang bận")));
+                                  }
+                                }
+                              },
+                            ),
+                          )
+                        ],
+                      )
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+                ElevatedButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      Navigator.pop(ctx);
+                      
+                      // Gọi API Update Ticket trong Cubit
+                      context.read<MachineOperationCubit>().updateTicketInfo(
+                        ticketId: ticket.id,
+                        basketId: selectedBasket!.id,
+                        standardId: selectedStandard!.id,
+                        // Lấy ID người đang đăng nhập
+                        employeeInId: context.read<AuthCubit>().state is AuthAuthenticated 
+                            ? (context.read<AuthCubit>().state as AuthAuthenticated).user.employeeId ?? 0 
+                            : 0,
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003366), foregroundColor: Colors.white),
+                  child: const Text("XÁC NHẬN"),
+                )
+              ],
+            );
+          }
+        );
+      },
+    );
+  }
+
+  // --- MENU CHỌN HÀNH ĐỘNG ---
+  void _showTicketActionMenu(BuildContext context, WeavingTicket ticket, AppLocalizations l10n) {
+      showModalBottomSheet(
+        context: context,
+        builder: (ctx) => Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.fact_check, color: Colors.blue),
+              title: const Text("Kiểm tra chất lượng"), 
+              onTap: () {
+                Navigator.pop(ctx);
+                final autoShift = _calculateCurrentShift();
+                context.read<WeavingCubit>().loadInspections(ticket.id);
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (dlgCtx) => WeavingInspectionDialog(
+                    ticket: ticket,
+                    shiftName: autoShift, 
+                    onRelease: () {
+                      Navigator.pop(dlgCtx);
+                      _showReleaseDialog(context, ticket, l10n);
+                    },
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.stop_circle, color: Colors.red),
+              title: Text(l10n.finishTicket),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showReleaseDialog(context, ticket, l10n);
+              },
+            ),
+          ],
+        ),
+      );
+  }
+
+  // --- DIALOG XEM THÔNG TIN (READ ONLY) ---
   void _showAssignOrEditDialog(
     BuildContext context, 
     Machine machine, 
@@ -412,23 +628,18 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     AppLocalizations l10n, 
     {WeavingTicket? existingTicket}
   ) {
-    // Nếu không có phiếu (Logic cũ là tạo mới), ta return luôn vì giờ đã chặn ở _buildLineSlot
     if (existingTicket == null) return;
 
     final productState = context.read<ProductCubit>().state;
     final standardState = context.read<StandardCubit>().state;
-    final yarnLotState = context.read<YarnLotCubit>().state;
+    // Bỏ YarnLotState, dùng BatchCubit đã load ở initState hoặc widget con tự xử lý
     
     List<Product> products = (productState is ProductLoaded) ? productState.products : [];
     List<Standard> allStandards = (standardState is StandardLoaded) ? standardState.standards : [];
-    List<YarnLot> yarnLots = (yarnLotState is YarnLotLoaded) ? yarnLotState.yarnLots : [];
 
-    // Lấy giá trị hiện tại
     int? selectedProductId = existingTicket.productId;
     int? selectedStandardId = existingTicket.standardId;
-    int? selectedYarnLotId = existingTicket.batchId;
 
-    // Filter standards để hiển thị đúng text
     List<Standard> filteredStandards = [];
     filteredStandards = allStandards.where((s) => s.productId == selectedProductId).toList();
   
@@ -452,16 +663,16 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 1. Rổ (Read Only)
+                  // Rổ
                   TextFormField(
-                    initialValue: existingTicket.basketCode,
+                    initialValue: existingTicket.basketCode ?? "CHƯA GÁN",
                     decoration: const InputDecoration(labelText: "Mã Rổ", border: OutlineInputBorder(), filled: true, fillColor: Colors.white70),
                     readOnly: true,
                     enabled: false,
                   ),
                   const SizedBox(height: 16),
                   
-                  // 2. Sản phẩm (Disabled)
+                  // Sản phẩm
                   DropdownSearch<Product>(
                     items: (filter, loadProps) => products,
                     itemAsString: (Product p) => p.itemCode,
@@ -470,40 +681,28 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                     decoratorProps: DropDownDecoratorProps(
                       decoration: InputDecoration(labelText: l10n.productTitle, border: const OutlineInputBorder(), filled: true, fillColor: Colors.grey.shade200),
                     ),
-                    enabled: false, // [QUAN TRỌNG] Không cho sửa
+                    enabled: false, 
                   ),
                   const SizedBox(height: 16),
 
-                  // 3. Tiêu chuẩn (Disabled)
+                  // Tiêu chuẩn
                   DropdownSearch<Standard>(
                     items: (filter, loadProps) => filteredStandards,
-                    itemAsString: (Standard s) => "W:${s.widthMm} | T:${s.thicknessMm} (${s.colorName ?? 'N/A'})",
+                    itemAsString: (Standard s) => "W:${s.widthMm} | T:${s.thicknessMm}",
                     selectedItem: filteredStandards.where((s) => s.id == selectedStandardId).firstOrNull,
                     compareFn: (i, s) => i.id == s.id,
                     decoratorProps: DropDownDecoratorProps(
                       decoration: InputDecoration(labelText: l10n.standardTitle, border: const OutlineInputBorder(), filled: true, fillColor: Colors.grey.shade200),
                     ),
-                    enabled: false, // [QUAN TRỌNG] Không cho sửa
+                    enabled: false, 
                   ),
                   const SizedBox(height: 16),
 
-                  // 4. Lô sợi (Disabled - Hoặc cho phép sửa nếu cần, nhưng theo yêu cầu là KHÔNG)
-                  DropdownSearch<YarnLot>(
-                    items: (filter, loadProps) => yarnLots,
-                    itemAsString: (YarnLot y) => "${y.lotCode} (${y.totalKg}kg)",
-                    selectedItem: yarnLots.where((y) => y.id == selectedYarnLotId).firstOrNull,
-                    compareFn: (i, s) => i.id == s.id,
-                    decoratorProps: DropDownDecoratorProps(
-                      decoration: InputDecoration(labelText: l10n.yarnLotTitle, border: const OutlineInputBorder(), filled: true, fillColor: Colors.grey.shade200),
-                    ),
-                    enabled: false, // [QUAN TRỌNG] Không cho sửa
+                  // [THAY ĐỔI] Lô sợi (Hiển thị list thay vì Dropdown đơn)
+                  InputDecorator(
+                    decoration: const InputDecoration(labelText: "Lô sợi", border: OutlineInputBorder(), filled: true, fillColor: Color(0xFFEEEEEE)),
+                    child: _TicketBatchList(yarns: existingTicket.yarns),
                   ),
-                  
-                  const SizedBox(height: 16),
-                  const Text(
-                    "(*) Thông tin sản xuất được đồng bộ từ Phiếu xuất kho. Vui lòng liên hệ kho nếu có sai sót.",
-                    style: TextStyle(color: Colors.red, fontSize: 12, fontStyle: FontStyle.italic),
-                  )
                 ],
               ),
             ),
@@ -511,25 +710,23 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Đóng")),
-          // Đã xóa nút Save vì chỉ xem
         ],
       ),
     );
   }
 
-void _showStatusDialog(BuildContext context, Machine machine, String newStatus, AppLocalizations l10n) {
+  // --- DIALOG STATUS & RELEASE (GIỮ NGUYÊN) ---
+  void _showStatusDialog(BuildContext context, Machine machine, String newStatus, AppLocalizations l10n) {
     final reasonCtrl = TextEditingController();
     bool isIssue = newStatus == 'STOPPED' || newStatus == 'MAINTENANCE';
     final formKey = GlobalKey<FormState>();
     final localizedNewStatus = _getLocalizedStatus(newStatus, l10n);
-    
-    // [THÊM] Biến lưu ảnh tạm thời trong Dialog
     XFile? capturedImage;
     final ImagePicker picker = ImagePicker();
 
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder( // [QUAN TRỌNG] Dùng StatefulBuilder để update UI trong Dialog
+      builder: (ctx) => StatefulBuilder(
         builder: (context, setStateDialog) {
           return AlertDialog(
             title: Text(
@@ -538,12 +735,11 @@ void _showStatusDialog(BuildContext context, Machine machine, String newStatus, 
             ),
             content: Form(
               key: formKey,
-              child: SingleChildScrollView( // Bọc để tránh lỗi tràn màn hình khi hiện ảnh
+              child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(l10n.confirmStatusChangeMsg(machine.name, localizedNewStatus)),
-                    
                     if (isIssue) ...[
                       const SizedBox(height: 16),
                       TextFormField(
@@ -557,8 +753,6 @@ void _showStatusDialog(BuildContext context, Machine machine, String newStatus, 
                         maxLines: 2,
                       ),
                       const SizedBox(height: 12),
-                      
-                      // --- KHU VỰC HIỂN THỊ ẢNH ĐÃ CHỤP ---
                       if (capturedImage != null) ...[
                         Stack(
                           alignment: Alignment.topRight,
@@ -567,69 +761,27 @@ void _showStatusDialog(BuildContext context, Machine machine, String newStatus, 
                               height: 150,
                               width: double.infinity,
                               margin: const EdgeInsets.only(bottom: 10),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: kIsWeb
-                                    ? Image.network(
-                                        capturedImage!.path, // Trên Web, path là blob URL
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Image.file(
-                                        File(capturedImage!.path), // Trên Mobile, path là đường dẫn máy
-                                        fit: BoxFit.cover,
-                                      ),
+                                    ? Image.network(capturedImage!.path, fit: BoxFit.cover)
+                                    : Image.file(File(capturedImage!.path), fit: BoxFit.cover),
                               ),
                             ),
-                            // Nút xóa ảnh
                             IconButton(
-                              onPressed: () {
-                                setStateDialog(() {
-                                  capturedImage = null;
-                                });
-                              },
-                              icon: const CircleAvatar(
-                                backgroundColor: Colors.white,
-                                radius: 12,
-                                child: Icon(Icons.close, size: 16, color: Colors.red),
-                              ),
+                              onPressed: () => setStateDialog(() => capturedImage = null),
+                              icon: const Icon(Icons.close, color: Colors.red),
                             ),
                           ],
                         ),
                       ],
-
-                      // --- NÚT CHỤP ẢNH ---
                       ElevatedButton.icon(
                         onPressed: () async {
-                          try {
-                            // Gọi Camera hệ thống
-                            final XFile? photo = await picker.pickImage(
-                              source: ImageSource.camera,
-                              imageQuality: 50, // Nén ảnh để upload nhanh hơn
-                            );
-                            
-                            if (photo != null) {
-                              // Cập nhật lại giao diện Dialog
-                              setStateDialog(() {
-                                capturedImage = photo;
-                              });
-                            }
-                          } catch (e) {
-                            debugPrint("Lỗi chụp ảnh: $e");
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Lỗi Camera: $e")),
-                            );
-                          }
+                          final XFile? photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 50);
+                          if (photo != null) setStateDialog(() => capturedImage = photo);
                         },
-                        icon: Icon(capturedImage == null ? Icons.camera_alt : Icons.camera_alt_outlined),
-                        label: Text(capturedImage == null ? l10n.captureEvidence : "Mở camera"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey.shade200,
-                          foregroundColor: Colors.black87,
-                        ),
+                        icon: const Icon(Icons.camera_alt),
+                        label: const Text("Chụp ảnh"),
                       )
                     ]
                   ],
@@ -641,13 +793,11 @@ void _showStatusDialog(BuildContext context, Machine machine, String newStatus, 
               ElevatedButton(
                 onPressed: () {
                   if (isIssue && !formKey.currentState!.validate()) return;
-                  
-                  // [ĐÃ SỬA] Truyền thẳng XFile (capturedImage) thay vì File
                   context.read<MachineOperationCubit>().updateMachineStatus(
                     machineId: machine.id, 
                     status: newStatus,
                     reason: reasonCtrl.text,
-                    imageFile: capturedImage, // Truyền XFile
+                    imageFile: capturedImage,
                   );
                   Navigator.pop(ctx);
                 },
@@ -660,7 +810,8 @@ void _showStatusDialog(BuildContext context, Machine machine, String newStatus, 
       ),
     );
   }
-  // --- DIALOG KẾT THÚC PHIẾU (Giữ nguyên logic nhập kết quả) ---
+
+  // --- DIALOG KẾT THÚC PHIẾU ---
   void _showReleaseDialog(BuildContext context, WeavingTicket ticket, AppLocalizations l10n) {
     final grossCtrl = TextEditingController();
     final lengthCtrl = TextEditingController();
@@ -671,6 +822,29 @@ void _showStatusDialog(BuildContext context, Machine machine, String newStatus, 
     final authState = context.read<AuthCubit>().state;
     if (authState is AuthAuthenticated && authState.user.employeeId != null) {
       employeeOutId = authState.user.employeeId; 
+    }
+
+    // 1. Tìm Target Weight từ BOM
+    double targetWeightGm = 0.0;
+    
+    final bomState = context.read<BOMCubit>().state;
+    if (bomState is BOMListLoaded) {
+       try {
+         final bom = bomState.boms.firstWhere(
+           (b) => b.productId == ticket.productId && b.isActive,
+         );
+         targetWeightGm = bom.targetWeightGm;
+       } catch (_) {}
+    }
+
+    // 2. Tìm Rổ để lấy Trọng lượng bì (Tare Weight)
+    double basketTare = 0.0;
+    final basketState = context.read<BasketCubit>().state;
+    if (basketState is BasketLoaded && ticket.basketId != 0) {
+       try {
+         final basket = basketState.baskets.firstWhere((b) => b.id == ticket.basketId);
+         basketTare = basket.tareWeight;
+       } catch (_) {}
     }
 
     showDialog(
@@ -685,36 +859,70 @@ void _showStatusDialog(BuildContext context, Machine machine, String newStatus, 
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text("${l10n.ticketCode}: ${ticket.code}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (targetWeightGm > 0)
+                      Text("Định mức BOM: $targetWeightGm g/m", style: TextStyle(color: Colors.blue.shade700, fontSize: 12, fontStyle: FontStyle.italic)),
+                    if (basketTare > 0)
+                      Text("Trừ bì rổ: $basketTare kg", style: const TextStyle(color: Colors.brown, fontSize: 12, fontStyle: FontStyle.italic)),
+                    if (targetWeightGm == 0)
+                      const Text("Cảnh báo: Không có BOM để tính mét!", style: TextStyle(color: Colors.red, fontSize: 12)),
+                  ],
+                ),
+
                 const SizedBox(height: 16),
-                Row(children: [
-                  Expanded(child: TextFormField(
-                    controller: grossCtrl, 
-                    decoration: InputDecoration(labelText: l10n.grossWeight, border: const OutlineInputBorder()),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => v!.isEmpty ? l10n.required : null,
-                  )),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: knotCtrl,
-                      decoration: InputDecoration(
-                        labelText: l10n.splice,
-                        border: const OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
-                      validator: (v) => v == null || v.isEmpty ? l10n.required : null,
-                    ),
-                  ),
-                ]),
-                const SizedBox(height: 16),
+                
                 TextFormField(
-                    controller: lengthCtrl, 
-                    decoration: InputDecoration(labelText: l10n.length, border: const OutlineInputBorder()),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => v!.isEmpty ? l10n.required : null,
+                  controller: grossCtrl, 
+                  decoration: InputDecoration(
+                      labelText: "${l10n.grossWeight} (Kg)", 
+                      border: const OutlineInputBorder(),
+                      helperText: "Nhập tổng trọng lượng cân được"
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  validator: (v) => v!.isEmpty ? l10n.required : null,
+                  onChanged: (val) {
+                      if (targetWeightGm > 0 && val.isNotEmpty) {
+                          double? grossKg = double.tryParse(val);
+                          if (grossKg != null) {
+                              double netKg = grossKg - basketTare;
+                              if (netKg > 0) {
+                                  double meters = (netKg * 1000) / targetWeightGm;
+                                  lengthCtrl.text = meters.toStringAsFixed(2);
+                              } else {
+                                  lengthCtrl.text = "0"; 
+                              }
+                          } else {
+                              lengthCtrl.text = "";
+                          }
+                      }
+                  },
+                ),
+                const SizedBox(height: 12),
+                
+                TextFormField(
+                  controller: knotCtrl,
+                  decoration: InputDecoration(labelText: l10n.splice, border: const OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  validator: (v) => v == null || v.isEmpty ? l10n.required : null,
+                ),
+                const SizedBox(height: 12),
+                
+                TextFormField(
+                  controller: lengthCtrl, 
+                  decoration: InputDecoration(
+                      labelText: "${l10n.length} (m)", 
+                      border: const OutlineInputBorder(),
+                      fillColor: Colors.grey.shade200,
+                      filled: true,
+                      helperText: targetWeightGm > 0 ? "Tự động tính (Net / Định mức)" : "Nhập tay (Không có BOM)"
+                  ),
+                  keyboardType: TextInputType.number,
+                  readOnly: targetWeightGm > 0, 
+                  validator: (v) => v!.isEmpty ? l10n.required : null,
                 ),
               ],
             ),
@@ -774,7 +982,7 @@ void _showStatusDialog(BuildContext context, Machine machine, String newStatus, 
   }
 }
 
-// Widget Scanner (Giữ nguyên)
+// Widget Scanner
 class SimpleBarcodeScanner extends StatefulWidget {
   const SimpleBarcodeScanner({super.key});
 
@@ -796,18 +1004,9 @@ class _SimpleBarcodeScannerState extends State<SimpleBarcodeScanner> {
   Future<void> _startCamera() async {
     try {
       await controller.start();
-      if (mounted) {
-        setState(() {
-          _isCameraStarted = true;
-        });
-      }
+      if (mounted) setState(() => _isCameraStarted = true);
     } catch (e) {
-      debugPrint("Lỗi khởi động: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Không mở được Camera: $e")),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Không mở được Camera: $e")));
     }
   }
 
@@ -820,26 +1019,10 @@ class _SimpleBarcodeScannerState extends State<SimpleBarcodeScanner> {
         children: [
           if (!_isCameraStarted)
             Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.camera_alt, size: 80, color: Colors.grey),
-                  const SizedBox(height: 20),
-                  const Text(
-                    "Trình duyệt yêu cầu bạn\ncấp quyền thủ công",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: _startCamera,
-                    icon: const Icon(Icons.power_settings_new),
-                    label: const Text("Bấm để mở Camera"),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                    ),
-                  ),
-                ],
+              child: ElevatedButton.icon(
+                onPressed: _startCamera,
+                icon: const Icon(Icons.camera_alt),
+                label: const Text("Bấm để mở Camera"),
               ),
             )
           else
@@ -856,25 +1039,6 @@ class _SimpleBarcodeScannerState extends State<SimpleBarcodeScanner> {
                   }
                 }
               },
-              errorBuilder: (context, error, child) {
-                return Center(
-                  child: Text(
-                    "Lỗi: ${error.errorCode}",
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                );
-              },
-            ),
-          if (_isCameraStarted)
-            Center(
-              child: Container(
-                width: 250,
-                height: 250,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.red, width: 2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
             ),
         ],
       ),
@@ -885,5 +1049,49 @@ class _SimpleBarcodeScannerState extends State<SimpleBarcodeScanner> {
   void dispose() {
     controller.dispose();
     super.dispose();
+  }
+}
+
+// [MỚI] Widget hiển thị danh sách Batch chi tiết
+class _TicketBatchList extends StatelessWidget {
+  final List<WeavingTicketYarn> yarns;
+  const _TicketBatchList({required this.yarns});
+
+  @override
+  Widget build(BuildContext context) {
+    if (yarns.isEmpty) return const Text("-", style: TextStyle(color: Colors.grey));
+
+    return BlocBuilder<BatchCubit, BatchState>(
+      builder: (context, state) {
+        final List<Batch> allBatches = (state is BatchLoaded) ? state.batches : [];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: yarns.map((yarnItem) {
+            // Tìm thông tin Batch trong Cubit
+            final batch = allBatches.where((b) => b.batchId == yarnItem.batchId).firstOrNull;
+            final internalCode = batch?.internalBatchCode ?? "ID:${yarnItem.batchId}";
+            final supplierCode = batch?.supplierBatchNo ?? "";
+            
+            final displayCode = supplierCode.isNotEmpty 
+                ? "$internalCode (Sup:$supplierCode)" 
+                : internalCode;
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 2.0),
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(color: Colors.black87, fontSize: 12, fontFamily: 'Roboto'),
+                  children: [
+                    TextSpan(text: "${yarnItem.componentType}: ", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                    TextSpan(text: displayCode, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  ]
+                )
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
   }
 }

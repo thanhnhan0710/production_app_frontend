@@ -19,7 +19,7 @@ import 'package:production_app_frontend/features/inventory/stock_in/presentation
 import 'package:production_app_frontend/features/inventory/warehouse/data/warehouse_repository.dart';
 import 'package:production_app_frontend/features/inventory/warehouse/presentation/bloc/warehouse_cubit.dart';
 import 'package:production_app_frontend/features/inventory/warehouse/presentation/screens/warehouse_screen.dart';
-import 'package:production_app_frontend/features/inventory/yarn_lot/presentation/screens/yarn_lot_screen';
+
 
 // --- CORE & L10N ---
 import 'core/bloc/language_cubit.dart';
@@ -58,9 +58,6 @@ import 'features/inventory/supplier/presentation/screens/supplier_screen.dart';
 import 'features/inventory/yarn/data/yarn_repository.dart';
 import 'features/inventory/yarn/presentation/bloc/yarn_cubit.dart';
 import 'features/inventory/yarn/presentation/screens/yarn_screen.dart';
-import 'features/inventory/yarn_lot/data/yarn_lot_repository.dart';
-import 'features/inventory/yarn_lot/presentation/bloc/yarn_lot_cubit.dart';
-
 import 'features/inventory/material/data/material_repository.dart';
 import 'features/inventory/material/presentation/bloc/material_cubit.dart';
 import 'features/inventory/material/presentation/screens/material_screen.dart';
@@ -129,7 +126,6 @@ class MyApp extends StatelessWidget {
           // 3. Inventory Providers
           BlocProvider(create: (context) => SupplierCubit(SupplierRepository())),
           BlocProvider(create: (context) => YarnCubit(YarnRepository())),
-          BlocProvider(create: (context) => YarnLotCubit(YarnLotRepository())),
           BlocProvider(create: (context) => MaterialCubit(MaterialRepository())),
           BlocProvider(create: (context) => UnitCubit(UnitRepository())),
           BlocProvider(create: (context) => BasketCubit(BasketRepository())),

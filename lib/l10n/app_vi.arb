@@ -337,7 +337,7 @@
   "resultsUpdateOnly": "Kết quả (chỉ cập nhật)",
 
   "machineOperation": "Vận hành Máy dệt",
-  "line": "Trục",
+  "line": "Line",
   "scanBarcodeSubline":"Quét mã rổ tại đây để tự chọn",
   "selectProductBefore": "Chọn sản phẩm trước",
   "assignBasket": "Gán rổ",
@@ -347,10 +347,10 @@
   "editTicket":"Sửa phiếu",
   "currentBasket": "Rổ hiện tại",
   "noActiveBasket": "Trống",
-  "confirmRelease": "Kết thúc phiếu và tháo rổ?",
+  "confirmRelease": "Kết thúc phiếu và ra rổ?",
   "basketAssigned": "Đã gán rổ thành công",
 
-  "releaseBasket": "Tháo rổ / Kết thúc phiếu",
+  "releaseBasket": "Ra rổ",
   "finishTicket": "Kết thúc phiếu",
   "grossWeight": "Trọng lượng cả bì (kg)",
   "netWeight": "Trọng lượng tịnh (kg)",

@@ -12,20 +12,28 @@ import 'package:production_app_frontend/features/inventory/product/presentation/
 import 'package:production_app_frontend/features/inventory/product/domain/product_model.dart';
 import 'package:production_app_frontend/features/production/standard/presentation/bloc/standard_cubit.dart';
 import 'package:production_app_frontend/features/production/standard/domain/standard_model.dart';
-import 'package:production_app_frontend/features/inventory/yarn_lot/presentation/bloc/yarn_lot_cubit.dart';
-import 'package:production_app_frontend/features/inventory/yarn_lot/domain/yarn_lot_model.dart';
+
+// [THAY ĐỔI] Import Batch thay vì YarnLot
+import 'package:production_app_frontend/features/inventory/batch/presentation/bloc/batch_cubit.dart';
+import 'package:production_app_frontend/features/inventory/batch/domain/batch_model.dart';
+
 import 'package:production_app_frontend/features/hr/employee/presentation/bloc/employee_cubit.dart';
 import 'package:production_app_frontend/features/hr/employee/domain/employee_model.dart';
 import 'package:production_app_frontend/features/hr/shift/presentation/bloc/shift_cubit.dart';
 import 'package:production_app_frontend/features/hr/shift/domain/shift_model.dart';
-// Import Auth để lấy user hiện tại
 import 'package:production_app_frontend/features/auth/presentation/bloc/auth_cubit.dart';
 
 class WeavingInspectionDialog extends StatefulWidget {
   final WeavingTicket ticket;
   final VoidCallback? onRelease;
+  final String? shiftName; 
 
-  const WeavingInspectionDialog({super.key, required this.ticket, this.onRelease});
+  const WeavingInspectionDialog({
+    super.key, 
+    required this.ticket, 
+    this.onRelease,
+    this.shiftName,
+  });
 
   @override
   State<WeavingInspectionDialog> createState() => _WeavingInspectionDialogState();
@@ -58,7 +66,9 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
     context.read<ShiftCubit>().loadShifts();
     context.read<ProductCubit>().loadProducts();
     context.read<StandardCubit>().loadStandards();
-    context.read<YarnLotCubit>().loadYarnLots();
+    
+    // [THAY ĐỔI] Load Batch thay vì YarnLot
+    context.read<BatchCubit>().loadBatches();
   }
 
   @override
@@ -77,8 +87,7 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
     return Dialog(
       insetPadding: EdgeInsets.all(isDesktop ? 30 : 10),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      // ignore: sized_box_for_whitespace
-      child: Container(
+      child: SizedBox(
         width: isDesktop ? 1000 : width,
         height: isDesktop ? 800 : height * 0.95,
         child: Column(
@@ -136,17 +145,18 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start, // Căn trên cùng để danh sách batch không bị lệch
                     children: [
                       const Icon(Icons.assignment, size: 18, color: Colors.black54),
                       const SizedBox(width: 8),
                       const Text("Standard & Product Info", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
                       const Spacer(),
-                      // Hiển thị thêm thông tin lô sợi
-                      _YarnLotInfo(id: widget.ticket.batchId),
+                      
+                      // [THAY ĐỔI] Hiển thị danh sách lô sợi thay vì _YarnLotInfo
+                      _TicketBatchList(yarns: widget.ticket.yarns),
                     ],
                   ),
                   const Divider(),
-                  // [QUAN TRỌNG] Widget hiển thị đầy đủ thông tin tiêu chuẩn + ảnh
                   _StandardFullDetails(standardId: widget.ticket.standardId),
                 ],
               ),
@@ -293,12 +303,10 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
     );
   }
 
-  // --- INPUT FORM (Tự động chọn người dùng) ---
+  // --- INPUT FORM ---
   Widget _buildInputForm(AppLocalizations l10n) {
-     
     final authState = context.read<AuthCubit>().state;
     if (authState is AuthAuthenticated && authState.user.employeeId != null) {
-        // Tự động gán ID nhân viên
         _selectedEmpId = authState.user.employeeId; 
     }
     
@@ -313,11 +321,28 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
                if (state is WeavingLoaded) nextCount = state.inspections.length + 1;
                return Text("Check #$nextCount", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
              }
-             
            ),
            const SizedBox(height: 20),
            
-           Expanded(
+           if (widget.shiftName != null)
+             Container(
+               width: double.infinity,
+               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+               decoration: BoxDecoration(
+                 color: Colors.grey.shade200,
+                 borderRadius: BorderRadius.circular(8),
+                 border: Border.all(color: Colors.grey.shade300)
+               ),
+               child: Row(
+                 children: [
+                   const Icon(Icons.access_time, size: 20, color: Colors.blueGrey),
+                   const SizedBox(width: 8),
+                   Text("Ca làm việc: ${widget.shiftName} (Tự động)", style: const TextStyle(fontWeight: FontWeight.bold)),
+                 ],
+               ),
+             )
+           else
+             Expanded(
                  child: BlocBuilder<ShiftCubit, ShiftState>(
                    builder: (context, state) {
                      List<Shift> items = (state is ShiftLoaded) ? state.shifts : [];
@@ -332,6 +357,7 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
                    }
                  ),
             ),
+           
            const SizedBox(height: 16),
 
            Text(l10n.measurements, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
@@ -372,7 +398,25 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
   }
 
   void _saveInspection(AppLocalizations l10n) {
-    if (_formKey.currentState!.validate() && _selectedEmpId != null && _selectedShiftId != null) {
+    int? finalShiftId = _selectedShiftId;
+
+    if (widget.shiftName != null) {
+      final shiftState = context.read<ShiftCubit>().state;
+      if (shiftState is ShiftLoaded) {
+        final foundShift = shiftState.shifts.firstWhere(
+          (s) => s.name.toUpperCase() == widget.shiftName!.toUpperCase(),
+          orElse: () => Shift(id: 0, name: "", note: ""), 
+        );
+        if (foundShift.id != 0) {
+          finalShiftId = foundShift.id;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Lỗi: Không tìm thấy ID của ca làm việc tự động trong hệ thống."), backgroundColor: Colors.red));
+          return;
+        }
+      }
+    }
+
+    if (_formKey.currentState!.validate() && _selectedEmpId != null && finalShiftId != null) {
       final state = context.read<WeavingCubit>().state;
       int count = (state is WeavingLoaded) ? state.inspections.length : 0;
       String stageName = "Lần ${count + 1}";
@@ -382,7 +426,7 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
         ticketId: widget.ticket.id,
         stageName: stageName,
         employeeId: _selectedEmpId!,
-        shiftId: _selectedShiftId!,
+        shiftId: finalShiftId,
         widthMm: double.tryParse(_widthCtrl.text) ?? 0,
         weftDensity: double.tryParse(_densityCtrl.text) ?? 0,
         tensionDan: double.tryParse(_tensionCtrl.text) ?? 0,
@@ -399,6 +443,8 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
       
       if (!ResponsiveLayout.isDesktop(context)) _tabController.animateTo(0);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.saveSuccess), backgroundColor: Colors.green));
+    } else if (finalShiftId == null) {
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng chọn Ca làm việc."), backgroundColor: Colors.orange));
     }
   }
 
@@ -407,7 +453,7 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
   }
 }
 
-// --- WIDGET HIỂN THỊ FULL TIÊU CHUẨN (Copy từ WeavingScreen) ---
+// --- WIDGET HIỂN THỊ FULL TIÊU CHUẨN ---
 class _StandardFullDetails extends StatelessWidget {
   final int standardId;
   const _StandardFullDetails({required this.standardId});
@@ -435,7 +481,6 @@ class _StandardFullDetails extends StatelessWidget {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-               // 1. Hình ảnh sản phẩm
                Container(
                  width: 80, height: 80,
                  margin: const EdgeInsets.only(right: 16),
@@ -445,24 +490,21 @@ class _StandardFullDetails extends StatelessWidget {
                    border: Border.all(color: Colors.grey.shade300),
                  ),
                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: (item.productImage != null && item.productImage!.isNotEmpty)
+                   borderRadius: BorderRadius.circular(8),
+                   child: (item.productImage != null && item.productImage!.isNotEmpty)
                        ? Image.network(item.productImage!, fit: BoxFit.cover, errorBuilder: (_,__,___)=>const Icon(Icons.image_not_supported, color: Colors.grey))
                        : const Icon(Icons.image, color: Colors.grey),
                  ),
                ),
 
-               // 2. Thông tin chi tiết
                Expanded(
                  child: Column(
                    crossAxisAlignment: CrossAxisAlignment.start,
                    children: [
-                      // Product Info
                       Text(item.productItemCode ?? "Unknown Code", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
                       Text(item.productName ?? "Unknown Name", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                       const SizedBox(height: 8),
                       
-                      // Specs Grid
                       Wrap(
                         spacing: 12, runSpacing: 6,
                         children: [
@@ -476,7 +518,6 @@ class _StandardFullDetails extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       
-                      // Color
                       Row(
                         children: [
                           Container(width: 12, height: 12, decoration: BoxDecoration(color: _hexToColor(item.colorHex), shape: BoxShape.circle, border: Border.all(color: Colors.grey.shade300))),
@@ -507,8 +548,47 @@ class _StandardFullDetails extends StatelessWidget {
   }
 }
 
-// Widget Badge nhỏ
-class _YarnLotInfo extends StatelessWidget {
-  final int id; const _YarnLotInfo({required this.id});
-  @override Widget build(BuildContext context) => BlocBuilder<YarnLotCubit, YarnLotState>(builder: (c,s)=>Text(s is YarnLotLoaded ? (s.yarnLots.where((e)=>e.id==id).firstOrNull?.lotCode ?? "$id") : "$id", style: const TextStyle(fontWeight: FontWeight.bold)));
+// [MỚI] Widget hiển thị danh sách Batch chi tiết
+class _TicketBatchList extends StatelessWidget {
+  final List<WeavingTicketYarn> yarns;
+  const _TicketBatchList({required this.yarns});
+
+  @override
+  Widget build(BuildContext context) {
+    if (yarns.isEmpty) return const Text("-", style: TextStyle(color: Colors.grey));
+
+    return BlocBuilder<BatchCubit, BatchState>(
+      builder: (context, state) {
+        final List<Batch> allBatches = (state is BatchLoaded) ? state.batches : [];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.end, // Căn phải để khớp với Spacer()
+          children: yarns.map((yarnItem) {
+            // Tìm thông tin Batch trong Cubit
+            final batch = allBatches.where((b) => b.batchId == yarnItem.batchId).firstOrNull;
+            final internalCode = batch?.internalBatchCode ?? "ID:${yarnItem.batchId}";
+            final supplierCode = batch?.supplierBatchNo ?? "";
+            
+            final displayCode = supplierCode.isNotEmpty 
+                ? "$internalCode (Sup:$supplierCode)" 
+                : internalCode;
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 2.0),
+              child: RichText(
+                textAlign: TextAlign.right,
+                text: TextSpan(
+                  style: const TextStyle(color: Colors.black87, fontSize: 12, fontFamily: 'Roboto'),
+                  children: [
+                    TextSpan(text: "${yarnItem.componentType}: ", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                    TextSpan(text: displayCode, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  ]
+                )
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
 }

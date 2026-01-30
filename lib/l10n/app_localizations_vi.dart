@@ -1000,7 +1000,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get selectProductBefore => 'Chọn sản phẩm trước';
 
   @override
-  String get line => 'Trục';
+  String get line => 'Line';
 
   @override
   String get assignBasket => 'Gán rổ';
@@ -1030,13 +1030,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get noActiveBasket => 'Trống';
 
   @override
-  String get confirmRelease => 'Kết thúc phiếu và tháo rổ?';
+  String get confirmRelease => 'Kết thúc phiếu và ra rổ?';
 
   @override
   String get basketAssigned => 'Đã gán rổ thành công';
 
   @override
-  String get releaseBasket => 'Tháo rổ / Kết thúc phiếu';
+  String get releaseBasket => 'Ra rổ';
 
   @override
   String get finishTicket => 'Kết thúc phiếu';

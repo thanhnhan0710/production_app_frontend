@@ -28,7 +28,10 @@ class WeavingRepository {
         'machine_id': ticket.machineId,
         'machine_line': ticket.machineLine, 
         'yarn_load_date': ticket.yarnLoadDate, // YYYY-MM-DD
-        'batch_id': ticket.batchId,
+        
+        // [THAY ĐỔI] Gửi danh sách yarns thay vì batch_id đơn lẻ
+        'yarns': ticket.yarns.map((e) => e.toJson()).toList(),
+        
         'basket_id': ticket.basketId,
         'employee_in_id': ticket.employeeInId,
         'time_in': ticket.timeIn,
@@ -47,6 +50,7 @@ class WeavingRepository {
   }
   
   Future<void> updateTicket(WeavingTicket ticket) async {
+    // ticket.toJson() trong Model đã được cập nhật để bao gồm 'yarns'
     await _dio.put('/api/v1/weaving-basket-tickets/${ticket.id}', data: ticket.toJson());
   }
 
@@ -54,11 +58,9 @@ class WeavingRepository {
     await _dio.delete('/api/v1/weaving-basket-tickets/$id');
   }
 
-  // --- INSPECTIONS (ĐÃ SỬA LỖI) ---
+  // --- INSPECTIONS ---
   Future<List<WeavingInspection>> getInspections(int ticketId) async {
     try {
-      // [FIX] Sử dụng queryParameters thay vì path param
-      // Backend: GET /api/v1/weaving-inspections?ticket_id=...
       final response = await _dio.get(
         '/api/v1/weaving-inspections', 
         queryParameters: {'ticket_id': ticketId},

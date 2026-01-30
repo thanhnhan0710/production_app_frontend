@@ -1,16 +1,77 @@
+// [MỚI] Class đại diện cho 1 lô sợi trong phiếu dệt
+class WeavingTicketYarn {
+  final int id;
+  final int ticketId;
+  final int batchId;
+  final String componentType;
+  final double quantity; 
+  final String? note;
+  
+  // [CẬP NHẬT] Các trường hiển thị lấy từ Nested Object
+  final String? internalBatchCode;
+  final String? supplierShortName;
+
+  WeavingTicketYarn({
+    this.id = 0,
+    this.ticketId = 0,
+    required this.batchId,
+    required this.componentType,
+    this.quantity = 0.0,
+    this.note,
+    this.internalBatchCode,
+    this.supplierShortName,
+  });
+
+  factory WeavingTicketYarn.fromJson(Map<String, dynamic> json) {
+    // Trích xuất thông tin từ nested object 'batch' và 'batch' -> 'supplier'
+    String? iBatchCode;
+    String? sShortName;
+
+    if (json['batch'] != null) {
+      iBatchCode = json['batch']['internal_batch_code'];
+      if (json['batch']['supplier'] != null) {
+        sShortName = json['batch']['supplier']['supplier_short_name'];
+      }
+    }
+
+    return WeavingTicketYarn(
+      id: json['id'] ?? 0,
+      ticketId: json['ticket_id'] ?? 0,
+      batchId: json['batch_id'] ?? 0,
+      componentType: json['component_type'] ?? '',
+      quantity: (json['quantity'] ?? 0).toDouble(),
+      note: json['note'],
+      
+      // Gán giá trị đã trích xuất
+      internalBatchCode: iBatchCode,
+      supplierShortName: sShortName,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (id != 0) 'id': id,
+      'ticket_id': ticketId,
+      'batch_id': batchId,
+      'component_type': componentType,
+      'quantity': quantity,
+      'note': note,
+    };
+  }
+}
+
 class WeavingTicket {
   final int id;
   final String code;
   final int productId;
   final int standardId;
   final int machineId;
-  final String machineLine; // Backend là int, nhưng Frontend convert sang String để hiển thị
+  final String machineLine;
   final String yarnLoadDate;
   
-  // [CẬP NHẬT] Đổi từ yarnLotId sang batchId để khớp với Backend
-  final int batchId; 
-  
-  final int basketId;
+  final List<WeavingTicketYarn> yarns;
+
+  final int? basketId;
   final String timeIn;
   final int? employeeInId;
   final String? timeOut;
@@ -20,7 +81,6 @@ class WeavingTicket {
   final double lengthMeters;
   final int numberOfKnots;
   
-  // Nested Objects (Read-only)
   final String? basketCode;
   final double? tareWeight;
 
@@ -32,8 +92,8 @@ class WeavingTicket {
     required this.machineId,
     required this.machineLine,
     required this.yarnLoadDate,
-    required this.batchId, // [CẬP NHẬT]
-    required this.basketId,
+    this.yarns = const [], 
+    this.basketId, 
     required this.timeIn,
     this.employeeInId,
     this.timeOut,
@@ -48,19 +108,20 @@ class WeavingTicket {
 
   factory WeavingTicket.fromJson(Map<String, dynamic> json) {
     final basketObj = json['basket'];
+    
+    var yarnList = json['yarns'] as List? ?? [];
+    List<WeavingTicketYarn> yarns = yarnList.map((i) => WeavingTicketYarn.fromJson(i)).toList();
+
     return WeavingTicket(
       id: json['id'] ?? 0,
       code: json['code'] ?? '',
       productId: json['product_id'] ?? 0,
       standardId: json['standard_id'] ?? 0,
       machineId: json['machine_id'] ?? 0,
-      machineLine: json['machine_line']?.toString() ?? '',
+      machineLine: (json['machine_line'] ?? '').toString(),
       yarnLoadDate: json['yarn_load_date'] ?? '',
-      
-      // [CẬP NHẬT] Map key 'batch_id' từ API
-      batchId: json['batch_id'] ?? 0, 
-      
-      basketId: json['basket_id'] ?? 0,
+      yarns: yarns, 
+      basketId: json['basket_id'], 
       timeIn: json['time_in'] ?? '',
       employeeInId: json['employee_in_id'],
       timeOut: json['time_out'],
@@ -76,16 +137,14 @@ class WeavingTicket {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'code': code,
       'product_id': productId,
       'standard_id': standardId,
       'machine_id': machineId,
       'machine_line': machineLine,
       'yarn_load_date': yarnLoadDate,
-      
-      // [CẬP NHẬT] Gửi key 'batch_id' lên API
-      'batch_id': batchId,
-      
+      'yarns': yarns.map((e) => e.toJson()).toList(),
       'basket_id': basketId,
       'time_in': timeIn,
       'employee_in_id': employeeInId,
@@ -97,27 +156,24 @@ class WeavingTicket {
       'number_of_knots': numberOfKnots,
     };
   }
+  
+  int get firstBatchId => yarns.isNotEmpty ? yarns.first.batchId : 0;
 }
 
-// Class WeavingInspection giữ nguyên như yêu cầu của bạn
+// Class WeavingInspection (Giữ nguyên không đổi)
 class WeavingInspection {
   final int id;
-  final int ticketId; // Map với weaving_basket_ticket_id
+  final int ticketId;
   final String stageName;
   final int employeeId;
   final int shiftId;
-  
-  // Các thông số kỹ thuật
   final double widthMm;
   final double weftDensity;
   final double tensionDan;
   final double thicknessMm;
   final double weightGm;
   final double bowing;
-  
   final String inspectionTime;
-  
-  // Thông tin hiển thị thêm
   final String? employeeName;
   final String? shiftName;
 
@@ -159,6 +215,7 @@ class WeavingInspection {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'weaving_basket_ticket_id': ticketId,
       'stage_name': stageName,
       'employee_id': employeeId,
