@@ -1,4 +1,5 @@
-// [MỚI] Class đại diện cho 1 lô sợi trong phiếu dệt
+// weaving_model.dart
+
 class WeavingTicketYarn {
   final int id;
   final int ticketId;
@@ -8,8 +9,9 @@ class WeavingTicketYarn {
   final String? note;
   
   // [CẬP NHẬT] Các trường hiển thị lấy từ Nested Object
-  final String? internalBatchCode;
-  final String? supplierShortName;
+  final String? internalBatchCode; // Mã nội bộ (V26...)
+  final String? supplierBatchNo;   // Mã lô NCC (G60...) - JSON có trả về
+  final String? supplierShortName; // Tên tắt NCC (GUX)
 
   WeavingTicketYarn({
     this.id = 0,
@@ -19,18 +21,25 @@ class WeavingTicketYarn {
     this.quantity = 0.0,
     this.note,
     this.internalBatchCode,
+    this.supplierBatchNo,
     this.supplierShortName,
   });
 
   factory WeavingTicketYarn.fromJson(Map<String, dynamic> json) {
-    // Trích xuất thông tin từ nested object 'batch' và 'batch' -> 'supplier'
+    // Trích xuất thông tin từ nested object 'batch'
     String? iBatchCode;
+    String? sBatchNo;
     String? sShortName;
 
-    if (json['batch'] != null) {
-      iBatchCode = json['batch']['internal_batch_code'];
-      if (json['batch']['supplier'] != null) {
-        sShortName = json['batch']['supplier']['supplier_short_name'];
+    final batchObj = json['batch'];
+    if (batchObj != null) {
+      iBatchCode = batchObj['internal_batch_code'];
+      sBatchNo = batchObj['supplier_batch_no']; // Lấy thêm mã lô NCC
+
+      final supplierObj = batchObj['supplier'];
+      if (supplierObj != null) {
+        // [QUAN TRỌNG] JSON trả về 'short_name', không phải 'supplier_short_name'
+        sShortName = supplierObj['short_name']; 
       }
     }
 
@@ -42,8 +51,9 @@ class WeavingTicketYarn {
       quantity: (json['quantity'] ?? 0).toDouble(),
       note: json['note'],
       
-      // Gán giá trị đã trích xuất
+      // Gán các giá trị tham chiếu
       internalBatchCode: iBatchCode,
+      supplierBatchNo: sBatchNo,
       supplierShortName: sShortName,
     );
   }
@@ -75,14 +85,18 @@ class WeavingTicket {
   final String timeIn;
   final int? employeeInId;
   final String? timeOut;
+  final String? employeeInName;
+  final String? employeeOutName;
   final int? employeeOutId;
   final double grossWeight;
   final double netWeight;
   final double lengthMeters;
   final int numberOfKnots;
   
+  // Thông tin tham chiếu (Reference Info)
   final String? basketCode;
   final double? tareWeight;
+  final String? productItemCode; // [MỚI] Mã sản phẩm hiển thị (6622076...)
 
   WeavingTicket({
     required this.id,
@@ -98,19 +112,36 @@ class WeavingTicket {
     this.employeeInId,
     this.timeOut,
     this.employeeOutId,
+    this.employeeInName,
+    this.employeeOutName,
     required this.grossWeight,
     required this.netWeight,
     required this.lengthMeters,
     required this.numberOfKnots,
     this.basketCode,
     this.tareWeight,
+    this.productItemCode,
   });
 
   factory WeavingTicket.fromJson(Map<String, dynamic> json) {
-    final basketObj = json['basket'];
-    
+    // 1. Parse danh sách sợi
     var yarnList = json['yarns'] as List? ?? [];
     List<WeavingTicketYarn> yarns = yarnList.map((i) => WeavingTicketYarn.fromJson(i)).toList();
+
+    // 2. Parse thông tin Bồ (Basket)
+    final basketObj = json['basket'];
+    
+    // 3. Parse thông tin Sản phẩm (Product) để lấy item_code
+    final productObj = json['product'];
+    String? empInName;
+    if (json['employee_in'] != null) {
+      empInName = json['employee_in']['full_name'];
+    }
+
+    String? empOutName;
+    if (json['employee_out'] != null) {
+      empOutName = json['employee_out']['full_name'];
+    }
 
     return WeavingTicket(
       id: json['id'] ?? 0,
@@ -120,18 +151,27 @@ class WeavingTicket {
       machineId: json['machine_id'] ?? 0,
       machineLine: (json['machine_line'] ?? '').toString(),
       yarnLoadDate: json['yarn_load_date'] ?? '',
+      
       yarns: yarns, 
+      
       basketId: json['basket_id'], 
       timeIn: json['time_in'] ?? '',
       employeeInId: json['employee_in_id'],
       timeOut: json['time_out'],
       employeeOutId: json['employee_out_id'],
+      employeeInName: empInName,
+      employeeOutName: empOutName,
+      
+      
       grossWeight: (json['gross_weight'] ?? 0).toDouble(),
       netWeight: (json['net_weight'] ?? 0).toDouble(),
       lengthMeters: (json['length_meters'] ?? 0).toDouble(),
       numberOfKnots: json['number_of_knots'] ?? 0,
+      
+      // Mapping fields tham chiếu
       basketCode: basketObj != null ? basketObj['basket_code'] : null,
       tareWeight: basketObj != null ? (basketObj['tare_weight'] ?? 0).toDouble() : null,
+      productItemCode: productObj != null ? productObj['item_code'] : null,
     );
   }
 
@@ -160,7 +200,7 @@ class WeavingTicket {
   int get firstBatchId => yarns.isNotEmpty ? yarns.first.batchId : 0;
 }
 
-// Class WeavingInspection (Giữ nguyên không đổi)
+// Class WeavingInspection (Giữ nguyên)
 class WeavingInspection {
   final int id;
   final int ticketId;

@@ -11,7 +11,8 @@ import 'package:production_app_frontend/features/auth/presentation/bloc/auth_cub
 import 'package:production_app_frontend/features/hr/work_schedule/presentation/bloc/work_schedule_cubit.dart';
 import 'package:production_app_frontend/features/inventory/basket/doamain/basket_model.dart';
 import 'package:production_app_frontend/features/inventory/basket/presentation/bloc/baket_cubit.dart';
-import 'package:production_app_frontend/features/inventory/bom/presentation/bloc/bom_cubit.dart'; 
+import 'package:production_app_frontend/features/inventory/bom/presentation/bloc/bom_cubit.dart';
+import 'package:production_app_frontend/features/production/machine/presentation/screens/weaving_ticket_detail_screen.dart'; 
 
 import 'package:production_app_frontend/features/production/weaving/presentation/bloc/weaving_cubit.dart';
 import 'package:production_app_frontend/features/production/weaving/presentation/screens/weaving_inspection_dialog.dart';
@@ -399,7 +400,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                     const Icon(Icons.warning_amber_rounded, color: Colors.deepOrange, size: 24),
                     const SizedBox(height: 2),
                     const Text(
-                      "Chưa gán rổ",
+                      "Chưa có rổ",
                       style: TextStyle(fontSize: 10, color: Colors.deepOrange, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
@@ -425,8 +426,14 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                 child: InkWell(
                   customBorder: const CircleBorder(),
                   onTap: () {
-                    // Xem thông tin chi tiết
-                    _showAssignOrEditDialog(context, machine, lineCode, readyBaskets, l10n, existingTicket: ticket);
+                    // [THAY ĐỔI Ở ĐÂY]
+                    // Thay vì gọi dialog cũ, chuyển sang màn hình chi tiết mới
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => WeavingTicketDetailScreen(ticket: ticket),
+                      ),
+                    );
                   },
                   child: Container(
                     padding: const EdgeInsets.all(6),
@@ -445,6 +452,10 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     // Load Data
     final standardState = context.read<StandardCubit>().state;
     final basketState = context.read<BasketCubit>().state;
+    final authState = context.read<AuthCubit>().state;
+    final int currentEmployeeId = (authState is AuthAuthenticated) 
+        ? (authState.user.employeeId ?? 0) 
+        : 0;
     
     // Lọc tiêu chuẩn theo ProductID của ticket
     List<Standard> availableStandards = [];
@@ -562,9 +573,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                         basketId: selectedBasket!.id,
                         standardId: selectedStandard!.id,
                         // Lấy ID người đang đăng nhập
-                        employeeInId: context.read<AuthCubit>().state is AuthAuthenticated 
-                            ? (context.read<AuthCubit>().state as AuthAuthenticated).user.employeeId ?? 0 
-                            : 0,
+                        employeeInId: currentEmployeeId,
                       );
                     }
                   },
@@ -620,6 +629,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
   }
 
   // --- DIALOG XEM THÔNG TIN (READ ONLY) ---
+  // ignore: unused_element
   void _showAssignOrEditDialog(
     BuildContext context, 
     Machine machine, 
