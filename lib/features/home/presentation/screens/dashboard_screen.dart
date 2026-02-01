@@ -313,11 +313,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                        _buildSubExpansionGroup(
                         title: "Dệt",
                         currentPath: currentPath,
-                        childrenRoutes: ['/machine-operation', '/weaving', '/weaving-productions'],
+                        childrenRoutes: ['/machine-operation', '/weaving', '/weaving-productions', 'weaving-records'],
                         children: [
                           _buildLevel3MenuItem(Icons.precision_manufacturing, "Vận hành máy dệt", '/machine-operation', currentPath),
                           _buildLevel3MenuItem(Icons.description, "Phiếu rổ dệt", '/weaving', currentPath),
                           _buildLevel3MenuItem(Icons.bar_chart, "Sản lượng dệt", '/weaving-productions', currentPath),
+                          _buildLevel3MenuItem(Icons.bar_chart, "Sản lượng theo ca và phế", '/weaving-records', currentPath),
                         ]
                       ),
                       // Các mục đơn (Level 2)
@@ -375,9 +376,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     icon: Icons.admin_panel_settings,
                     title: "Administrator",
                     currentPath: currentPath,
-                    childrenRoutes: ['/users'],
+                    childrenRoutes: ['/users', '/logs'],
                     children: [
                       _buildSubMenuItem(Icons.manage_accounts, l10n.userManagementTitle, '/users', currentPath),
+                      _buildSubMenuItem(Icons.manage_accounts, "Nhật ký hoạt động", '/logs', currentPath),
                     ]
                   ),
 

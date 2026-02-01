@@ -19,6 +19,12 @@ import 'package:production_app_frontend/features/inventory/stock_in/presentation
 import 'package:production_app_frontend/features/inventory/warehouse/data/warehouse_repository.dart';
 import 'package:production_app_frontend/features/inventory/warehouse/presentation/bloc/warehouse_cubit.dart';
 import 'package:production_app_frontend/features/inventory/warehouse/presentation/screens/warehouse_screen.dart';
+import 'package:production_app_frontend/features/log/data/log_repository.dart';
+import 'package:production_app_frontend/features/log/presentation/bloc/log_cubit.dart';
+import 'package:production_app_frontend/features/log/presentation/screens/audit_log_screen.dart';
+import 'package:production_app_frontend/features/production/weaving_record/data/weaving_record_repository.dart';
+import 'package:production_app_frontend/features/production/weaving_record/presentation/bloc/weaving_record_cubit.dart';
+import 'package:production_app_frontend/features/production/weaving_record/presentation/screens/weaving_record_screen.dart';
 
 
 // --- CORE & L10N ---
@@ -121,7 +127,9 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => EmployeeCubit(EmployeeRepository())),
           BlocProvider(create: (context) => ShiftCubit(ShiftRepository())),
           BlocProvider(create: (context) => WorkScheduleCubit(WorkScheduleRepository())),
+          //Admintrator
           BlocProvider(create: (context) => UserCubit(UserRepository())),
+          BlocProvider(create: (context) => LogCubit(LogRepository())),
           
           // 3. Inventory Providers
           BlocProvider(create: (context) => SupplierCubit(SupplierRepository())),
@@ -144,6 +152,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => StandardCubit(StandardRepository())),
           BlocProvider(create: (context) => WeavingCubit(WeavingRepository())),
           BlocProvider(create: (context) => WeavingProductionCubit(WeavingProductionRepository())),
+          BlocProvider(create: (context) => WeavingRecordCubit(WeavingRecordRepository())),
           BlocProvider(
             create: (context) => MachineOperationCubit(
               MachineRepository(),
@@ -200,6 +209,7 @@ class AppView extends StatelessWidget {
         GoRoute(path: '/schedules', builder: (context, state) => const WorkScheduleScreen()),
         GoRoute(path: '/shifts', builder: (context, state) => const ShiftScreen()),
         GoRoute(path: '/users', builder: (context, state) => const UserScreen()),
+        GoRoute(path: '/logs', builder: (context, state) => const AuditLogScreen()),
 
         // --- INVENTORY ROUTES ---
         GoRoute(path: '/suppliers', builder: (context, state) => const SupplierScreen()),
@@ -226,6 +236,7 @@ class AppView extends StatelessWidget {
         GoRoute(path: '/machine-operation',builder: (context, state) => const MachineOperationScreen()),
         GoRoute(path: '/weaving', builder: (context, state) => const WeavingScreen()),
         GoRoute(path: '/weaving-productions', builder: (context, state) => const WeavingProductionScreen()),
+        GoRoute(path: '/weaving-records', builder: (context, state) => const WeavingRecordScreen()),
       ],
     );
 

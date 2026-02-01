@@ -35,6 +35,9 @@ import 'package:production_app_frontend/features/hr/employee/presentation/bloc/e
 import 'package:production_app_frontend/features/hr/shift/presentation/bloc/shift_cubit.dart';
 import 'package:production_app_frontend/features/production/machine/presentation/screens/machine_history_dialog.dart';
 
+// [MỚI] Import Weaving Record (Sử dụng bộ code mới đã đổi tên ở bước trước)
+import 'package:production_app_frontend/features/production/weaving_record/presentation/bloc/weaving_record_cubit.dart';
+import 'package:production_app_frontend/features/production/weaving_record/domain/weaving_record_model.dart';
 
 class MachineOperationScreen extends StatefulWidget {
   const MachineOperationScreen({super.key});
@@ -370,8 +373,9 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                   // Có phiếu nhưng chưa có rổ -> Mở dialog chọn rổ & tiêu chuẩn
                   _showAssignBasketDialog(context, ticket, l10n);
                 } else {
-                  // Đã có đủ -> Menu Inspect/Release
-                  _showTicketActionMenu(context, ticket, l10n);
+                  // [THAY ĐỔI] Menu Inspect/Release/Weighing
+                  // Truyền thêm machine và lineCode để phục vụ cân rổ
+                  _showTicketActionMenu(context, machine, lineCode, ticket, l10n);
                 }
               },
               child: Column(
@@ -588,8 +592,8 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     );
   }
 
-  // --- MENU CHỌN HÀNH ĐỘNG ---
-  void _showTicketActionMenu(BuildContext context, WeavingTicket ticket, AppLocalizations l10n) {
+  // --- MENU CHỌN HÀNH ĐỘNG (ĐÃ CẬP NHẬT THÊM CÂN RỔ) ---
+  void _showTicketActionMenu(BuildContext context, Machine machine, String lineCode, WeavingTicket ticket, AppLocalizations l10n) {
       showModalBottomSheet(
         context: context,
         builder: (ctx) => Wrap(
@@ -615,6 +619,17 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                 );
               },
             ),
+            
+            // [MỚI] Nút Cân rổ cuối ca
+            ListTile(
+              leading: const Icon(Icons.monitor_weight, color: Colors.indigo),
+              title: const Text("Cân rổ cuối ca"), 
+              onTap: () {
+                Navigator.pop(ctx);
+                _showWeighingDialog(context, machine, lineCode, ticket);
+              },
+            ),
+
             ListTile(
               leading: const Icon(Icons.stop_circle, color: Colors.red),
               title: Text(l10n.finishTicket),
@@ -628,7 +643,203 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
       );
   }
 
-  // --- DIALOG XEM THÔNG TIN (READ ONLY) ---
+  // --- [MỚI] DIALOG CÂN RỔ (FORM) ---
+  void _showWeighingDialog(BuildContext context, Machine machine, String lineCode, WeavingTicket ticket) {
+    final formKey = GlobalKey<FormState>();
+    final grossWeightCtrl = TextEditingController();
+    final runWasteCtrl = TextEditingController(text: "0");
+    final setupWasteCtrl = TextEditingController(text: "0");
+
+    // Lấy trọng lượng bì từ BasketCubit (Vì ticket chỉ có ID, cần lookup để chính xác nhất)
+    double basketTare = 0.0;
+    final basketState = context.read<BasketCubit>().state;
+    if (basketState is BasketLoaded && ticket.basketId != null) {
+       try {
+         final foundBasket = basketState.baskets.firstWhere((b) => b.id == ticket.basketId);
+         basketTare = foundBasket.tareWeight;
+       } catch (_) {}
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          // Tính Net Weight
+          double gross = double.tryParse(grossWeightCtrl.text) ?? 0;
+          double net = gross > basketTare ? gross - basketTare : 0;
+
+          return AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.monitor_weight, color: Colors.indigo),
+                SizedBox(width: 8),
+                Text("Cân rổ cuối ca"),
+              ],
+            ),
+            content: Form(
+              key: formKey,
+              child: SizedBox(
+                width: 350,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "${machine.name} - Line $lineCode", 
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+                    ),
+                    Text("Rổ: ${ticket.basketCode} (Bì: ${basketTare}kg)", style: TextStyle(color: Colors.grey.shade700)),
+                    const SizedBox(height: 16),
+                    
+                    TextFormField(
+                      controller: grossWeightCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: "Tổng trọng lượng (Gross)",
+                        suffixText: "kg",
+                        border: OutlineInputBorder(),
+                        helperText: "Bao gồm cả trọng lượng rổ"
+                      ),
+                      onChanged: (val) => setStateDialog((){}), 
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return "Bắt buộc nhập";
+                        if (double.tryParse(v) == null) return "Sai định dạng";
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(4)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Khối lượng tịnh (Net):", style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            "${net.toStringAsFixed(2)} kg", 
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16)
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: runWasteCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(
+                              labelText: "Phế Run",
+                              suffixText: "kg",
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextFormField(
+                            controller: setupWasteCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(
+                              labelText: "Phế Setup",
+                              suffixText: "kg",
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Hủy")),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.save),
+                label: const Text("Lưu"),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                onPressed: () {
+                  if (formKey.currentState!.validate()) {
+                    _saveWeighingData(
+                      context, 
+                      machine.id, 
+                      int.parse(lineCode), 
+                      ticket, 
+                      net, 
+                      double.tryParse(runWasteCtrl.text) ?? 0, 
+                      double.tryParse(setupWasteCtrl.text) ?? 0
+                    );
+                    Navigator.pop(ctx);
+                  }
+                },
+              ),
+            ],
+          );
+        }
+      ),
+    );
+  }
+
+  void _saveWeighingData(
+    BuildContext context, 
+    int machineId, 
+    int line, 
+    WeavingTicket ticket, 
+    double netWeight, 
+    double runWaste, 
+    double setupWaste
+  ) {
+    // 1. Xác định User (Lấy Employee ID từ AuthCubit)
+    final authState = context.read<AuthCubit>().state;
+    int? currentEmployeeId;
+    if (authState is AuthAuthenticated) {
+      currentEmployeeId = authState.user.employeeId;
+    }
+
+    // 2. Xác định Ca (Shift) theo ID
+    final shiftState = context.read<ShiftCubit>().state;
+    int? currentShiftId;
+    if (shiftState is ShiftLoaded) {
+      final currentShiftName = _calculateCurrentShift(); 
+      try {
+        final shift = shiftState.shifts.firstWhere(
+          (s) => s.name.contains(currentShiftName) || s.name.contains(currentShiftName.substring(3)), 
+        );
+        currentShiftId = shift.id;
+      } catch (_) {
+        if (shiftState.shifts.isNotEmpty) currentShiftId = shiftState.shifts.first.id;
+      }
+    }
+
+    // 3. Tạo Object Model
+    final recordData = WeavingRecord(
+      id: 0, 
+      machineId: machineId,
+      line: line,
+      basketId: ticket.basketId ?? 0,
+      shiftId: currentShiftId,
+      updatedById: currentEmployeeId, // [QUAN TRỌNG] Truyền ID vào đây
+      totalWeight: netWeight,
+      runWaste: runWaste,
+      setupWaste: setupWaste,
+      updatedAt: DateTime.now(),
+    );
+
+    // 4. Gọi Cubit để lưu
+    context.read<WeavingRecordCubit>().saveRecord(
+      item: recordData, 
+      isEdit: false
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Đã lưu dữ liệu sản xuất thành công!"), backgroundColor: Colors.green),
+    );
+  }
+
+  // --- DIALOG XEM THÔNG TIN PHIẾU (READ ONLY) ---
   // ignore: unused_element
   void _showAssignOrEditDialog(
     BuildContext context, 
