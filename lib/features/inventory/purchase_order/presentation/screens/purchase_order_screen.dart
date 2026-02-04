@@ -12,7 +12,7 @@ import '../../../../../l10n/app_localizations.dart';
 import '../../domain/purchase_order_model.dart';
 import '../bloc/purchase_order_cubit.dart';
 import 'purchase_order_detail_screen.dart';
-import 'create_purchase_order_screen.dart'; // [NEW] Import trang Form
+import 'create_purchase_order_screen.dart'; // Import trang Form tạo/sửa
 
 class PurchaseOrderScreen extends StatefulWidget {
   const PurchaseOrderScreen({super.key});
@@ -52,7 +52,7 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
     });
   }
 
-  // [NEW] Điều hướng sang form (Tạo mới nếu po=null, Sửa nếu po!=null)
+  // Điều hướng sang form (Tạo mới nếu po=null, Sửa nếu po!=null)
   void _navigateToForm({PurchaseOrderHeader? po}) {
     Navigator.push(
       context,
@@ -60,6 +60,14 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
     ).then((_) {
       context.read<PurchaseOrderCubit>().loadPurchaseOrders();
     });
+  }
+
+  // Điều hướng sang trang chi tiết
+  void _navigateToDetail(int poId) {
+    Navigator.push(
+      context, 
+      MaterialPageRoute(builder: (_) => PurchaseOrderDetailScreen(poId: poId))
+    ).then((_) => context.read<PurchaseOrderCubit>().loadPurchaseOrders());
   }
 
   @override
@@ -219,8 +227,11 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
                       DataColumn(label: Text(l10n.vendor.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.orderDate.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.eta.toUpperCase(), style: _headerStyle)),
+                      
+                      // [MỚI] Cột Tổng Cuộn
+                      DataColumn(label: Text("TỔNG CUỘN", style: _headerStyle)),
+                      
                       DataColumn(label: Text(l10n.incoterm.toUpperCase(), style: _headerStyle)),
-                      DataColumn(label: Text(l10n.note.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.totalAmount.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.status.toUpperCase(), style: _headerStyle)),
                       DataColumn(label: Text(l10n.actions.toUpperCase(), style: _headerStyle)),
@@ -233,8 +244,11 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
                           DataCell(_VendorName(vendorId: po.vendorId, vendorObj: po.vendor)),
                           DataCell(Text(_dateFormat.format(po.orderDate))),
                           DataCell(Text(po.expectedArrivalDate != null ? _dateFormat.format(po.expectedArrivalDate!) : "-")),
+                          
+                          // [HIỂN THỊ] Tổng cuộn
+                          DataCell(Text("${po.totalRolls}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey))),
+                          
                           DataCell(Text(po.incoterm.name)),
-                          DataCell(Container(width: 220, padding: const EdgeInsets.symmetric(vertical: 12), child: Text(po.note ?? '', style: TextStyle(color: Colors.grey.shade700, fontSize: 13), maxLines: 2, overflow: TextOverflow.ellipsis))),
                           
                           // Hiển thị tiền theo VND (đã quy đổi nếu cần)
                           DataCell(Text(
@@ -330,7 +344,16 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
                   Row(children: [Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade400), const SizedBox(width: 6), Text("${l10n.date}: ${_dateFormat.format(po.orderDate)}", style: TextStyle(fontSize: 12, color: Colors.grey.shade600))]),
                   const Divider(height: 20),
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text("${po.incoterm.name} - ${po.currency}", style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+                    // [HIỂN THỊ] Tổng cuộn trên Mobile
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("${po.incoterm.name} - ${po.currency}", style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 2),
+                        Text("Tổng cuộn: ${po.totalRolls}", style: const TextStyle(fontSize: 12, color: Colors.blueGrey, fontStyle: FontStyle.italic)),
+                      ],
+                    ),
+                    
                     // Hiển thị VND
                     Text(NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(po.totalAmount * po.exchangeRate), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _primaryColor)),
                   ]),
@@ -358,10 +381,6 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
       decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: color.withOpacity(0.2))),
       child: Text(status.name.toUpperCase(), style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
     );
-  }
-
-  void _navigateToDetail(int poId) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => PurchaseOrderDetailScreen(poId: poId))).then((_) => context.read<PurchaseOrderCubit>().loadPurchaseOrders());
   }
 
   void _confirmDelete(BuildContext context, PurchaseOrderHeader po, AppLocalizations l10n) {

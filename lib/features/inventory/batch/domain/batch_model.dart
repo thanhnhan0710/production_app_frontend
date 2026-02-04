@@ -6,6 +6,11 @@ class Batch {
   final String? manufactureDate;
   final String? expiryDate;
   final String? originCountry;
+  final String? materialCode; // Map từ material.material_code
+  final String? materialType; // Map từ material.material_type
+  final String? specDenier; // Từ Backend (cần update backend để trả về)
+  final String? supplierName; // Lấy từ supplier.short_name
+  final String? receiptNumber; // Lấy từ receipt_number
   
   // [MỚI] Vị trí kho
   final String? location;
@@ -18,7 +23,6 @@ class Batch {
   final String? createdAt;
   
   // Số phiếu nhập
-  final String? receiptNumber;
 
   Batch({
     this.batchId = 0,
@@ -36,6 +40,10 @@ class Batch {
     this.receiptDetailId,
     this.createdAt,
     this.receiptNumber,
+    this.materialCode,
+    this.materialType,
+    this.specDenier,
+    this.supplierName,
   });
 
   factory Batch.fromJson(Map<String, dynamic> json) {
@@ -56,6 +64,9 @@ class Batch {
       receiptDetailId: json['receipt_detail_id'],
       createdAt: json['created_at'],
       receiptNumber: json['receipt_number'],
+      materialCode: json['material'] != null ? json['material']['material_code'] : null,
+      materialType: json['material'] != null ? json['material']['material_type'] : null,
+      specDenier: json['material'] != null ? json['material']['spec_denier'] : null,
     );
   }
 

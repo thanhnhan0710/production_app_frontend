@@ -36,14 +36,12 @@ class _UserScreenState extends State<UserScreen> {
     return Scaffold(
       backgroundColor: _bgLight,
       // [TÍNH NĂNG COPY] Bọc toàn bộ body trong SelectionArea
-      // Widget này cho phép người dùng bôi đen và copy bất kỳ text nào bên trong nó
       body: SelectionArea(
         child: BlocConsumer<UserCubit, UserState>(
           listener: (context, state) {
             if (state is UserError) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text(state.message), backgroundColor: Colors.red),
+                SnackBar(content: Text(state.message), backgroundColor: Colors.red),
               );
             }
           },
@@ -405,6 +403,7 @@ class _UserScreenState extends State<UserScreen> {
     Color color = Colors.blue;
     if (role == 'admin' || isSuper) color = Colors.purple;
     if (role == 'manager') color = Colors.orange;
+    if (role == 'worker') color = Colors.teal; // [NEW] Màu cho Worker
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -572,11 +571,12 @@ class _UserScreenState extends State<UserScreen> {
 
                       // Role & Settings
                       DropdownButtonFormField<String>(
-                        value: selectedRole,
+                        value: selectedRole.toLowerCase(), // [FIX 1] Đảm bảo giá trị hiển thị ban đầu là chữ thường
                         decoration: InputDecoration(labelText: l10n.role),
-                        items: ['staff', 'manager', 'admin']
+                        items: ['staff', 'manager', 'admin', 'worker']
                             .map((r) => DropdownMenuItem(
-                                value: r, child: Text(r.toUpperCase())))
+                                value: r, // [FIX 2] Giá trị gửi đi là 'worker' (chữ thường)
+                                child: Text(r.toUpperCase()))) // Hiển thị là 'WORKER'
                             .toList(),
                         onChanged: (val) => setState(() => selectedRole = val!),
                       ),

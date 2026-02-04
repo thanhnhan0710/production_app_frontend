@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dropdown_search/dropdown_search.dart'; 
 import 'package:production_app_frontend/l10n/app_localizations.dart';
 import 'package:production_app_frontend/core/widgets/responsive_layout.dart';
 
@@ -52,7 +53,14 @@ class _StandardScreenState extends State<StandardScreen> {
 
     return Scaffold(
       backgroundColor: _bgLight,
-      body: BlocBuilder<StandardCubit, StandardState>(
+      body: BlocConsumer<StandardCubit, StandardState>(
+        listener: (context, state) {
+          if (state is StandardError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+            );
+          }
+        },
         builder: (context, state) {
           int total = 0;
           if (state is StandardLoaded) total = state.standards.length;
@@ -105,7 +113,7 @@ class _StandardScreenState extends State<StandardScreen> {
                     // Search Bar
                     Row(
                       children: [
-                         if (isDesktop) ...[
+                          if (isDesktop) ...[
                           _buildStatBadge(Icons.grid_view, "Total Standards", "$total", Colors.blue),
                           const SizedBox(width: 16),
                           const Spacer(),
@@ -151,7 +159,7 @@ class _StandardScreenState extends State<StandardScreen> {
                 child: Builder(
                   builder: (context) {
                     if (state is StandardLoading) return Center(child: CircularProgressIndicator(color: _primaryColor));
-                    if (state is StandardError) return Center(child: Text("Error: ${state.message}", style: const TextStyle(color: Colors.red)));
+                    // Error handled in listener
                     if (state is StandardLoaded) {
                       if (state.standards.isEmpty) {
                         return Center(
@@ -187,7 +195,7 @@ class _StandardScreenState extends State<StandardScreen> {
     );
   }
 
-  // --- DESKTOP TABLE (ĐÃ CẬP NHẬT FULL CỘT) ---
+  // --- DESKTOP TABLE ---
   Widget _buildDesktopTable(BuildContext context, List<Standard> items, AppLocalizations l10n) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -206,14 +214,14 @@ class _StandardScreenState extends State<StandardScreen> {
                     headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
                     horizontalMargin: 24,
                     columnSpacing: 30,
-                    dataRowMinHeight: 110, // Tăng chiều cao để chứa nhiều dòng
+                    dataRowMinHeight: 110, 
                     dataRowMaxHeight: 110,
                     columns: [
                       DataColumn(label: Text(l10n.product.toUpperCase(), style: _headerStyle)),
-                      DataColumn(label: Text("${l10n.dyeColor} & DE".toUpperCase(), style: _headerStyle)), // Màu + DE
+                      DataColumn(label: Text("${l10n.dyeColor} & DE".toUpperCase(), style: _headerStyle)), 
                       const DataColumn(label: Text("PHYSICAL SPECS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87))),
                       const DataColumn(label: Text("QUALITY SPECS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87))),
-                      const DataColumn(label: Text("APPEARANCE & NOTE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87))), // Ngoại quan + Note
+                      const DataColumn(label: Text("APPEARANCE & NOTE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87))), 
                       DataColumn(label: Text(l10n.actions.toUpperCase(), style: _headerStyle)),
                     ],
                     rows: items.map((item) {
@@ -261,7 +269,7 @@ class _StandardScreenState extends State<StandardScreen> {
                             )
                           ),
                           
-                          // 3. Thông số Vật lý (Khổ, Dày, Trọng lượng, Mật độ)
+                          // 3. Thông số Vật lý
                           DataCell(
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,7 +283,7 @@ class _StandardScreenState extends State<StandardScreen> {
                             )
                           ),
 
-                          // 4. Thông số Chất lượng (Lực đứt, Độ giãn, Bền màu)
+                          // 4. Thông số Chất lượng
                           DataCell(
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,7 +300,7 @@ class _StandardScreenState extends State<StandardScreen> {
                           // 5. Ngoại quan & Ghi chú
                           DataCell(
                             SizedBox(
-                              width: 200, // Giới hạn chiều rộng để text xuống dòng
+                              width: 200, 
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -346,7 +354,7 @@ class _StandardScreenState extends State<StandardScreen> {
 
   TextStyle get _headerStyle => TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5);
 
-  // --- MOBILE LIST VIEW (Thẻ chi tiết) ---
+  // --- MOBILE LIST VIEW ---
   Widget _buildMobileList(BuildContext context, List<Standard> items, AppLocalizations l10n) {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
@@ -504,7 +512,6 @@ class _StandardScreenState extends State<StandardScreen> {
 
   // --- DIALOG ---
   void _showEditDialog(BuildContext context, Standard? item, AppLocalizations l10n) {
-    // Không cần controller cho Code nữa
     final widthCtrl = TextEditingController(text: item?.widthMm ?? '');
     final thickCtrl = TextEditingController(text: item?.thicknessMm ?? '');
     final strengthCtrl = TextEditingController(text: item?.breakingStrength ?? '');
@@ -517,18 +524,18 @@ class _StandardScreenState extends State<StandardScreen> {
     final weightCtrl = TextEditingController(text: item?.weightGm ?? '');
     final noteCtrl = TextEditingController(text: item?.note ?? '');
     
-    int? selectedProductId = item?.productId;
+    Product? selectedProduct;
+    
+    // [FIX] Xử lý logic 0 vs null để tránh crash Dropdown
     int? selectedColorId = item?.dyeColorId;
+    if (selectedColorId == 0) selectedColorId = null;
 
     final prodState = context.read<ProductCubit>().state;
-    if (item == null && prodState is ProductLoaded && prodState.products.isNotEmpty) {
-      selectedProductId = prodState.products.first.id;
-    }
+    List<Product> prods = (prodState is ProductLoaded) ? prodState.products : [];
     
-    final colorState = context.read<DyeColorCubit>().state;
-    if (item == null && colorState is DyeColorLoaded && colorState.colors.isNotEmpty) {
-      selectedColorId = colorState.colors.first.id;
-    }
+    if (item != null) {
+      selectedProduct = prods.where((p) => p.id == item.productId).firstOrNull;
+    } 
 
     final formKey = GlobalKey<FormState>();
 
@@ -551,28 +558,47 @@ class _StandardScreenState extends State<StandardScreen> {
                   Text("General Info", style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Row(children: [
-                    Expanded(child: BlocBuilder<ProductCubit, ProductState>(
-                      builder: (context, state) {
-                        List<Product> prods = (state is ProductLoaded) ? state.products : [];
-                        return DropdownButtonFormField<int>(
-                          value: selectedProductId,
+                    // DropdownSearch cho Sản phẩm
+                    Expanded(
+                      child: DropdownSearch<Product>(
+                        items: (filter, props) => prods,
+                        itemAsString: (Product p) => p.itemCode,
+                        compareFn: (i, s) => i.id == s.id,
+                        selectedItem: selectedProduct,
+                        onChanged: (Product? data) => selectedProduct = data,
+                        validator: (v) => v == null ? "Required" : null,
+                        decoratorProps: DropDownDecoratorProps(
                           decoration: _inputDeco(l10n.product),
-                          items: prods.map((p) => DropdownMenuItem(value: p.id, child: Text(p.itemCode))).toList(),
-                          onChanged: (val) => selectedProductId = val,
-                          validator: (v) => v == null ? "Required" : null,
-                        );
-                      },
-                    )),
+                        ),
+                        popupProps: const PopupProps.menu(
+                          showSearchBox: true,
+                          searchFieldProps: TextFieldProps(
+                            decoration: InputDecoration(
+                              hintText: "Search product code...",
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                            )
+                          )
+                        ),
+                      ),
+                    ),
                     const SizedBox(width: 12),
+                    // DropdownButtonFormField cho Màu (Cho phép null)
                     Expanded(child: BlocBuilder<DyeColorCubit, DyeColorState>(
                       builder: (context, state) {
                         List<DyeColor> colors = (state is DyeColorLoaded) ? state.colors : [];
-                        return DropdownButtonFormField<int>(
+                        return DropdownButtonFormField<int?>(
                           value: selectedColorId,
                           decoration: _inputDeco(l10n.dyeColor),
-                          items: colors.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
+                          items: [
+                            const DropdownMenuItem<int?>(
+                              value: null, 
+                              child: Text("Không chọn màu", style: TextStyle(color: Colors.grey))
+                            ),
+                            ...colors.map((c) => DropdownMenuItem<int?>(value: c.id, child: Text(c.name))),
+                          ],
                           onChanged: (val) => selectedColorId = val,
-                          validator: (v) => v == null ? "Required" : null,
+                          // Bỏ validator để cho phép null
                         );
                       },
                     )),
@@ -624,11 +650,11 @@ class _StandardScreenState extends State<StandardScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel, style: const TextStyle(color: Colors.grey))),
           ElevatedButton(
             onPressed: () {
-              if (formKey.currentState!.validate() && selectedProductId != null && selectedColorId != null) {
+              if (formKey.currentState!.validate() && selectedProduct != null) {
                 final newItem = Standard(
                   id: item?.id ?? 0,
-                  productId: selectedProductId!,
-                  dyeColorId: selectedColorId!,
+                  productId: selectedProduct!.id, 
+                  dyeColorId: selectedColorId, // Truyền null (không phải 0)
                   widthMm: widthCtrl.text,
                   thicknessMm: thickCtrl.text,
                   breakingStrength: strengthCtrl.text,

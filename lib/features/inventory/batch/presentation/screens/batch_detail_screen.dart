@@ -19,7 +19,6 @@ class BatchDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Cung cấp IQCResultCubit cho màn hình này
     return BlocProvider(
       create: (context) => IQCResultCubit(IQCResultRepository())
         ..loadResultsByBatch(batch.batchId),
@@ -57,8 +56,15 @@ class _BatchDetailViewState extends State<_BatchDetailView> with SingleTickerPro
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Batch: ${widget.batch.internalBatchCode}", style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
-            Text(widget.batch.supplierBatchNo, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+            Text(
+              "Batch: ${widget.batch.internalBatchCode}", 
+              style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)
+            ),
+            // [SỬA] Hiển thị Material Code và Type/Spec
+            Text(
+              "${widget.batch.materialCode ?? 'Unknown Material'} | ${widget.batch.materialType ?? ''}", 
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12, overflow: TextOverflow.ellipsis)
+            ),
           ],
         ),
         bottom: TabBar(
@@ -90,28 +96,48 @@ class _BatchDetailViewState extends State<_BatchDetailView> with SingleTickerPro
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildCard(
-            title: "Basic Information",
+            title: "Material & Supplier",
             children: [
-              _buildRow("Internal Code", widget.batch.internalBatchCode),
+              // [SỬA] Thay thế Name bằng Code và Type
+              _buildRow("Material Code", widget.batch.materialCode ?? "--", isHighlight: true),
+              _buildRow("Type", widget.batch.materialType ?? "--"),
+              _buildRow("Spec (Denier)", widget.batch.specDenier ?? "--"), // Hiển thị thông số kỹ thuật
+              
+              const Divider(height: 20, thickness: 0.5),
+              
+              _buildRow("Supplier", widget.batch.supplierName ?? "Unknown"),
               _buildRow("Supplier Batch", widget.batch.supplierBatchNo),
-              _buildRow("Material ID", "${widget.batch.materialId}"), 
               _buildRow("Origin", widget.batch.originCountry ?? "N/A"),
-              _buildRow("Created At", widget.batch.createdAt ?? "N/A"),
             ],
           ),
           const SizedBox(height: 16),
           _buildCard(
-            title: "Status & Logistics",
+            title: "Logistics & Storage",
             children: [
-              _buildRow("QC Status", widget.batch.qcStatus, isStatus: true),
-              _buildRow("QC Note", widget.batch.qcNote ?? "--"),
-              _buildRow("Mfg Date", widget.batch.manufactureDate ?? "--"),
-              _buildRow("Exp Date", widget.batch.expiryDate ?? "--"),
-              _buildRow("Receipt ID", widget.batch.receiptDetailId != null ? "#${widget.batch.receiptDetailId}" : "--"),
+              _buildRow("Location", widget.batch.location ?? "Unassigned", isHighlight: true),
+              _buildRow("Receipt Number", widget.batch.receiptNumber ?? "--"),
+              
+              _buildRow("Mfg Date", widget.batch.manufactureDate != null 
+                  ? DateFormat('dd/MM/yyyy').format(DateTime.parse(widget.batch.manufactureDate!)) 
+                  : "--"),
+              _buildRow("Exp Date", widget.batch.expiryDate != null 
+                  ? DateFormat('dd/MM/yyyy').format(DateTime.parse(widget.batch.expiryDate!)) 
+                  : "--"),
+               _buildRow("Created At", widget.batch.createdAt != null 
+                  ? DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(widget.batch.createdAt!)) 
+                  : "--"),
             ],
           ),
           const SizedBox(height: 16),
-          if (widget.batch.note != null)
+          _buildCard(
+            title: "Quality Status",
+            children: [
+              _buildRow("QC Status", widget.batch.qcStatus, isStatus: true),
+              _buildRow("QC Note", widget.batch.qcNote ?? "--"),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (widget.batch.note != null && widget.batch.note!.isNotEmpty)
              _buildCard(
                title: "Note", 
                children: [Text(widget.batch.note!, style: const TextStyle(fontSize: 14, color: Colors.black87))]
@@ -122,6 +148,7 @@ class _BatchDetailViewState extends State<_BatchDetailView> with SingleTickerPro
   }
 
   // --- TAB 2: LỊCH SỬ KIỂM TRA (QC) ---
+  // (Giữ nguyên phần này như code trước vì không ảnh hưởng bởi Material Name)
   Widget _buildIQCTab() {
     return BlocConsumer<IQCResultCubit, IQCResultState>(
       listener: (context, state) {
@@ -143,7 +170,6 @@ class _BatchDetailViewState extends State<_BatchDetailView> with SingleTickerPro
 
         return Column(
           children: [
-            // Nút tạo mới
             Padding(
               padding: const EdgeInsets.all(16),
               child: SizedBox(
@@ -156,11 +182,11 @@ class _BatchDetailViewState extends State<_BatchDetailView> with SingleTickerPro
                     backgroundColor: _primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
               ),
             ),
-            
             Expanded(
               child: results.isEmpty
                   ? Center(child: Text("No test results yet.", style: TextStyle(color: Colors.grey.shade500)))
@@ -193,21 +219,14 @@ class _BatchDetailViewState extends State<_BatchDetailView> with SingleTickerPro
                                 const SizedBox(height: 4),
                                 Text("Date: ${item.testDate ?? 'N/A'}"),
                                 Text("Tester: ${item.testerName ?? 'Unknown'}"),
-                                if (item.note != null) Text("Note: ${item.note}", style: const TextStyle(fontStyle: FontStyle.italic)),
                               ],
                             ),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  item.finalResult.toJson().toUpperCase(),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: item.finalResult == IQCResultStatus.pass ? Colors.green : Colors.red,
-                                  ),
-                                ),
-                              ],
+                            trailing: Text(
+                              item.finalResult.toJson().toUpperCase(),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: item.finalResult == IQCResultStatus.pass ? Colors.green : Colors.red,
+                              ),
                             ),
                           ),
                         );
@@ -220,21 +239,16 @@ class _BatchDetailViewState extends State<_BatchDetailView> with SingleTickerPro
     );
   }
 
-  // [QUAN TRỌNG] ĐÃ SỬA LẠI HÀM NÀY
   void _showIQCForm(BuildContext context) {
-    // 1. Lấy Cubit hiện tại từ context của màn hình
     final iqcCubit = context.read<IQCResultCubit>();
-
     showDialog(
       context: context,
       builder: (_) => BlocProvider.value(
-        // 2. Truyền Cubit này vào context của Dialog
         value: iqcCubit, 
         child: IQCFormDialog(batchId: widget.batch.batchId),
       ),
     ).then((result) {
       if (result != null) {
-        // Reload lại danh sách sau khi đóng dialog (dù saveResult đã reload, nhưng gọi lại cho chắc chắn state mới nhất)
         iqcCubit.loadResultsByBatch(widget.batch.batchId);
       }
     });
@@ -260,16 +274,24 @@ class _BatchDetailViewState extends State<_BatchDetailView> with SingleTickerPro
     );
   }
 
-  Widget _buildRow(String label, String value, {bool isStatus = false}) {
+  Widget _buildRow(String label, String value, {bool isStatus = false, bool isHighlight = false}) {
     Color valColor = Colors.black87;
+    FontWeight valWeight = FontWeight.w500;
+
     if (isStatus) {
       if (value == "Pass") {
         valColor = Colors.green;
+        valWeight = FontWeight.bold;
       } else if (value == "Fail") {
         valColor = Colors.red;
+        valWeight = FontWeight.bold;
       } else {
         valColor = Colors.orange;
+        valWeight = FontWeight.bold;
       }
+    } else if (isHighlight) {
+      valColor = _primaryColor;
+      valWeight = FontWeight.bold;
     }
 
     return Padding(
@@ -277,8 +299,15 @@ class _BatchDetailViewState extends State<_BatchDetailView> with SingleTickerPro
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
-          Text(value, style: TextStyle(fontWeight: isStatus ? FontWeight.bold : FontWeight.w500, color: valColor, fontSize: 14)),
+          Expanded(flex: 4, child: Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 14))),
+          Expanded(
+            flex: 6,
+            child: Text(
+              value, 
+              style: TextStyle(fontWeight: valWeight, color: valColor, fontSize: 14),
+              textAlign: TextAlign.right,
+            ),
+          ),
         ],
       ),
     );

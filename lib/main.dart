@@ -3,6 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:production_app_frontend/features/home/presentation/screens/weaving_worker_dashboard.dart';
+
+// --- FEATURES IMPORTS ---
+// (Giữ nguyên các import của bạn)
 import 'package:production_app_frontend/features/inventory/batch/data/batch_repository.dart';
 import 'package:production_app_frontend/features/inventory/batch/presentation/bloc/batch_cubit.dart';
 import 'package:production_app_frontend/features/inventory/batch/presentation/screens/batch_screen.dart';
@@ -22,27 +26,24 @@ import 'package:production_app_frontend/features/inventory/warehouse/presentatio
 import 'package:production_app_frontend/features/log/data/log_repository.dart';
 import 'package:production_app_frontend/features/log/presentation/bloc/log_cubit.dart';
 import 'package:production_app_frontend/features/log/presentation/screens/audit_log_screen.dart';
+import 'package:production_app_frontend/features/production/weaving/presentation/screens/weaving_management_screen.dart';
 import 'package:production_app_frontend/features/production/weaving_record/data/weaving_record_repository.dart';
 import 'package:production_app_frontend/features/production/weaving_record/presentation/bloc/weaving_record_cubit.dart';
 import 'package:production_app_frontend/features/production/weaving_record/presentation/screens/weaving_record_screen.dart';
 
-
-// --- CORE & L10N ---
 import 'core/bloc/language_cubit.dart';
 import 'l10n/app_localizations.dart'; 
 
-// --- AUTH FEATURE ---
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/data/user_repository.dart';
 import 'features/auth/presentation/bloc/auth_cubit.dart';
+// [QUAN TRỌNG] Import AuthState để dùng trong logic redirect 
 import 'features/auth/presentation/bloc/user_cubit.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/user_screen.dart';
 
-// --- HOME FEATURE ---
 import 'features/home/presentation/screens/dashboard_screen.dart';
 
-// --- HR FEATURE ---
 import 'features/hr/department/data/department_repository.dart';
 import 'features/hr/department/presentation/bloc/department_cubit.dart';
 import 'features/hr/department/presentation/screens/department_screen.dart';
@@ -57,7 +58,6 @@ import 'features/hr/work_schedule/data/work_schedule_repository.dart';
 import 'features/hr/work_schedule/presentation/bloc/work_schedule_cubit.dart';
 import 'features/hr/work_schedule/presentation/screens/work_schedule_screen.dart';
 
-// --- INVENTORY FEATURE ---
 import 'features/inventory/supplier/data/supplier_repository.dart';
 import 'features/inventory/supplier/presentation/bloc/supplier_cubit.dart';
 import 'features/inventory/supplier/presentation/screens/supplier_screen.dart';
@@ -83,12 +83,10 @@ import 'features/inventory/bom/data/bom_repository.dart';
 import 'features/inventory/bom/presentation/bloc/bom_cubit.dart';
 import 'features/inventory/bom/presentation/screens/bom_screen.dart';
 
-// [NEW] Purchase Order Imports
 import 'features/inventory/purchase_order/data/purchase_order_repository.dart';
 import 'features/inventory/purchase_order/presentation/bloc/purchase_order_cubit.dart';
-import 'features/inventory/purchase_order/presentation/screens/purchase_order_screen.dart'; // Đã sửa tên file chính xác
+import 'features/inventory/purchase_order/presentation/screens/purchase_order_screen.dart';
 
-// --- PRODUCTION FEATURE ---
 import 'features/production/machine/data/machine_repository.dart';
 import 'features/production/machine/presentation/bloc/machine_cubit.dart';
 import 'features/production/machine/presentation/bloc/machine_operation_cubit.dart';
@@ -172,8 +170,62 @@ class AppView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // [NEW] Lấy AuthCubit để truyền vào GoRouter
+    final authCubit = context.read<AuthCubit>();
+
     final GoRouter router = GoRouter(
       initialLocation: '/login',
+      // [NEW] Dùng Stream để GoRouter tự refresh khi trạng thái Auth thay đổi (Logout/Login)
+      refreshListenable: GoRouterRefreshStream(authCubit.stream),
+      
+      // [NEW] Logic Redirect (Bảo vệ Route)
+      redirect: (context, state) {
+        final authState = authCubit.state;
+        
+        // 1. Kiểm tra đăng nhập
+        // AuthAuthenticated nghĩa là đã có Token và User info
+        final bool loggedIn = authState is AuthAuthenticated; 
+        final bool loggingIn = state.matchedLocation == '/login';
+
+        if (!loggedIn) {
+          // Nếu chưa đăng nhập và không phải đang ở trang login -> Về login
+          return loggingIn ? null : '/login';
+        }
+
+        // Nếu đã đăng nhập
+        if (loggingIn) {
+          // Đã đăng nhập mà vào login -> Vào dashboard (hoặc trang phù hợp role)
+          return '/dashboard'; 
+        }
+
+        // 2. PHÂN QUYỀN (RBAC) - Chặn truy cập các trang Admin
+        // Danh sách các trang chỉ dành cho Admin (Administrator)
+        final adminRoutes = ['/users', '/logs']; 
+        
+        // Kiểm tra xem trang đang truy cập có nằm trong danh sách cấm không
+        if (adminRoutes.contains(state.matchedLocation)) {
+          // Lấy role từ AuthState
+          final userRole = (authState).user.role; 
+          final isSuperuser = (authState).user.isSuperuser;
+          
+          // Nếu không phải admin và không phải superuser -> Chặn -> Về dashboard
+          if (userRole != 'admin' && !isSuperuser) {
+             return '/dashboard'; 
+          }
+        }
+
+        // (Tùy chọn) Redirect cho Worker (Công nhân vận hành)
+        // Nếu role là 'worker' và đang vào dashboard -> Chuyển sang màn hình vận hành máy
+        
+        final userRole = (authState).user.role;
+        if (userRole == 'worker' && state.matchedLocation == '/dashboard') {
+           return '/worker-dashboard';
+        }
+        
+
+        return null; // Cho phép truy cập bình thường
+      },
+
       routes: [
         // --- AUTH ---
         GoRoute(
@@ -192,11 +244,11 @@ class AppView extends StatelessWidget {
         GoRoute(
           path: '/employees',
           builder: (context, state) {
-             final deptId = state.uri.queryParameters['departmentId'];
-             if (deptId != null) {
-               return EmployeeDepartmentScreen(departmentId: int.parse(deptId));
-             }
-             return const EmployeeScreen();
+              final deptId = state.uri.queryParameters['departmentId'];
+              if (deptId != null) {
+                return EmployeeDepartmentScreen(departmentId: int.parse(deptId));
+              }
+              return const EmployeeScreen();
           },
         ),
         GoRoute(
@@ -226,17 +278,24 @@ class AppView extends StatelessWidget {
         GoRoute(path: '/inventorys', builder: (context, state) => const InventoryScreen()),
         GoRoute(path: '/material-exports', builder: (context, state) => const MaterialExportListScreen()),
         
-        
-        // [NEW] Purchase Order Route
+        // Purchase Order Route
         GoRoute(path: '/purchase-orders', builder: (context, state) => const PurchaseOrderScreen()),
 
         // --- PRODUCTION ROUTES ---
         GoRoute(path: '/machines', builder: (context, state) => const MachineScreen()),
         GoRoute(path: '/standards', builder: (context, state) => const StandardScreen()),
         GoRoute(path: '/machine-operation',builder: (context, state) => const MachineOperationScreen()),
-        GoRoute(path: '/weaving', builder: (context, state) => const WeavingScreen()),
-        GoRoute(path: '/weaving-productions', builder: (context, state) => const WeavingProductionScreen()),
-        GoRoute(path: '/weaving-records', builder: (context, state) => const WeavingRecordScreen()),
+        GoRoute(
+          path: '/weaving-management', 
+          builder: (context, state) => const WeavingManagementScreen()
+        ),
+        //GoRoute(path: '/weaving', builder: (context, state) => const WeavingScreen()),
+        //GoRoute(path: '/weaving-productions', builder: (context, state) => const WeavingProductionScreen()),
+        //GoRoute(path: '/weaving-records', builder: (context, state) => const WeavingRecordScreen()),
+        GoRoute(
+          path: '/worker-dashboard',
+          builder: (context, state) => const WeavingWorkerDashboard(),
+        ),
       ],
     );
 
@@ -272,5 +331,23 @@ class AppView extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+// [NEW] Class tiện ích để chuyển Stream thành Listenable cho GoRouter
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen(
+      (dynamic _) => notifyListeners(),
+    );
+  }
+
+  late final dynamic _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
   }
 }

@@ -176,6 +176,40 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
     }
   }
 
+  // [CẬP NHẬT] Logic tự động chọn ca dựa trên giờ cứng (Hardcoded Time Logic)
+  int? _getAutoShiftId(List<Shift> shifts) {
+    final now = DateTime.now();
+    final currentHour = now.hour; // Lấy giờ hiện tại (0-23)
+
+    String targetShiftName = "";
+
+    // QUY TẮC THỜI GIAN:
+    // Ca A: 06:00 -> 14:00 (13:59)
+    // Ca B: 14:00 -> 22:00 (21:59)
+    // Ca C: 22:00 -> 06:00 sáng hôm sau
+    
+    if (currentHour >= 6 && currentHour < 14) {
+      targetShiftName = "A"; // Ca A
+    } else if (currentHour >= 14 && currentHour < 22) {
+      targetShiftName = "B"; // Ca B
+    } else {
+      // Từ 22h đêm đến 6h sáng
+      targetShiftName = "C"; // Ca C
+    }
+
+    try {
+      // Tìm trong danh sách ca (trong DB) xem có ca nào tên chứa chữ cái tương ứng không
+      // Ví dụ: Tìm ca có tên "Ca A", "Shift A", "A"...
+      final foundShift = shifts.firstWhere(
+        (s) => s.name.toUpperCase().contains(targetShiftName),
+      );
+      return foundShift.id;
+    } catch (e) {
+      // Không tìm thấy ca phù hợp trong DB
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -224,6 +258,21 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
                 }
               },
             ),
+            
+            // [CẬP NHẬT] Listener tự động chọn Ca làm việc theo giờ
+            BlocListener<ShiftCubit, ShiftState>(
+              listener: (context, state) {
+                if (state is ShiftLoaded && _selectedShiftId == null && widget.existingExport == null) {
+                  final autoShiftId = _getAutoShiftId(state.shifts);
+                  if (autoShiftId != null) {
+                    setState(() {
+                      _selectedShiftId = autoShiftId;
+                    });
+                  }
+                }
+              },
+            ),
+
             BlocListener<MaterialExportCubit, MaterialExportState>(
               listener: (context, state) {
                 if (state is MaterialExportError) {
@@ -705,10 +754,10 @@ class _MaterialExportScreenState extends State<MaterialExportScreen> {
 
                       if (isDuplicateType) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                             SnackBar(
-                               content: Text("Loại sợi '$selectedComponentType' đã được chọn cho Máy ${selectedMachine!.name} Line $selectedLine rồi!"), 
-                               backgroundColor: Colors.orange
-                             )
+                            SnackBar(
+                              content: Text("Loại sợi '$selectedComponentType' đã được chọn cho Máy ${selectedMachine!.name} Line $selectedLine rồi!"), 
+                              backgroundColor: Colors.orange
+                            )
                           );
                           return;
                       }

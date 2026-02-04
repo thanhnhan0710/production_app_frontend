@@ -5,7 +5,7 @@ import '../domain/purchase_order_model.dart';
 
 class PurchaseOrderRepository {
   final Dio _dio = ApiClient().dio;
-  final String _endpoint = '/api/v1/purchase-orders';
+  final String _endpoint = '/api/v1/purchase-orders/';
 
   // --- GET LIST (FILTER) ---
   Future<List<PurchaseOrderHeader>> getPurchaseOrders({

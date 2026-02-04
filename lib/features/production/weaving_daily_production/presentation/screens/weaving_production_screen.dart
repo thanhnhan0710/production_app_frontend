@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Để dùng Clipboard
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:production_app_frontend/l10n/app_localizations.dart'; // Import file đa ngôn ngữ
+import 'package:production_app_frontend/l10n/app_localizations.dart'; 
 import 'package:production_app_frontend/features/production/weaving_daily_production/services/weaving_export_service.dart';
 
 import '../bloc/weaving_production_cubit.dart';
 import '../../domain/weaving_production_model.dart';
 
 class WeavingProductionScreen extends StatefulWidget {
-  const WeavingProductionScreen({super.key});
+  // [MỚI] Tham số để xác định chế độ hiển thị (độc lập hay nhúng trong TabBar)
+  final bool isEmbedded;
+  
+  const WeavingProductionScreen({super.key, this.isEmbedded = false});
 
   @override
   State<WeavingProductionScreen> createState() => _WeavingProductionScreenState();
@@ -21,14 +24,16 @@ class _WeavingProductionScreenState extends State<WeavingProductionScreen> {
   DateTime? _toDate;
   final _currencyFormat = NumberFormat("#,##0.00", "vi_VN");
 
-  // Thay vì lưu String tĩnh, ta lưu key để dịch trong hàm build
+  // Lưu key để dịch đa ngôn ngữ trong hàm build
   String _dateFilterKey = "filter7Days"; 
 
   @override
   void initState() {
     super.initState();
+    // Mặc định lọc 7 ngày gần nhất
     _applyQuickFilter('7_days');
     
+    // Đảm bảo widget đã build xong trước khi load data
     WidgetsBinding.instance.addPostFrameCallback((_) {
        _onSearch();
     });
@@ -122,7 +127,7 @@ class _WeavingProductionScreenState extends State<WeavingProductionScreen> {
     }
   }
 
-  // Helper để lấy text từ key (vì switch case ở trên không truy cập được context để lấy l10n ngay lập tức)
+  // Helper lấy label từ key
   String _getFilterLabel(AppLocalizations l10n) {
     switch (_dateFilterKey) {
       case "filterToday": return l10n.filterToday;
@@ -135,228 +140,6 @@ class _WeavingProductionScreenState extends State<WeavingProductionScreen> {
       case "filterCustom": return l10n.filterCustom;
       default: return l10n.filter7Days;
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // [MỚI] Lấy đối tượng ngôn ngữ
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: Text(l10n.prodStatsTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF003366),
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.download), 
-            tooltip: l10n.exportExcel,
-            onPressed: () => _onExport(l10n), // Truyền l10n vào hàm export
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: l10n.refreshData,
-            onPressed: _onSearch,
-          ),
-          IconButton(
-            icon: const Icon(Icons.calculate_outlined),
-            tooltip: l10n.recalculateToday,
-            onPressed: () => context.read<WeavingProductionCubit>().recalculateToday(),
-          )
-        ],
-      ),
-      body: Column(
-        children: [
-          // --- HEADER BỘ LỌC ---
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(bottom: BorderSide(color: Colors.black12)),
-            ),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchCtrl,
-                  decoration: InputDecoration(
-                    hintText: l10n.searchProductHint, // [MỚI] Đa ngôn ngữ
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    isDense: true,
-                  ),
-                  onSubmitted: (_) => _onSearch(),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    PopupMenuButton<String>(
-                      onSelected: _applyQuickFilter,
-                      itemBuilder: (context) => [
-                        PopupMenuItem(value: 'today', child: Text(l10n.filterToday)),
-                        PopupMenuItem(value: 'yesterday', child: Text(l10n.filterYesterday)),
-                        PopupMenuItem(value: '7_days', child: Text(l10n.filter7Days)),
-                        const PopupMenuDivider(),
-                        PopupMenuItem(value: 'this_month', child: Text(l10n.filterThisMonth)),
-                        PopupMenuItem(value: 'last_month', child: Text(l10n.filterLastMonth)),
-                        PopupMenuItem(value: 'this_quarter', child: Text(l10n.filterThisQuarter)),
-                        PopupMenuItem(value: 'this_year', child: Text(l10n.filterThisYear)),
-                      ],
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE3F2FD),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.filter_list, size: 18, color: Color(0xFF003366)),
-                            const SizedBox(width: 8),
-                            // [MỚI] Hiển thị label động theo ngôn ngữ
-                            Text(_getFilterLabel(l10n), style: const TextStyle(color: Color(0xFF003366), fontWeight: FontWeight.bold)),
-                            const Icon(Icons.arrow_drop_down, color: Color(0xFF003366)),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: InkWell(
-                        onTap: _pickDateRange,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.calendar_month, size: 18, color: Colors.grey),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  (_fromDate != null && _toDate != null)
-                                      ? "${DateFormat('dd/MM').format(_fromDate!)} - ${DateFormat('dd/MM').format(_toDate!)}"
-                                      : l10n.filterCustom,
-                                  style: const TextStyle(fontSize: 13),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          
-          // --- KẾT QUẢ ---
-          Expanded(
-            child: BlocBuilder<WeavingProductionCubit, WeavingProductionState>(
-              builder: (context, state) {
-                if (state is WeavingProductionLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (state is WeavingProductionError) {
-                  return Center(child: Text("Error: ${state.message}", style: const TextStyle(color: Colors.red)));
-                }
-
-                if (state is WeavingProductionLoaded) {
-                  final list = state.productions;
-                  if (list.isEmpty) {
-                    return _buildEmptyState(l10n);
-                  }
-
-                  double sumKg = list.fold(0, (sum, item) => sum + item.totalKg);
-                  double sumMeters = list.fold(0, (sum, item) => sum + item.totalMeters);
-
-                  return SelectionArea(
-                    child: Column(
-                      children: [
-                        _buildSummaryCard(sumKg, sumMeters, list.length, l10n),
-                        Expanded(
-                          child: ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                            itemCount: list.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 8),
-                            itemBuilder: (context, index) {
-                              return _buildItemCard(context, list[index], l10n);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return const SizedBox();
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(AppLocalizations l10n) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.bar_chart, size: 80, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(l10n.noStatsData, style: TextStyle(color: Colors.grey.shade600)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryCard(double totalKg, double totalMeters, int count, AppLocalizations l10n) {
-    return Container(
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [Colors.blue.shade800, Colors.blue.shade600]),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildStatItem(l10n.totalProduction, _currencyFormat.format(totalKg), "kg", Colors.white),
-          Container(width: 1, height: 40, color: Colors.white30),
-          _buildStatItem(l10n.totalLength, _currencyFormat.format(totalMeters), "m", Colors.white),
-          Container(width: 1, height: 40, color: Colors.white30),
-          _buildStatItem(l10n.itemCount, "$count", "", Colors.white),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value, String unit, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: TextStyle(color: color.withOpacity(0.8), fontSize: 10, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18)),
-            if(unit.isNotEmpty) ...[
-              const SizedBox(width: 2),
-              Text(unit, style: TextStyle(color: color.withOpacity(0.9), fontSize: 12)),
-            ]
-          ],
-        ),
-      ],
-    );
   }
 
   void _onExport(AppLocalizations l10n) async {
@@ -381,84 +164,352 @@ class _WeavingProductionScreenState extends State<WeavingProductionScreen> {
     }
   }
 
+@override
+Widget build(BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
+
+  return Scaffold(
+    backgroundColor: const Color(0xFFF5F7FA),
+    // [CẬP NHẬT] AppBar ẩn nếu nhúng, hiện nếu độc lập
+    appBar: widget.isEmbedded 
+        ? null 
+        : AppBar(
+            title: Text(
+              l10n.prodStatsTitle, 
+              style: const TextStyle(
+                color: Colors.white, 
+                fontWeight: FontWeight.bold, 
+                fontSize: 16 // [Đồng nhất]
+              )
+            ),
+            backgroundColor: const Color(0xFF003366),
+            iconTheme: const IconThemeData(color: Colors.white),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.download), 
+                tooltip: l10n.exportExcel,
+                onPressed: () => _onExport(l10n),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: l10n.refreshData,
+                onPressed: _onSearch,
+              ),
+              IconButton(
+                icon: const Icon(Icons.calculate_outlined),
+                tooltip: l10n.recalculateToday,
+                onPressed: () => context.read<WeavingProductionCubit>().recalculateToday(),
+              )
+            ],
+          ),
+    body: Column(
+      children: [
+        // [CẬP NHẬT] Toolbar phụ cho chế độ Embedded
+        if (widget.isEmbedded)
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.black12)), // Thêm đường kẻ dưới
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Nút Export Excel
+                  OutlinedButton.icon(
+                    onPressed: () => _onExport(l10n),
+                    icon: const Icon(Icons.download, size: 18),
+                    label: Text(l10n.exportExcel),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF003366),
+                      side: const BorderSide(color: Color(0xFF003366)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Nút Refresh
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.grey),
+                    tooltip: l10n.refreshData,
+                    onPressed: _onSearch,
+                  ),
+                  // Nút Tính toán lại
+                  IconButton(
+                    icon: const Icon(Icons.calculate_outlined, color: Colors.blue),
+                    tooltip: l10n.recalculateToday,
+                    onPressed: () => context.read<WeavingProductionCubit>().recalculateToday(),
+                  )
+                ],
+              ),
+            ),
+
+        // --- HEADER BỘ LỌC ---
+        Container(
+          padding: const EdgeInsets.all(10), // Compact padding
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: Colors.black12)),
+          ),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 40,
+                child: TextField(
+                  controller: _searchCtrl,
+                  decoration: InputDecoration(
+                    hintText: l10n.searchProductHint,
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                    isDense: true,
+                  ),
+                  style: const TextStyle(fontSize: 14),
+                  onSubmitted: (_) => _onSearch(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  // Filter Chip (Date Preset)
+                  PopupMenuButton<String>(
+                    onSelected: _applyQuickFilter,
+                    itemBuilder: (context) => [
+                      PopupMenuItem(value: 'today', child: Text(l10n.filterToday)),
+                      PopupMenuItem(value: 'yesterday', child: Text(l10n.filterYesterday)),
+                      PopupMenuItem(value: '7_days', child: Text(l10n.filter7Days)),
+                      const PopupMenuDivider(),
+                      PopupMenuItem(value: 'this_month', child: Text(l10n.filterThisMonth)),
+                      PopupMenuItem(value: 'last_month', child: Text(l10n.filterLastMonth)),
+                      PopupMenuItem(value: 'this_quarter', child: Text(l10n.filterThisQuarter)),
+                      PopupMenuItem(value: 'this_year', child: Text(l10n.filterThisYear)),
+                    ],
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE3F2FD),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.filter_list, size: 16, color: Color(0xFF003366)),
+                          const SizedBox(width: 6),
+                          Text(_getFilterLabel(l10n), style: const TextStyle(color: Color(0xFF003366), fontWeight: FontWeight.bold, fontSize: 13)),
+                          const Icon(Icons.arrow_drop_down, color: Color(0xFF003366), size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Custom Date Range Picker
+                  Expanded(
+                    child: InkWell(
+                      onTap: _pickDateRange,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_month, size: 16, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                (_fromDate != null && _toDate != null)
+                                    ? "${DateFormat('dd/MM').format(_fromDate!)} - ${DateFormat('dd/MM').format(_toDate!)}"
+                                    : l10n.filterCustom,
+                                style: const TextStyle(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        
+        // --- KẾT QUẢ ---
+        Expanded(
+          child: BlocBuilder<WeavingProductionCubit, WeavingProductionState>(
+            builder: (context, state) {
+              if (state is WeavingProductionLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is WeavingProductionError) {
+                return Center(child: Text("Error: ${state.message}", style: const TextStyle(color: Colors.red)));
+              }
+
+              if (state is WeavingProductionLoaded) {
+                final list = state.productions;
+                if (list.isEmpty) {
+                  return _buildEmptyState(l10n);
+                }
+
+                double sumKg = list.fold(0, (sum, item) => sum + item.totalKg);
+                double sumMeters = list.fold(0, (sum, item) => sum + item.totalMeters);
+
+                return SelectionArea(
+                  child: Column(
+                    children: [
+                      _buildSummaryCard(sumKg, sumMeters, list.length, l10n),
+                      Expanded(
+                        child: ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                          itemCount: list.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 6),
+                          itemBuilder: (context, index) {
+                            return _buildItemCard(context, list[index], l10n);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return const SizedBox();
+            },
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+  Widget _buildEmptyState(AppLocalizations l10n) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.bar_chart, size: 60, color: Colors.grey.shade300),
+          const SizedBox(height: 12),
+          Text(l10n.noStatsData, style: TextStyle(color: Colors.grey.shade600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(double totalKg, double totalMeters, int count, AppLocalizations l10n) {
+    return Container(
+      margin: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [Colors.blue.shade800, Colors.blue.shade600]),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 3))],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildStatItem(l10n.totalProduction, _currencyFormat.format(totalKg), "kg", Colors.white),
+          Container(width: 1, height: 30, color: Colors.white30),
+          _buildStatItem(l10n.totalLength, _currencyFormat.format(totalMeters), "m", Colors.white),
+          Container(width: 1, height: 30, color: Colors.white30),
+          _buildStatItem(l10n.itemCount, "$count", "", Colors.white),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, String unit, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(color: color.withOpacity(0.8), fontSize: 10, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 2),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
+            if(unit.isNotEmpty) ...[
+              const SizedBox(width: 2),
+              Text(unit, style: TextStyle(color: color.withOpacity(0.9), fontSize: 11)),
+            ]
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildItemCard(BuildContext context, WeavingDailyProduction item, AppLocalizations l10n) {
     return Card(
-      elevation: 2,
+      elevation: 1,
       shadowColor: Colors.black12,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       surfaceTintColor: Colors.white,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         child: Column(
           children: [
-            // Header
+            // Header Item
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6)),
-                  child: const Icon(Icons.calendar_today, size: 14, color: Colors.blueGrey),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(4)),
+                  child: const Icon(Icons.calendar_today, size: 12, color: Colors.blueGrey),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   DateFormat("dd/MM/yyyy").format(item.date),
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 13),
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.orange.shade50,
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.orange.shade200),
+                    border: Border.all(color: Colors.orange.shade200, width: 0.5),
                   ),
                   child: Text(
-                    "${item.activeMachineLines} ${l10n.machines}", // Sử dụng từ khóa đa ngôn ngữ
-                    style: TextStyle(fontSize: 11, color: Colors.orange.shade800, fontWeight: FontWeight.bold),
+                    "${item.activeMachineLines} ${l10n.machines}", 
+                    style: TextStyle(fontSize: 10, color: Colors.orange.shade800, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Nút Copy
                 InkWell(
                   onTap: () {
-                    final String text = 
-                        "${l10n.date}: ${DateFormat('dd/MM/yyyy').format(item.date)}\n"
-                        "${l10n.product}: ${item.product?.itemCode}\n"
-                        "${l10n.output}: ${_currencyFormat.format(item.totalKg)} kg\n"
-                        "${l10n.length}: ${_currencyFormat.format(item.totalMeters)} m";
+                    final String text = "${l10n.date}: ${DateFormat('dd/MM/yyyy').format(item.date)}\n${l10n.product}: ${item.product?.itemCode}\n${l10n.output}: ${_currencyFormat.format(item.totalKg)} kg";
                     Clipboard.setData(ClipboardData(text: text));
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.copySuccess), duration: const Duration(seconds: 1)));
                   },
                   child: const Padding(
-                    padding: EdgeInsets.all(4.0),
-                    child: Icon(Icons.copy, size: 18, color: Colors.grey),
+                    padding: EdgeInsets.all(2.0),
+                    child: Icon(Icons.copy, size: 16, color: Colors.grey),
                   ),
                 )
               ],
             ),
-            const Divider(height: 20),
             
-            // Body: Ảnh + Thông tin
+            const Divider(height: 12, thickness: 0.5),
+            
+            // Body Item
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Ảnh sản phẩm
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                   child: Container(
-                    width: 60,
-                    height: 60,
+                    width: 48, 
+                    height: 48,
                     color: Colors.grey.shade200,
                     child: (item.product?.imageUrl != null && item.product!.imageUrl!.isNotEmpty)
-                        ? Image.network(
-                            item.product!.imageUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (ctx, err, stack) => const Icon(Icons.image_not_supported, color: Colors.grey),
-                          )
-                        : const Icon(Icons.image, color: Colors.grey),
+                        ? Image.network(item.product!.imageUrl!, fit: BoxFit.cover, errorBuilder: (_,__,___) => const Icon(Icons.image_not_supported, color: Colors.grey, size: 18))
+                        : const Icon(Icons.image, color: Colors.grey, size: 18),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 
                 // Thông tin chi tiết
                 Expanded(
@@ -467,11 +518,12 @@ class _WeavingProductionScreenState extends State<WeavingProductionScreen> {
                     children: [
                       Text(
                         item.product?.itemCode ?? "Unknown Product",
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF003366)),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF003366)),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       if (item.product?.note != null)
-                        Text(item.product!.note!, style: const TextStyle(fontSize: 12, color: Colors.grey), maxLines: 2, overflow: TextOverflow.ellipsis),
+                        Text(item.product!.note!, style: const TextStyle(fontSize: 11, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),
@@ -481,10 +533,10 @@ class _WeavingProductionScreenState extends State<WeavingProductionScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text("${_currencyFormat.format(item.totalKg)} kg", 
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
-                    const SizedBox(height: 4),
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 14)),
+                    const SizedBox(height: 2),
                     Text("${_currencyFormat.format(item.totalMeters)} m", 
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13)),
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 11)),
                   ],
                 )
               ],

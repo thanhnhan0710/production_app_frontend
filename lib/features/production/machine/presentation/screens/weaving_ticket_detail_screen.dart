@@ -3,19 +3,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:production_app_frontend/features/production/weaving/domain/weaving_model.dart';
 import 'package:production_app_frontend/features/production/weaving/presentation/bloc/weaving_cubit.dart';
-import 'package:production_app_frontend/features/production/weaving/presentation/screens/weaving_screen.dart';
 import 'package:production_app_frontend/l10n/app_localizations.dart';
 
 // Import các model và bloc
-
 import 'package:production_app_frontend/features/inventory/product/presentation/bloc/product_cubit.dart';
 import 'package:production_app_frontend/features/production/machine/presentation/bloc/machine_cubit.dart';
+import 'package:production_app_frontend/features/production/machine/presentation/screens/machine_history_dialog.dart'; 
+import 'package:production_app_frontend/features/production/machine/domain/machine_model.dart'; 
 import 'package:production_app_frontend/features/production/standard/presentation/bloc/standard_cubit.dart';
 import 'package:production_app_frontend/features/inventory/batch/presentation/bloc/batch_cubit.dart';
 import 'package:production_app_frontend/features/inventory/batch/domain/batch_model.dart';
 
-// Import Service in ấn (Giả sử bạn đã lưu class WeavingPrintService ở file service/weaving_print_service.dart hoặc để chung file cũ)
-// Nếu chưa tách file, bạn hãy copy class WeavingPrintService vào cuối file này hoặc import từ file chứa nó.// Import để lấy WeavingPrintService nếu nó nằm ở đó
+// Import WeavingRecord
+import 'package:production_app_frontend/features/production/weaving_record/presentation/bloc/weaving_record_cubit.dart';
+import 'package:production_app_frontend/features/production/weaving_record/domain/weaving_record_model.dart';
 
 class WeavingTicketDetailScreen extends StatefulWidget {
   final WeavingTicket ticket;
@@ -27,67 +28,40 @@ class WeavingTicketDetailScreen extends StatefulWidget {
 }
 
 class _WeavingTicketDetailScreenState extends State<WeavingTicketDetailScreen> {
-  
+  List<WeavingRecord> _weighingRecords = [];
+  bool _isLoadingRecords = true;
+
   @override
   void initState() {
     super.initState();
-    // Load lịch sử kiểm tra của phiếu này
+    // 1. Load lịch sử kiểm tra (QC)
     context.read<WeavingCubit>().loadInspections(widget.ticket.id);
+    
+    // 2. Load lịch sử cân rổ
+    _loadWeighingHistory();
   }
 
-  // Hàm tính ca (để in)
-  String _getShiftFromTime(String? timeIso) {
-    if (timeIso == null || timeIso.isEmpty) return "-";
+  Future<void> _loadWeighingHistory() async {
     try {
-      final dt = DateTime.parse(timeIso);
-      final h = dt.hour;
-      if (h >= 6 && h < 14) return "Ca A";
-      if (h >= 14 && h < 22) return "Ca B";
-      return "Ca C"; 
+      final records = await context.read<WeavingRecordCubit>().getRecordsByTicketId(widget.ticket.id);
+      if (mounted) {
+        setState(() {
+          _weighingRecords = records;
+          _isLoadingRecords = false;
+        });
+      }
     } catch (e) {
-      return "-";
+      if (mounted) setState(() => _isLoadingRecords = false);
     }
   }
 
   // Hàm xử lý in ấn
   Future<void> _handlePrint(List<WeavingInspection> inspections) async {
-    final ticket = widget.ticket;
-    
-    // 1. Lấy thông tin bổ sung
-    final pState = context.read<ProductCubit>().state;
-    String pName = "${ticket.productId}";
-    if (pState is ProductLoaded) {
-        final p = pState.products.where((e) => e.id == ticket.productId).firstOrNull;
-        if (p != null) pName = p.itemCode;
-    }
-
-    final mState = context.read<MachineCubit>().state;
-    String mName = "Mac-${ticket.machineId}";
-    if (mState is MachineLoaded) {
-        final m = mState.machines.where((e) => e.id == ticket.machineId).firstOrNull;
-        if (m != null) mName = m.name;
-    }
-
-    final stdState = context.read<StandardCubit>().state;
-    var fullStandard = (stdState is StandardLoaded) 
-        ? stdState.standards.where((s) => s.id == ticket.standardId).firstOrNull 
-        : null;
-
-    // 2. Gọi Service in (Class này bạn đã có ở code trước)
-    await WeavingPrintService.printFullTicket(
-        ticket: ticket,
-        productName: pName,
-        machineName: mName,
-        standard: fullStandard, 
-        inspections: inspections, 
-        shiftIn: _getShiftFromTime(ticket.timeIn),
-        shiftOut: _getShiftFromTime(ticket.timeOut),
-    );
+    // Logic in ấn
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final ticket = widget.ticket;
 
     return Scaffold(
@@ -103,7 +77,6 @@ class _WeavingTicketDetailScreenState extends State<WeavingTicketDetailScreen> {
         backgroundColor: const Color(0xFF003366),
         foregroundColor: Colors.white,
         actions: [
-          // Chỉ giữ nút In
           BlocBuilder<WeavingCubit, WeavingState>(
             builder: (context, state) {
               return IconButton(
@@ -112,7 +85,7 @@ class _WeavingTicketDetailScreenState extends State<WeavingTicketDetailScreen> {
                 onPressed: () {
                    final inspections = (state is WeavingLoaded && state.selectedTicket?.id == ticket.id) 
                       ? state.inspections 
-                      : <WeavingInspection>[]; // Hoặc lấy từ state khác tùy logic cubit của bạn
+                      : <WeavingInspection>[]; 
                    _handlePrint(inspections);
                 },
               );
@@ -123,10 +96,8 @@ class _WeavingTicketDetailScreenState extends State<WeavingTicketDetailScreen> {
       ),
       body: BlocBuilder<WeavingCubit, WeavingState>(
         builder: (context, state) {
-          // Lấy list inspections từ Cubit (đã load ở initState)
           List<WeavingInspection> inspections = [];
           if (state is WeavingLoaded) {
-             // Lưu ý: Nếu logic loadInspections của bạn update vào state.inspections
              inspections = state.inspections;
           }
 
@@ -142,7 +113,7 @@ class _WeavingTicketDetailScreenState extends State<WeavingTicketDetailScreen> {
                    _rowInfo("Máy & Line", _MachineInfo(id: ticket.machineId, line: ticket.machineLine)),
                 ]),
 
-                // 2. Standard (Full Spec)
+                // 2. Standard
                 Container(
                   width: double.infinity,
                   margin: const EdgeInsets.only(bottom: 12),
@@ -181,8 +152,18 @@ class _WeavingTicketDetailScreenState extends State<WeavingTicketDetailScreen> {
                     _rowInfo("Số nối/lỗi", Text("${ticket.numberOfKnots}")),
                 ]),
 
+                // 6. Lịch sử cân rổ
                 const SizedBox(height: 10),
-                // 6. Inspection History
+                const Text("Lịch sử cân rổ (Weighing Logs)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                _buildWeighingHistoryCard(),
+
+                // 7. Lịch sử máy
+                const SizedBox(height: 20),
+                _buildMachineHistoryCard(),
+
+                const SizedBox(height: 20),
+                // 8. Inspection History
                 const Text("Lịch sử kiểm tra (QC)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 
@@ -210,6 +191,96 @@ class _WeavingTicketDetailScreenState extends State<WeavingTicketDetailScreen> {
       ),
     );
   }
+
+  // --- [CẬP NHẬT] WIDGET LỊCH SỬ CÂN RỔ ---
+  Widget _buildWeighingHistoryCard() {
+    if (_isLoadingRecords) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_weighingRecords.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+        child: const Text("Chưa có dữ liệu cân", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
+      );
+    }
+
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.indigo.shade100)),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _weighingRecords.length,
+        separatorBuilder: (_, __) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          final record = _weighingRecords[index];
+          return ListTile(
+            dense: true,
+            leading: const Icon(Icons.monitor_weight, color: Colors.indigo),
+            // [THAY ĐỔI] Tách hiển thị Phế thành Run và Setup
+            title: Row(
+              children: [
+                Text("Net: ${record.totalWeight}kg", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+                const SizedBox(width: 8),
+                // Run Waste Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(4)),
+                  child: Text("Run: ${record.runWaste}Kg", style: TextStyle(fontSize: 11, color: Colors.orange.shade800, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(width: 4),
+                // Setup Waste Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(4)),
+                  child: Text("Setup: ${record.setupWaste}Kg", style: TextStyle(fontSize: 11, color: Colors.red.shade800, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            subtitle: Text(
+              "Ca: ${record.shiftName} • ${record.updatedAt != null ? _formatDateTimeFull(record.updatedAt!.toIso8601String()) : '-'}",
+              style: const TextStyle(fontSize: 11)
+            ),
+            trailing: const Icon(Icons.check_circle, color: Colors.green, size: 16),
+          );
+        },
+      ),
+    );
+  }
+
+  // --- WIDGET LỊCH SỬ MÁY ---
+  Widget _buildMachineHistoryCard() {
+    return Card(
+      elevation: 0,
+      color: Colors.blue.shade50,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.blue.shade200)),
+      child: ListTile(
+        leading: const Icon(Icons.history, color: Colors.blue),
+        title: const Text("Lịch sử hoạt động của máy", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        subtitle: Text("Xem trạng thái chạy/dừng của máy NF-${widget.ticket.machineId}"),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+        onTap: () {
+          final machineStub = Machine(
+            id: widget.ticket.machineId, 
+            name: "NF-${widget.ticket.machineId}", 
+            totalLines: 2, 
+            purpose: "Sản xuất", status: '',
+          );
+          
+          showDialog(
+            context: context,
+            builder: (ctx) => MachineHistoryDialog(machine: machineStub),
+          );
+        },
+      ),
+    );
+  }
+
 
   // --- UI HELPERS ---
 
@@ -305,7 +376,7 @@ class _WeavingTicketDetailScreenState extends State<WeavingTicketDetailScreen> {
 }
 
 // =========================================================================
-// CÁC WIDGET CON (Copy từ WeavingScreen sang để dùng độc lập)
+// CÁC WIDGET CON
 // =========================================================================
 
 class _ProductFullDetails extends StatelessWidget {

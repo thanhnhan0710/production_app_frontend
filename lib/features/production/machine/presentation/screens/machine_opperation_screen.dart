@@ -26,7 +26,6 @@ import 'package:production_app_frontend/features/inventory/product/presentation/
 import 'package:production_app_frontend/features/production/standard/domain/standard_model.dart';
 import 'package:production_app_frontend/features/production/standard/presentation/bloc/standard_cubit.dart';
 
-// [THAY ĐỔI] Import Batch thay vì YarnLot
 import 'package:production_app_frontend/features/inventory/batch/presentation/bloc/batch_cubit.dart';
 import 'package:production_app_frontend/features/inventory/batch/domain/batch_model.dart';
 
@@ -35,7 +34,6 @@ import 'package:production_app_frontend/features/hr/employee/presentation/bloc/e
 import 'package:production_app_frontend/features/hr/shift/presentation/bloc/shift_cubit.dart';
 import 'package:production_app_frontend/features/production/machine/presentation/screens/machine_history_dialog.dart';
 
-// [MỚI] Import Weaving Record (Sử dụng bộ code mới đã đổi tên ở bước trước)
 import 'package:production_app_frontend/features/production/weaving_record/presentation/bloc/weaving_record_cubit.dart';
 import 'package:production_app_frontend/features/production/weaving_record/domain/weaving_record_model.dart';
 
@@ -58,7 +56,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     context.read<ProductCubit>().loadProducts();
     context.read<StandardCubit>().loadStandards();
     
-    // [THAY ĐỔI] Load Batch
     context.read<BatchCubit>().loadBatches();
     
     context.read<EmployeeCubit>().loadEmployees();
@@ -68,21 +65,17 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     context.read<BOMCubit>().loadBOMHeaders(); 
   }
 
-  // Hàm tính toán Ca làm việc tự động theo giờ
-  String _calculateCurrentShift() {
+  // Hàm tính toán tên Ca làm việc tự động theo giờ
+  String _calculateCurrentShiftName() {
     final hour = DateTime.now().hour;
-    // Ca A: 06:00 - 14:00 (tức < 14h)
+    // Ca A: 06:00 - 14:00
     if (hour >= 6 && hour < 14) {
       return "Ca A";
-    } 
-    // Ca B: 14:00 - 22:00 (tức < 22h)
-    else if (hour >= 14 && hour < 22) {
-      return "Ca B";
-    } 
+    // ignore: curly_braces_in_flow_control_structures
+    } else if (hour >= 14 && hour < 22) return "Ca B";
     // Ca C: 22:00 - 06:00
-    else {
-      return "Ca C";
-    }
+    // ignore: curly_braces_in_flow_control_structures
+    else return "Ca C";
   }
 
   @override
@@ -373,8 +366,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                   // Có phiếu nhưng chưa có rổ -> Mở dialog chọn rổ & tiêu chuẩn
                   _showAssignBasketDialog(context, ticket, l10n);
                 } else {
-                  // [THAY ĐỔI] Menu Inspect/Release/Weighing
-                  // Truyền thêm machine và lineCode để phục vụ cân rổ
+                  // Mở Menu Action
                   _showTicketActionMenu(context, machine, lineCode, ticket, l10n);
                 }
               },
@@ -420,32 +412,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
               ),
             ),
           ),
-
-          if (hasTicket)
-            Positioned(
-              right: -2,
-              top: -2,
-              child: Tooltip(
-                message: l10n.viewTicket,
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: () {
-                    // [THAY ĐỔI Ở ĐÂY]
-                    // Thay vì gọi dialog cũ, chuyển sang màn hình chi tiết mới
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => WeavingTicketDetailScreen(ticket: ticket),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(Icons.visibility, size: 12, color: Colors.blue.shade700),
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -502,11 +468,10 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                               children: [
                                 const Icon(Icons.info_outline, color: Colors.orange, size: 16),
                                 const SizedBox(width: 8),
-                                Expanded(child: Text("Đang chạy sản phẩm ID: ${ticket.productId}", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade800))),
+                                Expanded(child: Text("Đang chạy sản phẩm: ${ticket.productItemCode}", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade800))),
                               ],
                             ),
                             const SizedBox(height: 8),
-                            // [MỚI] Hiển thị danh sách lô sợi trong dialog gán rổ
                             const Text("Lô sợi sử dụng:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                             _TicketBatchList(yarns: ticket.yarns),
                           ],
@@ -592,18 +557,33 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     );
   }
 
-  // --- MENU CHỌN HÀNH ĐỘNG (ĐÃ CẬP NHẬT THÊM CÂN RỔ) ---
+  // --- MENU CHỌN HÀNH ĐỘNG ---
   void _showTicketActionMenu(BuildContext context, Machine machine, String lineCode, WeavingTicket ticket, AppLocalizations l10n) {
       showModalBottomSheet(
         context: context,
         builder: (ctx) => Wrap(
           children: [
+            // [MỚI] Mục xem chi tiết phiếu
+            ListTile(
+              leading: const Icon(Icons.info_outline, color: Colors.teal),
+              title: Text(l10n.viewTicket),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => WeavingTicketDetailScreen(ticket: ticket),
+                  ),
+                );
+              },
+            ),
+            
             ListTile(
               leading: const Icon(Icons.fact_check, color: Colors.blue),
               title: const Text("Kiểm tra chất lượng"), 
               onTap: () {
                 Navigator.pop(ctx);
-                final autoShift = _calculateCurrentShift();
+                final autoShift = _calculateCurrentShiftName();
                 context.read<WeavingCubit>().loadInspections(ticket.id);
                 showDialog(
                   context: context,
@@ -620,19 +600,20 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
               },
             ),
             
-            // [MỚI] Nút Cân rổ cuối ca
+            // [MỚI] Nút Cân rổ cuối ca - Gọi hàm kiểm tra
             ListTile(
               leading: const Icon(Icons.monitor_weight, color: Colors.indigo),
               title: const Text("Cân rổ cuối ca"), 
               onTap: () {
                 Navigator.pop(ctx);
-                _showWeighingDialog(context, machine, lineCode, ticket);
+                // Gọi hàm kiểm tra ràng buộc trước khi mở dialog
+                _handleWeighingCheck(context, machine, lineCode, ticket);
               },
             ),
 
             ListTile(
               leading: const Icon(Icons.stop_circle, color: Colors.red),
-              title: Text(l10n.finishTicket),
+              title: const Text("Ra rổ"),
               onTap: () {
                 Navigator.pop(ctx);
                 _showReleaseDialog(context, ticket, l10n);
@@ -643,14 +624,93 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
       );
   }
 
-  // --- [MỚI] DIALOG CÂN RỔ (FORM) ---
+  // [CẬP NHẬT] Hàm Kiểm tra ràng buộc: Mỗi ca chỉ cân 1 lần TRONG NGÀY
+  void _handleWeighingCheck(BuildContext context, Machine machine, String lineCode, WeavingTicket ticket) async {
+    // 1. Xác định ID Ca làm việc hiện tại
+    final shiftState = context.read<ShiftCubit>().state;
+    if (shiftState is! ShiftLoaded) {
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Chưa tải được thông tin Ca làm việc!"), backgroundColor: Colors.orange));
+       // Vẫn cho mở dialog nếu lỗi load data (Optional)
+       _showWeighingDialog(context, machine, lineCode, ticket);
+       return;
+    }
+    
+    final currentShiftName = _calculateCurrentShiftName(); 
+    // Tìm shift object tương ứng
+    final currentShift = shiftState.shifts.firstWhere(
+        (s) => s.name.contains(currentShiftName) || s.name.contains(currentShiftName.replaceAll("Ca ", "")),
+        orElse: () => shiftState.shifts.first
+    );
+
+    // 2. Hiển thị Loading khi đang check
+    showDialog(
+      context: context, 
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator())
+    );
+    
+    try {
+        // 3. Gọi Cubit lấy lịch sử bản ghi của Ticket
+        final records = await context.read<WeavingRecordCubit>().getRecordsByTicketId(ticket.id);
+        
+        // Đóng Loading
+        if (context.mounted) Navigator.pop(context);
+
+        // --- [LOGIC MỚI BẮT ĐẦU TỪ ĐÂY] ---
+        
+        // Lấy ngày hôm nay (chỉ lấy ngày, tháng, năm; bỏ qua giờ phút)
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+
+        // 4. Kiểm tra xem đã có bản ghi nào thuộc Ca hiện tại VÀ trong Ngày hôm nay chưa
+        final hasWeighedToday = records.any((r) {
+            // Check 1: Phải trùng Ca
+            if (r.shiftId != currentShift.id) return false;
+            
+            // Check 2: Phải trùng Ngày
+            if (r.updatedAt == null) return false;
+            
+            // Chuyển đổi thời gian record sang Local time để so sánh chính xác ngày
+            final recordTime = r.updatedAt!.toLocal(); 
+            final recordDate = DateTime(recordTime.year, recordTime.month, recordTime.day);
+            
+            // So sánh ngày của record với ngày hôm nay
+            return recordDate.isAtSameMomentAs(today);
+        });
+        
+        if (hasWeighedToday) {
+            // [RÀNG BUỘC] Nếu đã cân hôm nay -> Báo lỗi & Không mở dialog
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("CẢNH BÁO: Ca ${currentShift.name} hôm nay đã thực hiện cân rồi!"),
+                  backgroundColor: Colors.redAccent,
+                  duration: const Duration(seconds: 3),
+                )
+              );
+            }
+        } else {
+            // [OK] Chưa cân hôm nay -> Mở Dialog
+            if (context.mounted) {
+              _showWeighingDialog(context, machine, lineCode, ticket);
+            }
+        }
+    } catch (e) {
+        // Lỗi khi check -> Đóng loading và vẫn cho mở (Fallback)
+        if (context.mounted) {
+          Navigator.pop(context);
+          _showWeighingDialog(context, machine, lineCode, ticket);
+        }
+    }
+  }
+
+  // --- DIALOG CÂN RỔ (FORM) ---
   void _showWeighingDialog(BuildContext context, Machine machine, String lineCode, WeavingTicket ticket) {
     final formKey = GlobalKey<FormState>();
     final grossWeightCtrl = TextEditingController();
     final runWasteCtrl = TextEditingController(text: "0");
     final setupWasteCtrl = TextEditingController(text: "0");
 
-    // Lấy trọng lượng bì từ BasketCubit (Vì ticket chỉ có ID, cần lookup để chính xác nhất)
     double basketTare = 0.0;
     final basketState = context.read<BasketCubit>().state;
     if (basketState is BasketLoaded && ticket.basketId != null) {
@@ -792,18 +852,16 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     double runWaste, 
     double setupWaste
   ) {
-    // 1. Xác định User (Lấy Employee ID từ AuthCubit)
     final authState = context.read<AuthCubit>().state;
     int? currentEmployeeId;
     if (authState is AuthAuthenticated) {
       currentEmployeeId = authState.user.employeeId;
     }
 
-    // 2. Xác định Ca (Shift) theo ID
     final shiftState = context.read<ShiftCubit>().state;
     int? currentShiftId;
     if (shiftState is ShiftLoaded) {
-      final currentShiftName = _calculateCurrentShift(); 
+      final currentShiftName = _calculateCurrentShiftName(); 
       try {
         final shift = shiftState.shifts.firstWhere(
           (s) => s.name.contains(currentShiftName) || s.name.contains(currentShiftName.substring(3)), 
@@ -814,21 +872,19 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
       }
     }
 
-    // 3. Tạo Object Model
     final recordData = WeavingRecord(
       id: 0, 
       machineId: machineId,
       line: line,
       basketId: ticket.basketId ?? 0,
       shiftId: currentShiftId,
-      updatedById: currentEmployeeId, // [QUAN TRỌNG] Truyền ID vào đây
+      updatedById: currentEmployeeId,
       totalWeight: netWeight,
       runWaste: runWaste,
       setupWaste: setupWaste,
       updatedAt: DateTime.now(),
     );
 
-    // 4. Gọi Cubit để lưu
     context.read<WeavingRecordCubit>().saveRecord(
       item: recordData, 
       isEdit: false
@@ -853,7 +909,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
 
     final productState = context.read<ProductCubit>().state;
     final standardState = context.read<StandardCubit>().state;
-    // Bỏ YarnLotState, dùng BatchCubit đã load ở initState hoặc widget con tự xử lý
     
     List<Product> products = (productState is ProductLoaded) ? productState.products : [];
     List<Standard> allStandards = (standardState is StandardLoaded) ? standardState.standards : [];

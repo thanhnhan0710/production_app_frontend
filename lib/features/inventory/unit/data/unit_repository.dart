@@ -8,7 +8,7 @@ class UnitRepository {
   // Lấy danh sách (Mặc định)
   Future<List<ProductUnit>> getUnits() async {
     try {
-      final response = await _dio.get('/api/v1/units');
+      final response = await _dio.get('/api/v1/units/');
       if (response.data is List) {
         return (response.data as List).map((e) => ProductUnit.fromJson(e)).toList();
       }
@@ -36,7 +36,7 @@ class UnitRepository {
 
   Future<void> createUnit(ProductUnit unit) async {
     try {
-      await _dio.post('/api/v1/units', data: unit.toJson());
+      await _dio.post('/api/v1/units/', data: unit.toJson());
     } catch (e) {
       throw Exception("Failed to create unit: $e");
     }

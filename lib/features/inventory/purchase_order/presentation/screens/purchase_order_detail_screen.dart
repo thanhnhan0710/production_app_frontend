@@ -24,7 +24,7 @@ class PurchaseOrderDetailScreen extends StatefulWidget {
 
 class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
   final _currencyFormat = NumberFormat.currency(locale: 'en_US', symbol: '');
-  final _vndFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫'); // Formatter cho VND
+  final _vndFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫'); 
   final _dateFormat = DateFormat('dd/MM/yyyy');
 
   @override
@@ -78,7 +78,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                                 ),
                               ],
                             ),
-                            // Hiển thị tổng tiền (Có thể thêm quy đổi ở đây nếu cần)
+                            // Hiển thị tổng tiền
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
@@ -104,7 +104,6 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                               itemCount: po.details.length,
                               separatorBuilder: (_,__) => const SizedBox(height: 12),
                               itemBuilder: (context, index) {
-                                // Truyền cả object PO để lấy tỷ giá tính toán
                                 return _buildDetailItem(po.details[index], po);
                               },
                             ),
@@ -123,7 +122,6 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
           return const SizedBox();
         },
       ),
-      // Nút thêm mới gọi Dialog và cần truyền PO hiện tại vào để lấy tỷ giá
       floatingActionButton: BlocBuilder<PurchaseOrderCubit, PurchaseOrderState>(
         builder: (context, state) {
           if (state is PODetailLoaded) {
@@ -195,7 +193,6 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
               children: [
                 _buildInfoColumn(l10n.date, _dateFormat.format(po.orderDate), Icons.calendar_today),
                 _buildInfoColumn("ETA", po.expectedArrivalDate != null ? _dateFormat.format(po.expectedArrivalDate!) : "--/--", Icons.local_shipping),
-                // Hiển thị thêm Tỷ giá ở đây cho rõ ràng
                 _buildInfoColumn("Rate", po.exchangeRate.toString(), Icons.currency_exchange),
                 _buildInfoColumn(l10n.currency, po.currency, Icons.attach_money),
               ],
@@ -218,11 +215,9 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
     );
   }
 
-  // --- ITEM CARD (Updated with VND conversion) ---
+  // --- ITEM CARD (Đã cập nhật hiển thị Rolls và Giá) ---
   Widget _buildDetailItem(PurchaseOrderDetail item, PurchaseOrderHeader po) {
     final mat = item.material;
-    
-    // Tính giá quy đổi
     double convertedLineTotal = item.lineTotal * po.exchangeRate;
 
     List<String> subInfos = [];
@@ -234,6 +229,9 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
       if (mat.specFilament != null && mat.specFilament! > 0) specs += "/${mat.specFilament}F";
       if (specs.isNotEmpty) subInfos.add(specs);
     }
+
+    // Xác định label cho đơn giá (Per Roll hay Per Unit)
+    String priceUnitLabel = item.isPricingByRoll ? "/ Roll" : "/ ${item.uom?.name ?? 'Unit'}";
 
     return Container(
       decoration: BoxDecoration(
@@ -288,12 +286,10 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Giá Nguyên Tệ
                 Text(
                   "${_currencyFormat.format(item.lineTotal)} ${po.currency}",
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
                 ),
-                // [NEW] Giá Quy Đổi VND (nếu currency != VND)
                 if (po.currency != 'VND')
                   Text(
                     "≈ ${_vndFormat.format(convertedLineTotal)}",
@@ -301,13 +297,26 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                   ),
 
                 const SizedBox(height: 4),
-                Text(
-                  "${_currencyFormat.format(item.quantity)} ${item.uom?.name ?? 'Unit'}",
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
+                // [UPDATED] Hiển thị Số lượng và Số cuộn
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "${_currencyFormat.format(item.quantity)} ${item.uom?.name ?? 'Unit'}",
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
+                    ),
+                    if (item.quantityRolls > 0)
+                      Text(
+                        " (${item.quantityRolls} rolls)",
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                  ],
                 ),
+                
                 const SizedBox(height: 2),
+                // [UPDATED] Hiển thị đơn giá kèm đơn vị tính giá
                 Text(
-                  "@ ${_currencyFormat.format(item.unitPrice)}",
+                  "@ ${_currencyFormat.format(item.unitPrice)} $priceUnitLabel",
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                 ),
               ],
@@ -354,13 +363,17 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
     );
   }
 
-  // --- DIALOG THÊM CHI TIẾT (Đã cập nhật tính toán tỷ giá) ---
+  // --- DIALOG THÊM CHI TIẾT (Đã cập nhật: Số cuộn + Tính giá theo Cuộn) ---
   void _showAddItemDialog(BuildContext context, PurchaseOrderHeader po, AppLocalizations l10n) {
     int? selectedMaterialId;
     int? selectedUomId;
     final qtyCtrl = TextEditingController(text: '');
     final priceCtrl = TextEditingController(text: '');
+    final rollsCtrl = TextEditingController(text: '0'); // [NEW] Control số cuộn
     
+    // [NEW] Biến switch tính giá
+    bool isPricePerRoll = false; 
+
     MaterialModel? selectedMaterial;
 
     showDialog(
@@ -368,12 +381,15 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
       barrierDismissible: false, 
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (context, setStateDialog) { // Đổi tên thành setStateDialog cho rõ
             
             double qty = double.tryParse(qtyCtrl.text) ?? 0;
             double price = double.tryParse(priceCtrl.text) ?? 0;
-            double total = qty * price;
-            double totalVND = total * po.exchangeRate; // Tính quy đổi
+            double rolls = double.tryParse(rollsCtrl.text) ?? 0;
+
+            // [NEW] Logic tính tổng tiền
+            double total = isPricePerRoll ? (rolls * price) : (qty * price);
+            double totalVND = total * po.exchangeRate;
 
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -393,7 +409,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // INFO TỶ GIÁ (Để user biết)
+                      // INFO TỶ GIÁ
                       if (po.currency != 'VND')
                         Container(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -421,7 +437,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                             onTap: () async {
                               final result = await _showMaterialSearch(context, materials, l10n);
                               if (result != null) {
-                                setState(() {
+                                setStateDialog(() {
                                   selectedMaterial = result;
                                   selectedMaterialId = result.id;
                                   selectedUomId = result.uomBaseId; 
@@ -483,6 +499,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                             flex: 3,
                             child: Column(
                               children: [
+                                // Số lượng KG
                                 TextFormField(
                                   controller: qtyCtrl,
                                   keyboardType: TextInputType.number,
@@ -492,7 +509,20 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                                   ),
-                                  onChanged: (_) => setState((){}), 
+                                  onChanged: (_) => setStateDialog((){}), 
+                                ),
+                                const SizedBox(height: 12),
+                                // [NEW] Số cuộn
+                                TextFormField(
+                                  controller: rollsCtrl,
+                                  keyboardType: TextInputType.number,
+                                  decoration: InputDecoration(
+                                    labelText: "Số cuộn (Rolls)",
+                                    hintText: "0",
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                  ),
+                                  onChanged: (_) => setStateDialog((){}),
                                 ),
                                 const SizedBox(height: 12),
                                 BlocBuilder<UnitCubit, UnitState>(
@@ -507,7 +537,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                                       ),
                                       items: units.map((u) => DropdownMenuItem(value: u.id, child: Text(u.name))).toList(),
-                                      onChanged: (val) => setState(() => selectedUomId = val),
+                                      onChanged: (val) => setStateDialog(() => selectedUomId = val),
                                     );
                                   },
                                 ),
@@ -518,25 +548,38 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                           
                           Expanded(
                             flex: 2,
-                            child: TextFormField(
-                              controller: priceCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                labelText: l10n.unitPrice,
-                                hintText: "0.0",
-                                prefixText: po.currency != 'VND' ? "\$ " : "₫ ",
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                              ),
-                              onChanged: (_) => setState((){}),
+                            child: Column(
+                              children: [
+                                TextFormField(
+                                  controller: priceCtrl,
+                                  keyboardType: TextInputType.number,
+                                  decoration: InputDecoration(
+                                    labelText: l10n.unitPrice,
+                                    hintText: "0.0",
+                                    prefixText: po.currency != 'VND' ? "\$ " : "₫ ",
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                  ),
+                                  onChanged: (_) => setStateDialog((){}),
+                                ),
+                                const SizedBox(height: 8),
+                                // [NEW] Switch tính giá theo cuộn
+                                SwitchListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text("Tính theo Cuộn?", style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                                  value: isPricePerRoll,
+                                  onChanged: (val) => setStateDialog(() => isPricePerRoll = val),
+                                  activeColor: const Color(0xFF003366),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                       
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       
-                      // SUMMARY (Updated to show VND conversion)
+                      // SUMMARY
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -584,11 +627,12 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                         poId: widget.poId,
                         materialId: selectedMaterialId!,
                         quantity: qty,
+                        quantityRolls: rolls.toInt(), // [NEW] Lưu số cuộn
                         unitPrice: price,
-                        lineTotal: total, // Lưu số tiền theo ngoại tệ
+                        lineTotal: total, // Tổng tiền đã tính đúng logic
                         uomId: selectedUomId,
-                        // [FIX TEMPORARY] Gán object material để hiển thị ngay
-                        material: selectedMaterial, 
+                        material: selectedMaterial,
+                        isPricingByRoll: isPricePerRoll, // [NEW] Lưu cờ tính giá
                       );
                       context.read<PurchaseOrderCubit>().addDetailItem(widget.poId, detail);
                       Navigator.pop(ctx);

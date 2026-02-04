@@ -9,7 +9,7 @@ class MaterialRepository {
   // --- GET ALL ---
   Future<List<MaterialModel>> getMaterials() async {
     try {
-      final response = await _dio.get('/api/v1/materials');
+      final response = await _dio.get('/api/v1/materials/');
       if (response.data is List) {
         return (response.data as List).map((e) => MaterialModel.fromJson(e)).toList();
       }
@@ -23,7 +23,7 @@ class MaterialRepository {
   Future<List<MaterialModel>> searchMaterials(String keyword) async {
     try {
       final response = await _dio.get(
-        '/api/v1/materials', // Dùng chung endpoint GET nhưng thêm params
+        '/api/v1/materials/', // Dùng chung endpoint GET nhưng thêm params
         queryParameters: {'keyword': keyword, 'skip': 0, 'limit': 100},
       );
       if (response.data is List) {
@@ -38,7 +38,7 @@ class MaterialRepository {
   // --- CREATE ---
   Future<void> createMaterial(MaterialModel material) async {
     try {
-      await _dio.post('/api/v1/materials', data: material.toJson());
+      await _dio.post('/api/v1/materials/', data: material.toJson());
     } on DioException catch (e) {
       debugPrint("❌ CREATE ERROR: ${e.response?.data}");
       throw Exception(e.response?.data['detail'] ?? e.message);

@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import '../../../../core/network/api_client.dart';
-import '../domain/weaving_record_model.dart'; // Import Model mới
+import '../domain/weaving_record_model.dart';
 
 class WeavingRecordRepository {
   final Dio _dio = ApiClient().dio;
-  // Giữ nguyên endpoint backend cũ, chỉ đổi tên class ở Flutter
+  // Endpoint chính
   final String _endpoint = '/api/v1/weaving-productions'; 
 
   Future<List<WeavingRecord>> getRecords() async {
@@ -66,6 +66,27 @@ class WeavingRecordRepository {
       await _dio.delete('$_endpoint/$id');
     } catch (e) {
       throw Exception("Failed to delete record: $e");
+    }
+  }
+
+  // [ĐÃ SỬA] Hàm lấy records theo Ticket ID
+  Future<List<WeavingRecord>> getRecordsByTicketId(int ticketId) async {
+    try {
+      // Sử dụng _dio và _endpoint đã khai báo
+      final response = await _dio.get(
+        _endpoint, // Sử dụng endpoint chính '/api/v1/weaving-productions'
+        queryParameters: {'weaving_ticket_id': ticketId}
+      );
+
+      if (response.statusCode == 200 && response.data is List) {
+        return (response.data as List)
+            .map((e) => WeavingRecord.fromJson(e))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint("⚠️ Error fetching records by ticket: $e");
+      return [];
     }
   }
 }

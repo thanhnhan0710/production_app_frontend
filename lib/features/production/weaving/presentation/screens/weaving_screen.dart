@@ -34,7 +34,10 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 class WeavingScreen extends StatefulWidget {
-  const WeavingScreen({super.key});
+  // [MỚI] Thêm tham số isEmbedded để ẩn AppBar nếu cần
+  final bool isEmbedded;
+  
+  const WeavingScreen({super.key, this.isEmbedded = false});
 
   @override
   State<WeavingScreen> createState() => _WeavingScreenState();
@@ -162,105 +165,123 @@ class _WeavingScreenState extends State<WeavingScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final isDesktop = ResponsiveLayout.isDesktop(context);
+@override
+Widget build(BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
+  final isDesktop = ResponsiveLayout.isDesktop(context);
 
-    return Scaffold(
-      backgroundColor: _bgLight,
-      body: BlocBuilder<WeavingCubit, WeavingState>(
-        builder: (context, state) {
-          if (state is WeavingLoading) return Center(child: CircularProgressIndicator(color: _primaryColor));
-           
-          if (state is WeavingError) {
-             return Center(child: Column(
-               mainAxisAlignment: MainAxisAlignment.center,
-               children: [
-                 Text("Error: ${state.message}", style: const TextStyle(color: Colors.red)),
-                 const SizedBox(height: 16),
-                 TextButton(onPressed: _loadAllData, child: const Text("Retry"))
-               ],
-             ));
-          }
-           
-          if (state is WeavingLoaded) {
-            final filteredTickets = _filterTickets(state.tickets);
-            int total = filteredTickets.length;
-
-            if (!isDesktop) {
-              // --- MOBILE VIEW ---
-              return Column(
-                children: [
-                   _buildHeader(l10n),
-                   Expanded(
-                     child: filteredTickets.isEmpty
-                      ? _buildEmptyState(l10n)
-                      : ListView.separated(
-                          padding: const EdgeInsets.all(12),
-                          itemCount: filteredTickets.length,
-                          separatorBuilder: (_,__) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                             final ticket = filteredTickets[index];
-                             return _buildTicketCardMobile(ticket, l10n);
-                          },
-                        ),
-                   ),
-                ],
-              );
-            }
-
-            // --- DESKTOP VIEW ---
-            return Row(
+  return Scaffold(
+    backgroundColor: _bgLight,
+    appBar: widget.isEmbedded 
+        ? null 
+        : AppBar(
+            // [CẬP NHẬT] Style đồng bộ: Size 20, Bold, White
+            title: const Text(
+              "Quản lý Phiếu Dệt", 
+              style: TextStyle(
+                color: Colors.white, 
+                fontWeight: FontWeight.bold, 
+                fontSize: 16
+              )
+            ),
+            backgroundColor: _primaryColor,
+            iconTheme: const IconThemeData(color: Colors.white),
+            actions: [
+                IconButton(icon: const Icon(Icons.refresh), onPressed: _loadAllData)
+            ],
+          ),
+    body: BlocBuilder<WeavingCubit, WeavingState>(
+      builder: (context, state) {
+        if (state is WeavingLoading) return Center(child: CircularProgressIndicator(color: _primaryColor));
+          
+        if (state is WeavingError) {
+            return Center(child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Expanded(
-                  flex: 4,
-                  child: Container(
-                    decoration: BoxDecoration(border: Border(right: BorderSide(color: Colors.grey.shade300))),
-                    child: Column(
-                      children: [
-                        _buildHeader(l10n),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          color: Colors.blue.shade50,
-                          child: Text("Total: $total tickets", style: TextStyle(color: Colors.blue.shade800, fontSize: 12, fontWeight: FontWeight.bold)),
-                        ),
-                        Expanded(
-                          child: filteredTickets.isEmpty 
-                            ? _buildEmptyState(l10n)
-                            : ListView.separated(
-                            padding: const EdgeInsets.all(12),
-                            itemCount: filteredTickets.length,
-                            separatorBuilder: (_,__) => const SizedBox(height: 8),
-                            itemBuilder: (context, index) {
-                              final ticket = filteredTickets[index];
-                              final isSelected = state.selectedTicket?.id == ticket.id;
-                              return _buildTicketCardDesktop(ticket, isSelected);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                Text("Error: ${state.message}", style: const TextStyle(color: Colors.red)),
+                const SizedBox(height: 16),
+                TextButton(onPressed: _loadAllData, child: const Text("Retry"))
+              ],
+            ));
+        }
+          
+        if (state is WeavingLoaded) {
+          final filteredTickets = _filterTickets(state.tickets);
+          int total = filteredTickets.length;
 
-                Expanded(
-                  flex: 6,
-                  child: state.selectedTicket == null 
-                    ? Center(child: Text(l10n.noTicketSelected, style: TextStyle(color: Colors.grey.shade500, fontSize: 16)))
-                    : _buildDetailPanel(state.selectedTicket!, state.inspections, l10n),
-                ),
+          if (!isDesktop) {
+            // --- MOBILE VIEW ---
+            return Column(
+              children: [
+                  _buildHeader(l10n),
+                  Expanded(
+                    child: filteredTickets.isEmpty
+                    ? _buildEmptyState(l10n)
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: filteredTickets.length,
+                        separatorBuilder: (_,__) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                            final ticket = filteredTickets[index];
+                            return _buildTicketCardMobile(ticket, l10n);
+                        },
+                      ),
+                  ),
               ],
             );
           }
-          return const SizedBox();
-        },
-      ),
-      // BỎ FAB ADD
-      floatingActionButton: null,
-    );
-  }
+
+          // --- DESKTOP VIEW ---
+          return Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: Container(
+                  decoration: BoxDecoration(border: Border(right: BorderSide(color: Colors.grey.shade300))),
+                  child: Column(
+                    children: [
+                      _buildHeader(l10n),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        color: Colors.blue.shade50,
+                        child: Text("Total: $total tickets", style: TextStyle(color: Colors.blue.shade800, fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                      Expanded(
+                        child: filteredTickets.isEmpty 
+                          ? _buildEmptyState(l10n)
+                          : ListView.separated(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: filteredTickets.length,
+                          separatorBuilder: (_,__) => const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final ticket = filteredTickets[index];
+                            final isSelected = state.selectedTicket?.id == ticket.id;
+                            return _buildTicketCardDesktop(ticket, isSelected);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              Expanded(
+                flex: 6,
+                child: state.selectedTicket == null 
+                  ? Center(child: Text(l10n.noTicketSelected, style: TextStyle(color: Colors.grey.shade500, fontSize: 16)))
+                  : _buildDetailPanel(state.selectedTicket!, state.inspections, l10n),
+              ),
+            ],
+          );
+        }
+        return const SizedBox();
+      },
+    ),
+    // BỎ FAB ADD
+    floatingActionButton: null,
+  );
+}
 
   // --- HEADER & SEARCH ---
   Widget _buildHeader(AppLocalizations l10n) {

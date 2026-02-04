@@ -7,6 +7,8 @@ import 'package:production_app_frontend/l10n/app_localizations.dart';
 import '../../../../core/widgets/responsive_layout.dart';
 import '../../../../core/bloc/language_cubit.dart';
 import '../../../auth/presentation/bloc/auth_cubit.dart';
+// [QUAN TRỌNG] Import AuthState để lấy user info
+
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -22,19 +24,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Hàm xử lý điều hướng
   void _onNavigate(String route) {
-    // Nếu route là '#' -> Hiện popup "Đang phát triển"
     if (route == '#') {
       _showUnderDevelopmentDialog();
     } else {
       context.go(route);
-      // Nếu đang ở mobile thì đóng drawer sau khi chọn
       if (ResponsiveLayout.isMobile(context)) {
         Navigator.pop(context);
       }
     }
   }
 
-  // Popup thông báo
   void _showUnderDevelopmentDialog() {
     showDialog(
       context: context,
@@ -61,6 +60,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isDesktop = ResponsiveLayout.isDesktop(context);
+
+    // [NEW] Lấy thông tin user hiện tại từ AuthCubit
+    final authState = context.watch<AuthCubit>().state;
+    String userRole = 'Staff';
+    String userName = 'User';
+    bool isAdmin = false;
+
+    if (authState is AuthAuthenticated) {
+      userRole = authState.user.role;
+      userName = authState.user.fullName;
+      // Kiểm tra quyền Admin (role = admin hoặc superuser = true)
+      isAdmin = (userRole == 'admin' || authState.user.isSuperuser);
+    }
 
     String currentPath = '/dashboard';
     try {
@@ -95,19 +107,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
       drawer: isDesktop
           ? null
-          : Drawer(child: _buildSidebar(context, l10n, currentPath)),
+          // Truyền quyền vào hàm build Sidebar
+          : Drawer(child: _buildSidebar(context, l10n, currentPath, isAdmin)),
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (isDesktop)
             SizedBox(
               width: 280,
-              child: _buildSidebar(context, l10n, currentPath),
+              // Truyền quyền vào hàm build Sidebar
+              child: _buildSidebar(context, l10n, currentPath, isAdmin),
             ),
           Expanded(
             child: Column(
               children: [
-                if (isDesktop) _buildDesktopTopBar(context, l10n),
+                if (isDesktop) _buildDesktopTopBar(context, l10n, userName, userRole),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
@@ -146,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ],
                             ),
                         ] else ...[
-                          // Placeholder cho các trang nội dung khác để test layout
+                          // Placeholder
                            Container(
                             height: 500,
                             alignment: Alignment.center,
@@ -174,7 +188,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // --- SIDEBAR & MENU ---
-  Widget _buildSidebar(BuildContext context, AppLocalizations l10n, String currentPath) {
+  // [UPDATED] Thêm tham số isAdmin
+  Widget _buildSidebar(BuildContext context, AppLocalizations l10n, String currentPath, bool isAdmin) {
     return Container(
       color: _primaryColor,
       child: Column(
@@ -299,7 +314,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       '/boms', '/standards'
                     ],
                     children: [
-                       // 1. Thông tin chung
+                        // 1. Thông tin chung
                       _buildSubExpansionGroup(
                         title: l10n.generalInfo,
                         currentPath: currentPath,
@@ -310,15 +325,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ]
                       ),
                       // 2. Dệt
-                       _buildSubExpansionGroup(
+                      _buildSubExpansionGroup(
                         title: "Dệt",
                         currentPath: currentPath,
-                        childrenRoutes: ['/machine-operation', '/weaving', '/weaving-productions', 'weaving-records'],
+                        // [CẬP NHẬT] Danh sách route con để highlight menu cha
+                        childrenRoutes: ['/machine-operation', '/weaving-management'],
                         children: [
-                          _buildLevel3MenuItem(Icons.precision_manufacturing, "Vận hành máy dệt", '/machine-operation', currentPath),
+                          _buildLevel3MenuItem(
+                            Icons.precision_manufacturing, 
+                            "Thông tin Máy & Rổ dệt", 
+                            '/machine-operation', 
+                            currentPath
+                          ),
+                          
+                          // [MỚI] Menu tổng hợp trỏ về trang Management
+                          _buildLevel3MenuItem(
+                            Icons.dashboard_customize, 
+                            "Quản lý sản xuất dệt", // Tên mới
+                            '/weaving-management',  // Route mới
+                            currentPath
+                          ),
+
+                          // [ĐÃ XÓA/ẨN] Các menu con cũ để tránh rối
+                          /*
                           _buildLevel3MenuItem(Icons.description, "Phiếu rổ dệt", '/weaving', currentPath),
-                          _buildLevel3MenuItem(Icons.bar_chart, "Sản lượng dệt", '/weaving-productions', currentPath),
-                          _buildLevel3MenuItem(Icons.bar_chart, "Sản lượng theo ca và phế", '/weaving-records', currentPath),
+                          _buildLevel3MenuItem(Icons.bar_chart, "Sản lượng theo sản phẩm mỗi ngày ", '/weaving-productions', currentPath),
+                          _buildLevel3MenuItem(Icons.assessment, "Sản lượng theo ca và phế", '/weaving-records', currentPath),
+                          */
                         ]
                       ),
                       // Các mục đơn (Level 2)
@@ -371,7 +404,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                    // ================= REPORT (CHƯA PHÁT TRIỂN) =================
                   _buildMenuItem(Icons.bar_chart, l10n.reports, '#', currentPath),
 
-                  // ================= ADMINISTRATOR =================
+                  // ================= ADMINISTRATOR (CHỈ HIỂN THỊ VỚI ADMIN) =================
+                  // [LOGIC] Ẩn hiện menu Admin
+                  if (isAdmin)
                    _buildExpansionGroup(
                     icon: Icons.admin_panel_settings,
                     title: "Administrator",
@@ -379,7 +414,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     childrenRoutes: ['/users', '/logs'],
                     children: [
                       _buildSubMenuItem(Icons.manage_accounts, l10n.userManagementTitle, '/users', currentPath),
-                      _buildSubMenuItem(Icons.manage_accounts, "Nhật ký hoạt động", '/logs', currentPath),
+                      _buildSubMenuItem(Icons.history, "Nhật ký hoạt động", '/logs', currentPath),
                     ]
                   ),
 
@@ -411,9 +446,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // --- MENU ITEM HELPERS ---
 
-  // Cấp 1: Mục đơn (VD: Dashboard, Sale, Report)
   Widget _buildMenuItem(IconData icon, String title, String route, String currentPath) {
-    final bool isActive = route != '#' && currentPath == route; // Fix: Không active nếu là #
+    final bool isActive = route != '#' && currentPath == route; 
     
     return ListTile(
       leading: Icon(icon, color: isActive ? Colors.white : Colors.white70, size: 20),
@@ -431,7 +465,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Cấp 1: Nhóm (VD: Kho, Sản xuất)
   Widget _buildExpansionGroup({
     required IconData icon,
     required String title,
@@ -456,7 +489,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Cấp 2: Nhóm con (Sub-Group)
   Widget _buildSubExpansionGroup({
     required String title,
     required String currentPath,
@@ -480,7 +512,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Cấp 2: Mục đơn
   Widget _buildSubMenuItem(IconData icon, String title, String route, String currentPath) {
     final bool isActive = route != '#' && currentPath.startsWith(route) && (route != '/' || currentPath == '/');
     return ListTile(
@@ -501,7 +532,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
   
-  // Header hiển thị text
   Widget _buildSubHeader(String title) {
     return ListTile(
       contentPadding: const EdgeInsets.only(left: 48, right: 16),
@@ -510,7 +540,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Cấp 3: Mục đơn
   Widget _buildLevel3MenuItem(IconData icon, String title, String route, String currentPath) {
     final bool isActive = route != '#' && currentPath.startsWith(route);
     
@@ -533,7 +562,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // --- TOP BAR ---
-  Widget _buildDesktopTopBar(BuildContext context, AppLocalizations l10n) {
+  // [UPDATED] Hiển thị tên user và role thực tế
+  Widget _buildDesktopTopBar(BuildContext context, AppLocalizations l10n, String userName, String userRole) {
     return Container(
       height: 70,
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -562,14 +592,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(width: 20),
           Row(
             children: [
-              CircleAvatar(backgroundColor: _primaryColor.withOpacity(0.1), child: Text("AD", style: TextStyle(color: _primaryColor))),
+              CircleAvatar(backgroundColor: _primaryColor.withOpacity(0.1), child: Text(userName.isNotEmpty ? userName[0].toUpperCase() : "U", style: TextStyle(color: _primaryColor))),
               const SizedBox(width: 10),
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Admin", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text("Manager", style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                  Text(userName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text(userRole.toUpperCase(), style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
                 ],
               )
             ],

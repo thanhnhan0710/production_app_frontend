@@ -3,7 +3,7 @@ class Standard {
   // Bỏ field code gốc của Standard
   // final String code; 
   final int productId;
-  final int dyeColorId;
+  final int? dyeColorId;
   
   // Thông số kỹ thuật
   final String widthMm;
@@ -29,7 +29,7 @@ class Standard {
   Standard({
     required this.id,
     required this.productId,
-    required this.dyeColorId,
+    this.dyeColorId,
     required this.widthMm,
     required this.thicknessMm,
     required this.breakingStrength,

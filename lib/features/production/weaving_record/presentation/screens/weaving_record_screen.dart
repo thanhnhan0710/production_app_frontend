@@ -2,14 +2,15 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:excel/excel.dart';
+import 'package:excel/excel.dart' hide Border;
+import 'package:production_app_frontend/l10n/app_localizations.dart';
 
 // Import các thư viện hỗ trợ đa nền tảng
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 // ignore: depend_on_referenced_packages
-import 'package:universal_io/io.dart' as io; // Thay thế dart:io
-import 'package:universal_html/html.dart' as html; // Hỗ trợ Web
+import 'package:universal_io/io.dart' as io; 
+import 'package:universal_html/html.dart' as html; 
 
 import 'package:production_app_frontend/features/production/weaving_record/presentation/bloc/weaving_record_cubit.dart';
 import 'package:production_app_frontend/features/production/weaving_record/domain/weaving_record_model.dart';
@@ -17,22 +18,37 @@ import 'package:production_app_frontend/features/production/weaving_record/domai
 enum DateFilterType { day, week, month, quarter, custom }
 
 class WeavingRecordScreen extends StatefulWidget {
-  const WeavingRecordScreen({super.key});
+  final bool isEmbedded;
+  const WeavingRecordScreen({super.key, this.isEmbedded = false});
 
   @override
   State<WeavingRecordScreen> createState() => _WeavingRecordScreenState();
 }
 
 class _WeavingRecordScreenState extends State<WeavingRecordScreen> {
+  // State
   DateFilterType _selectedFilter = DateFilterType.day;
   DateTimeRange? _customDateRange;
   List<WeavingRecord> _filteredList = [];
-  String _searchKeyword = "";
-
+  
+  // Controllers
+  final TextEditingController _searchCtrl = TextEditingController();
+  // [MỚI] Scroll Controllers cho Desktop
+  final ScrollController _verticalScrollController = ScrollController();
+  final ScrollController _horizontalScrollController = ScrollController();
+  
   @override
   void initState() {
     super.initState();
     context.read<WeavingRecordCubit>().loadRecords();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    _verticalScrollController.dispose();
+    _horizontalScrollController.dispose();
+    super.dispose();
   }
 
   // --- LOGIC LỌC DỮ LIỆU ---
@@ -47,6 +63,7 @@ class _WeavingRecordScreenState extends State<WeavingRecordScreen> {
         end = start.add(const Duration(days: 1)).subtract(const Duration(seconds: 1));
         break;
       case DateFilterType.week:
+        // Tuần này (Từ thứ 2)
         start = now.subtract(Duration(days: now.weekday - 1));
         start = DateTime(start.year, start.month, start.day);
         end = start.add(const Duration(days: 7)).subtract(const Duration(seconds: 1));
@@ -80,8 +97,8 @@ class _WeavingRecordScreenState extends State<WeavingRecordScreen> {
 
         // 2. Lọc theo từ khóa
         bool matchKeyword = true;
-        if (_searchKeyword.isNotEmpty) {
-          final kw = _searchKeyword.toLowerCase();
+        if (_searchCtrl.text.isNotEmpty) {
+          final kw = _searchCtrl.text.toLowerCase();
           matchKeyword = (item.machineName ?? '').toLowerCase().contains(kw) ||
               (item.basketCode ?? '').toLowerCase().contains(kw) ||
               (item.updatedByName ?? '').toLowerCase().contains(kw) ||
@@ -96,14 +113,49 @@ class _WeavingRecordScreenState extends State<WeavingRecordScreen> {
     });
   }
 
-  // --- LOGIC XUẤT EXCEL (ĐÃ CẬP NHẬT CHO WEB & MOBILE) ---
+  // --- HÀM HELPER UI ---
+  String _getFilterLabel(AppLocalizations l10n) {
+    switch (_selectedFilter) {
+      case DateFilterType.day: return l10n.filterToday; 
+      case DateFilterType.week: return "Tuần này"; 
+      case DateFilterType.month: return l10n.filterThisMonth;
+      case DateFilterType.quarter: return l10n.filterThisQuarter;
+      case DateFilterType.custom: return l10n.filterCustom;
+    }
+  }
+
+  Future<void> _pickDateRange(List<WeavingRecord> originalList) async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      initialDateRange: _customDateRange,
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            primaryColor: const Color(0xFF003366),
+            colorScheme: const ColorScheme.light(primary: Color(0xFF003366)),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _customDateRange = picked;
+        _selectedFilter = DateFilterType.custom;
+      });
+      _applyFilter(originalList);
+    }
+  }
+
+  // --- LOGIC XUẤT EXCEL ---
   Future<void> _exportToExcel() async {
     if (_filteredList.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Không có dữ liệu để xuất")));
       return;
     }
 
-    // Hiển thị loading
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đang tạo file Excel..."), duration: Duration(seconds: 1)));
 
     try {
@@ -136,16 +188,11 @@ class _WeavingRecordScreenState extends State<WeavingRecordScreen> {
         sheet.cell(CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: row)).value = TextCellValue(item.updatedByName ?? "-");
       }
 
-      // Lấy dữ liệu bytes
       final List<int>? fileBytes = excel.save();
 
       if (fileBytes != null) {
-        // Tên file
         String fileName = 'WeavingReport_${DateFormat('ddMMyy_HHmm').format(DateTime.now())}.xlsx';
-        
-        // Gọi Helper để lưu (Tự động xử lý Web/Mobile)
         await FileSaveHelper.saveAndLaunch(fileBytes, fileName);
-        
         if (!kIsWeb && mounted) {
            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Đã lưu file: $fileName"), backgroundColor: Colors.green));
         }
@@ -157,264 +204,344 @@ class _WeavingRecordScreenState extends State<WeavingRecordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        title: const Text("Lịch sử Sản lượng Dệt", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF003366),
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.file_download),
-            tooltip: "Xuất Excel",
-            onPressed: _exportToExcel,
-          )
-        ],
-      ),
-      body: BlocConsumer<WeavingRecordCubit, WeavingRecordState>(
-        listener: (context, state) {
-          if (state is WeavingRecordLoaded) {
-            _applyFilter(state.records);
-          }
-          if (state is WeavingRecordError) {
-             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
-          }
-        },
-        builder: (context, state) {
-          List<WeavingRecord> originalList = [];
-          if (state is WeavingRecordLoaded) originalList = state.records;
+    final l10n = AppLocalizations.of(context)!;
 
-          return Column(
-            children: [
-              // --- 1. THANH CÔNG CỤ ---
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA), // Màu nền xám nhạt hiện đại
+      
+      // AppBar ẩn nếu nhúng, hiện nếu độc lập
+      appBar: widget.isEmbedded 
+          ? null 
+          : AppBar(
+              title: const Text(
+                "Lịch sử Cân & Thống kê", 
+                style: TextStyle(
+                  color: Colors.white, 
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 16
+                )
+              ),
+              backgroundColor: const Color(0xFF003366),
+              iconTheme: const IconThemeData(color: Colors.white),
+              actions: [
+                IconButton(icon: const Icon(Icons.file_download), tooltip: "Xuất Excel", onPressed: _exportToExcel)
+              ],
+            ),
+            
+      body: Column(
+        children: [
+          // Toolbar phụ (Chỉ hiện khi Embedded)
+          if (widget.isEmbedded)
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.all(12),
-                child: Column(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    TextField(
-                      decoration: InputDecoration(
-                        hintText: "Tìm kiếm (Máy, Rổ, Người, Ca...)",
-                        prefixIcon: const Icon(Icons.search),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
+                    OutlinedButton.icon(
+                      onPressed: _exportToExcel,
+                      icon: const Icon(Icons.file_download, size: 18),
+                      label: const Text("Xuất Excel"),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF003366),
+                        side: const BorderSide(color: Color(0xFF003366)),
                       ),
-                      onChanged: (val) {
-                        _searchKeyword = val;
-                        _applyFilter(originalList);
-                      },
                     ),
-                    const SizedBox(height: 12),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildFilterChip("Hôm nay", DateFilterType.day, originalList),
-                          _buildFilterChip("Tuần này", DateFilterType.week, originalList),
-                          _buildFilterChip("Tháng này", DateFilterType.month, originalList),
-                          _buildFilterChip("Quý này", DateFilterType.quarter, originalList),
-                          const SizedBox(width: 8),
-                          ActionChip(
-                            label: Text(_customDateRange == null 
-                                ? "Tùy chọn..." 
-                                : "${DateFormat('dd/MM').format(_customDateRange!.start)} - ${DateFormat('dd/MM').format(_customDateRange!.end)}"
-                            ),
-                            avatar: const Icon(Icons.calendar_today, size: 16),
-                            backgroundColor: _selectedFilter == DateFilterType.custom ? Colors.blue.shade100 : Colors.grey.shade100,
-                            onPressed: () async {
-                              final picked = await showDateRangePicker(
-                                context: context,
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime(2030),
-                                initialDateRange: _customDateRange
-                              );
-                              if (picked != null) {
-                                setState(() {
-                                  _customDateRange = picked;
-                                  _selectedFilter = DateFilterType.custom;
-                                });
-                                _applyFilter(originalList);
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    )
                   ],
                 ),
               ),
-              const Divider(height: 1),
 
-              // --- 2. HIỂN THỊ DỮ LIỆU ---
-              Expanded(
-                child: state is WeavingRecordLoading 
-                  ? const Center(child: CircularProgressIndicator())
-                  : _filteredList.isEmpty 
-                      ? const Center(child: Text("Không tìm thấy dữ liệu", style: TextStyle(color: Colors.grey)))
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            if (constraints.maxWidth > 800) {
-                              return _buildDesktopTable();
+          // --- HEADER BỘ LỌC (Compact Style) ---
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: Colors.black12)),
+            ),
+            child: BlocBuilder<WeavingRecordCubit, WeavingRecordState>(
+              builder: (context, state) {
+                // Lấy data gốc để filter
+                List<WeavingRecord> originalList = [];
+                if (state is WeavingRecordLoaded) originalList = state.records;
+
+                return Column(
+                  children: [
+                    // Hàng 1: Search Bar
+                    SizedBox(
+                      height: 40,
+                      child: TextField(
+                        controller: _searchCtrl,
+                        decoration: InputDecoration(
+                          hintText: "Tìm kiếm (Máy, Rổ, Ca...)",
+                          prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                          isDense: true,
+                        ),
+                        style: const TextStyle(fontSize: 14),
+                        onChanged: (val) => _applyFilter(originalList),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Hàng 2: Filter Chips & Date Picker
+                    Row(
+                      children: [
+                        // Nút chọn loại thời gian (Popup)
+                        PopupMenuButton<DateFilterType>(
+                          onSelected: (type) {
+                            setState(() => _selectedFilter = type);
+                            if (type != DateFilterType.custom) {
+                              _applyFilter(originalList);
                             } else {
-                              return _buildMobileList();
+                              _pickDateRange(originalList);
                             }
                           },
+                          itemBuilder: (context) => [
+                            PopupMenuItem(value: DateFilterType.day, child: Text(l10n.filterToday)), // "Hôm nay"
+                            const PopupMenuItem(value: DateFilterType.week, child: Text("Tuần này")),
+                            PopupMenuItem(value: DateFilterType.month, child: Text(l10n.filterThisMonth)), // "Tháng này"
+                            PopupMenuItem(value: DateFilterType.quarter, child: Text(l10n.filterThisQuarter)), // "Quý này"
+                            const PopupMenuDivider(),
+                            PopupMenuItem(value: DateFilterType.custom, child: Text(l10n.filterCustom)), // "Tùy chọn"
+                          ],
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE3F2FD), // Xanh nhạt
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: Colors.blue.shade200),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.filter_list, size: 16, color: Color(0xFF003366)),
+                                const SizedBox(width: 6),
+                                Text(_getFilterLabel(l10n), style: const TextStyle(color: Color(0xFF003366), fontWeight: FontWeight.bold, fontSize: 13)),
+                                const Icon(Icons.arrow_drop_down, color: Color(0xFF003366), size: 18),
+                              ],
+                            ),
+                          ),
                         ),
-              ),
-              
-              // --- 3. FOOTER ---
-              if (_filteredList.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  color: Colors.blue.shade50,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("SL: ${_filteredList.length} bản ghi", style: const TextStyle(color: Colors.blueGrey)),
-                      Text("Tổng KL: ${_filteredList.fold(0.0, (sum, item) => sum + item.totalWeight).toStringAsFixed(2)} kg", 
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF003366), fontSize: 16)),
-                    ],
-                  ),
-                )
-            ],
-          );
-        },
+                        const SizedBox(width: 8),
+                        
+                        // Nút hiển thị ngày / Chọn ngày tùy chỉnh
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => _pickDateRange(originalList),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.calendar_month, size: 16, color: Colors.grey),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      (_selectedFilter == DateFilterType.custom && _customDateRange != null)
+                                          ? "${DateFormat('dd/MM').format(_customDateRange!.start)} - ${DateFormat('dd/MM').format(_customDateRange!.end)}"
+                                          : ( _selectedFilter == DateFilterType.day 
+                                              ? DateFormat('dd/MM/yyyy').format(DateTime.now())
+                                              : l10n.filterCustom // "Chọn ngày..."
+                                            ),
+                                      style: const TextStyle(fontSize: 13),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+
+          // --- KẾT QUẢ ---
+          Expanded(
+            child: BlocConsumer<WeavingRecordCubit, WeavingRecordState>(
+              listener: (context, state) {
+                if (state is WeavingRecordLoaded) {
+                  _applyFilter(state.records);
+                }
+                if (state is WeavingRecordError) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+                }
+              },
+              builder: (context, state) {
+                if (state is WeavingRecordLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (state is WeavingRecordLoaded) {
+                  final list = _filteredList; // Sử dụng list đã lọc
+                  if (list.isEmpty) {
+                    return const Center(child: Text("Không tìm thấy dữ liệu", style: TextStyle(color: Colors.grey)));
+                  }
+
+                  return SelectionArea(
+                    child: Column(
+                      children: [
+                        // Summary Bar
+                        Container(
+                            margin: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue.shade100),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text("Số lượng: ${list.length}", style: TextStyle(color: Colors.blue.shade900, fontSize: 13)),
+                                Text("Tổng KL: ${list.fold(0.0, (sum, item) => sum + item.totalWeight).toStringAsFixed(2)} kg", 
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF003366))),
+                              ],
+                            ),
+                        ),
+                        
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                                if (constraints.maxWidth > 800) {
+                                  // [QUAN TRỌNG] Truyền constraints vào để tính toán độ rộng
+                                  return _buildDesktopTable(constraints);
+                                } else {
+                                  return _buildMobileList();
+                                }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return const SizedBox();
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ... (Giữ nguyên các hàm _buildDesktopTable, _buildMobileList, _buildInfoRow như cũ) ...
-  // Để code gọn, tôi không lặp lại phần UI hiển thị danh sách vì nó không đổi
-  
-  // UI DESKTOP
-  Widget _buildDesktopTable() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.vertical,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingRowColor: MaterialStateProperty.all(Colors.grey.shade200),
-          columns: const [
-            DataColumn(label: Text('Ngày giờ')),
-            DataColumn(label: Text('Máy / Line')),
-            DataColumn(label: Text('Ca')),
-            DataColumn(label: Text('Mã Rổ')),
-            DataColumn(label: Text('KL Tịnh (Kg)'), numeric: true),
-            DataColumn(label: Text('Phế Run'), numeric: true),
-            DataColumn(label: Text('Phế Setup'), numeric: true),
-            DataColumn(label: Text('Người cập nhật')),
-            DataColumn(label: Text('Thao tác')),
-          ],
-          rows: _filteredList.map((item) {
-            return DataRow(cells: [
-              DataCell(Text(item.updatedAt != null ? DateFormat('dd/MM HH:mm').format(item.updatedAt!) : "-")),
-              DataCell(Text("${item.machineName ?? 'ID:${item.machineId}'} (L${item.line})")),
-              DataCell(Text(item.shiftName ?? '-')),
-              DataCell(Text(item.basketCode ?? 'ID:${item.basketId}', style: const TextStyle(fontWeight: FontWeight.w600))),
-              DataCell(Text(item.totalWeight.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green))),
-              DataCell(Text(item.runWaste.toStringAsFixed(2))),
-              DataCell(Text(item.setupWaste.toStringAsFixed(2))),
-              DataCell(Text(item.updatedByName ?? '-')),
-              DataCell(
-                IconButton(
-                  icon: const Icon(Icons.edit_note, color: Colors.blue),
-                  onPressed: () => _showEditDialog(context, item),
+  // --- UI DESKTOP (FULL SCREEN TABLE) ---
+  Widget _buildDesktopTable(BoxConstraints constraints) {
+    return Container(
+      width: double.infinity,
+      color: Colors.white, // Nền trắng cho bảng
+      child: Scrollbar(
+        controller: _verticalScrollController,
+        thumbVisibility: true, // Luôn hiện thanh cuộn dọc
+        child: SingleChildScrollView(
+          controller: _verticalScrollController,
+          scrollDirection: Axis.vertical,
+          child: Scrollbar(
+            controller: _horizontalScrollController,
+            thumbVisibility: true, // Luôn hiện thanh cuộn ngang nếu có
+            child: SingleChildScrollView(
+              controller: _horizontalScrollController,
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                // [QUAN TRỌNG] Ép độ rộng tối thiểu bằng độ rộng màn hình (trừ lề)
+                // Giúp bảng trải full màn hình
+                constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                child: DataTable(
+                  headingRowColor: MaterialStateProperty.all(Colors.grey.shade100),
+                  headingRowHeight: 45,
+                  dataRowMinHeight: 45,
+                  dataRowMaxHeight: 55,
+                  columnSpacing: 20,
+                  // border: TableBorder.all(color: Colors.grey.shade200), // Tùy chọn: Thêm viền
+                  columns: const [
+                    DataColumn(label: Text('Thời gian', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Máy / Line', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Ca', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Mã Rổ', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('KL Tịnh', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                    DataColumn(label: Text('Phế Run', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                    DataColumn(label: Text('Phế Setup', style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                    DataColumn(label: Text('Người cập nhật', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                  rows: _filteredList.map((item) {
+                    return DataRow(cells: [
+                      DataCell(Text(item.updatedAt != null ? DateFormat('dd/MM HH:mm').format(item.updatedAt!) : "-", style: const TextStyle(fontSize: 13))),
+                      DataCell(Text("${item.machineName ?? 'ID:${item.machineId}'} (L${item.line})", style: const TextStyle(fontSize: 13))),
+                      DataCell(Text(item.shiftName ?? '-', style: const TextStyle(fontSize: 13))),
+                      DataCell(Text(item.basketCode ?? 'ID:${item.basketId}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+                      DataCell(Text(item.totalWeight.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13))),
+                      DataCell(Text(item.runWaste.toStringAsFixed(2), style: const TextStyle(fontSize: 13))),
+                      DataCell(Text(item.setupWaste.toStringAsFixed(2), style: const TextStyle(fontSize: 13))),
+                      DataCell(Text(item.updatedByName ?? '-', style: const TextStyle(fontSize: 13))),
+                    ]);
+                  }).toList(),
                 ),
               ),
-            ]);
-          }).toList(),
+            ),
+          ),
         ),
       ),
     );
   }
 
-  // UI MOBILE
+  // --- UI MOBILE ---
   Widget _buildMobileList() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(8),
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
       itemCount: _filteredList.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 6),
       itemBuilder: (context, index) {
         final item = _filteredList[index];
         return Card(
-          elevation: 2,
-          margin: const EdgeInsets.only(bottom: 10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          elevation: 1,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.precision_manufacturing, size: 18, color: Colors.blueGrey),
-                        const SizedBox(width: 6),
-                        Text(
-                          "${item.machineName ?? '?'} - Line ${item.line}",
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                      ],
+                    Text(
+                      "${item.machineName ?? '?'} - Line ${item.line}",
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     Text(
-                      item.updatedAt != null ? DateFormat('dd/MM HH:mm').format(item.updatedAt!) : "-",
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                       item.updatedAt != null ? DateFormat('dd/MM HH:mm').format(item.updatedAt!) : "-",
+                       style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                     ),
                   ],
                 ),
-                const Divider(height: 16),
+                const Divider(height: 12, thickness: 0.5),
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildInfoRow(Icons.shopping_basket, "Rổ:", item.basketCode ?? "ID:${item.basketId}"),
-                          const SizedBox(height: 6),
-                          _buildInfoRow(Icons.access_time, "Ca:", item.shiftName ?? "-"),
-                          const SizedBox(height: 6),
-                          _buildInfoRow(Icons.person, "Nhân viên:", item.updatedByName ?? "-"),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text("KL Tịnh", style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-                            Text("${item.totalWeight.toStringAsFixed(2)} kg", 
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16)),
-                            const SizedBox(height: 4),
-                            Text("Phế: Run / Setup", style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
-                            Text("${item.runWaste} / ${item.setupWaste}", 
-                                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                    )
+                     Expanded(
+                       child: Column(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                            Text("Rổ: ${item.basketCode ?? 'N/A'}", style: const TextStyle(fontSize: 13)),
+                            Text("Ca: ${item.shiftName ?? '-'}", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                         ],
+                       )
+                     ),
+                     Column(
+                       crossAxisAlignment: CrossAxisAlignment.end,
+                       children: [
+                          Text("${item.totalWeight.toStringAsFixed(2)} kg", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 15)),
+                          Text("Phế: ${item.runWaste}/${item.setupWaste}", style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                       ],
+                     )
                   ],
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: () => _showEditDialog(context, item),
-                    icon: const Icon(Icons.edit, size: 16),
-                    label: const Text("Chỉnh sửa số liệu"),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.blue.shade700,
-                      padding: EdgeInsets.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap
-                    ),
-                  ),
                 )
               ],
             ),
@@ -423,118 +550,14 @@ class _WeavingRecordScreenState extends State<WeavingRecordScreen> {
       },
     );
   }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: Colors.grey),
-        const SizedBox(width: 4),
-        Text("$label ", style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13), overflow: TextOverflow.ellipsis)),
-      ],
-    );
-  }
-
-  Widget _buildFilterChip(String label, DateFilterType type, List<WeavingRecord> originalList) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: _selectedFilter == type,
-        selectedColor: Colors.blue.shade100,
-        backgroundColor: Colors.grey.shade100,
-        onSelected: (bool selected) {
-          if (selected) {
-            setState(() => _selectedFilter = type);
-            _applyFilter(originalList);
-          }
-        },
-      ),
-    );
-  }
-
-  void _showEditDialog(BuildContext context, WeavingRecord item) {
-    final weightCtrl = TextEditingController(text: item.totalWeight.toString());
-    final runWasteCtrl = TextEditingController(text: item.runWaste.toString());
-    final setupWasteCtrl = TextEditingController(text: item.setupWaste.toString());
-    final formKey = GlobalKey<FormState>();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text("Sửa bản ghi #${item.id}", style: const TextStyle(fontSize: 18)),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("${item.machineName} - Line ${item.line}", style: const TextStyle(fontWeight: FontWeight.bold)),
-              Text("Rổ: ${item.basketCode}", style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
-              const Divider(),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: weightCtrl,
-                decoration: const InputDecoration(labelText: "KL Tịnh (Kg)", border: OutlineInputBorder()),
-                keyboardType: TextInputType.number,
-                validator: (v) => v!.isEmpty ? "Nhập số liệu" : null,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: runWasteCtrl,
-                      decoration: const InputDecoration(labelText: "Phế Run", border: OutlineInputBorder()),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextFormField(
-                      controller: setupWasteCtrl,
-                      decoration: const InputDecoration(labelText: "Phế Setup", border: OutlineInputBorder()),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                ],
-              )
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Hủy")),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                final updatedItem = item.copyWith(
-                  totalWeight: double.parse(weightCtrl.text),
-                  runWaste: double.parse(runWasteCtrl.text),
-                  setupWaste: double.parse(setupWasteCtrl.text),
-                );
-                context.read<WeavingRecordCubit>().saveRecord(
-                  item: updatedItem, 
-                  isEdit: true
-                );
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text("Lưu"),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // =========================================================
-// HELPER CLASS: XỬ LÝ LƯU FILE ĐA NỀN TẢNG (WEB / MOBILE)
+// HELPER CLASS: XỬ LÝ LƯU FILE ĐA NỀN TẢNG
 // =========================================================
 class FileSaveHelper {
   static Future<void> saveAndLaunch(List<int> bytes, String fileName) async {
     if (kIsWeb) {
-      // --- LOGIC CHO WEB ---
-      // Tạo Blob và kích hoạt thẻ <a> để tải xuống
       final blob = html.Blob([bytes]);
       final url = html.Url.createObjectUrlFromBlob(blob);
       final anchor = html.AnchorElement(href: url)
@@ -542,22 +565,17 @@ class FileSaveHelper {
         ..click();
       html.Url.revokeObjectUrl(url);
     } else {
-      // --- LOGIC CHO MOBILE / DESKTOP ---
-      // Lưu vào thư mục ứng dụng và mở file
       io.Directory? directory;
-      
       if (io.Platform.isAndroid) {
-        directory = await getExternalStorageDirectory(); // Android
+        directory = await getExternalStorageDirectory(); 
       } else {
-        directory = await getApplicationDocumentsDirectory(); // iOS
+        directory = await getApplicationDocumentsDirectory(); 
       }
 
       if (directory != null) {
         final path = "${directory.path}/$fileName";
         final file = io.File(path);
         await file.writeAsBytes(bytes, flush: true);
-        
-        // Mở file bằng ứng dụng mặc định (Excel/Sheets)
         await OpenFile.open(path);
       }
     }

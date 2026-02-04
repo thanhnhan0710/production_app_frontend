@@ -58,4 +58,12 @@ class WeavingRecordCubit extends Cubit<WeavingRecordState> {
       emit(WeavingRecordError("Failed to delete: $e"));
     }
   }
+  Future<List<WeavingRecord>> getRecordsByTicketId(int ticketId) async {
+    try {
+      return await _repo.getRecordsByTicketId(ticketId);
+    } catch (e) {
+      print("Cubit Error fetching by ticket: $e");
+      return [];
+    }
+  }
 }

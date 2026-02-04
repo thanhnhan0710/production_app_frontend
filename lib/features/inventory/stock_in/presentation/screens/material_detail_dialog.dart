@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:production_app_frontend/l10n/app_localizations.dart'; 
 import '../../domain/material_receipt_model.dart';
 import '../../../material/data/material_repository.dart';
-import '../../../material/domain/material_model.dart';
+// import '../../../material/domain/material_model.dart'; // Nếu cần
 import '../../../purchase_order/domain/purchase_order_model.dart'; 
 
 class MaterialDetailDialog extends StatefulWidget {
   final MaterialReceiptDetail? detail;
-  // Danh sách chi tiết của PO đã chọn (để lọc vật tư)
+  // Danh sách chi tiết của PO đã chọn (để lọc vật tư & lấy số lượng)
   final List<PurchaseOrderDetail>? poDetails; 
 
   const MaterialDetailDialog({
@@ -37,29 +37,12 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
   final _batchCtrl = TextEditingController();
   final _originCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
-  
-  // [MỚI] Controller cho Location
   final _locationCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadMaterials();
-
-    // [GIỮ NGUYÊN] Tự động điền Thực nhận = PO khi nhập liệu (Chỉ khi thêm mới)
-    if (widget.detail == null) {
-      _poQtyKgCtrl.addListener(() {
-        if (_poQtyKgCtrl.text.isNotEmpty && (_receivedQtyKgCtrl.text == "0" || _receivedQtyKgCtrl.text.isEmpty)) {
-          _receivedQtyKgCtrl.text = _poQtyKgCtrl.text;
-        }
-      });
-
-      _poQtyConesCtrl.addListener(() {
-         if (_poQtyConesCtrl.text.isNotEmpty && (_receivedQtyConesCtrl.text == "0" || _receivedQtyConesCtrl.text.isEmpty)) {
-           _receivedQtyConesCtrl.text = _poQtyConesCtrl.text;
-         }
-      });
-    }
   }
 
   Future<void> _loadMaterials() async {
@@ -67,6 +50,7 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
       if (widget.poDetails != null && widget.poDetails!.isNotEmpty) {
         if (mounted) {
           setState(() {
+            // Map từ PurchaseOrderDetail sang ReceiptMaterial (để hiển thị trong dropdown)
             _availableMaterials = widget.poDetails!.map((d) {
               return ReceiptMaterial(
                 id: d.materialId,
@@ -124,20 +108,52 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
       _batchCtrl.text = widget.detail!.supplierBatchNo ?? "";
       _originCtrl.text = widget.detail!.originCountry ?? "";
       _noteCtrl.text = widget.detail!.note ?? "";
-      
-      // [MỚI] Load dữ liệu Location
       _locationCtrl.text = widget.detail!.location ?? "";
     }
   }
 
+  // [LOGIC MỚI] Khi chọn vật tư -> Tự động điền số lượng KG và SỐ CUỘN từ PO
   void _onMaterialSelected(ReceiptMaterial? val) {
     setState(() {
       _selectedMaterial = val;
-      _poQtyKgCtrl.text = "0";
-      _poQtyConesCtrl.text = "0";
-      _receivedQtyKgCtrl.text = "0";
-      _receivedQtyConesCtrl.text = "0";
+      
+      if (val != null && widget.poDetails != null) {
+        // Tìm chi tiết PO tương ứng với vật tư đã chọn
+        final poDetail = widget.poDetails!.firstWhere(
+          (d) => d.materialId == val.id, 
+          orElse: () => PurchaseOrderDetail(
+            poId: 0,
+            materialId: 0, 
+            quantity: 0, 
+            quantityRolls: 0, // Default rolls
+            unitPrice: 0
+          ) 
+        );
+
+        if (poDetail.materialId != 0) {
+           // 1. Tự động điền số lượng PO (Kg)
+           _poQtyKgCtrl.text = poDetail.quantity.toString();
+           
+           // 2. [CẬP NHẬT] Tự động điền số lượng PO (Cuộn/Rolls)
+           _poQtyConesCtrl.text = poDetail.quantityRolls.toString(); 
+           
+           // 3. Tự động điền số lượng Thực nhận bằng với PO (Auto-fill cả Kg và Rolls)
+           _receivedQtyKgCtrl.text = poDetail.quantity.toString();
+           _receivedQtyConesCtrl.text = poDetail.quantityRolls.toString(); 
+        } else {
+           _resetFields();
+        }
+      } else {
+        _resetFields();
+      }
     });
+  }
+
+  void _resetFields() {
+    _poQtyKgCtrl.text = "0";
+    _poQtyConesCtrl.text = "0";
+    _receivedQtyKgCtrl.text = "0";
+    _receivedQtyConesCtrl.text = "0";
   }
 
   @override
@@ -166,8 +182,8 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                       labelText: l10n.selectMaterialPlaceholder, 
                       border: const OutlineInputBorder(),
                       helperText: widget.poDetails != null && widget.poDetails!.isNotEmpty 
-                          ? "Filter by Selected PO" 
-                          : "All Materials"
+                          ? "Lọc theo PO đã chọn" 
+                          : "Tất cả vật tư"
                     ),
                     items: _availableMaterials.map((m) {
                       return DropdownMenuItem(
@@ -186,29 +202,39 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 
                 const SizedBox(height: 16),
                 
-                // PO Quantities
+                // PO Quantities 
                 Row(
                   children: [
                     Expanded(
                       child: TextFormField(
                         controller: _poQtyKgCtrl,
-                        decoration: InputDecoration(labelText: l10n.poQtyKg, border: const OutlineInputBorder()),
+                        decoration: InputDecoration(
+                          labelText: l10n.poQtyKg, 
+                          border: const OutlineInputBorder(),
+                          fillColor: Colors.grey.shade100, filled: true
+                        ),
                         keyboardType: TextInputType.number,
+                        readOnly: true, // Read-only để user đối chiếu số KG
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: TextFormField(
                         controller: _poQtyConesCtrl,
-                        decoration: InputDecoration(labelText: l10n.poQtyCones, border: const OutlineInputBorder()),
+                        decoration: InputDecoration(
+                          labelText: l10n.poQtyCones, 
+                          border: const OutlineInputBorder(),
+                          fillColor: Colors.grey.shade100, filled: true
+                        ),
                         keyboardType: TextInputType.number,
+                        readOnly: true, // Số cuộn trên PO cũng Read-only (lấy từ PO)
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
 
-                // Actual Quantities
+                // Actual Quantities (Đã được Auto-fill KG & Rolls)
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -287,7 +313,6 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 
                 Row(
                   children: [
-                    // [MỚI] Form nhập Location
                     Expanded(
                       flex: 1,
                       child: TextFormField(
@@ -348,7 +373,6 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 supplierBatchNo: _batchCtrl.text,
                 originCountry: _originCtrl.text,
                 note: _noteCtrl.text,
-                // [MỚI] Lưu location vào object chi tiết
                 location: _locationCtrl.text, 
               );
               Navigator.pop(context, newDetail);
