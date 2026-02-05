@@ -5,7 +5,7 @@ import '../domain/iqc_result_model.dart';
 class IQCResultRepository {
   final Dio _dio = ApiClient().dio;
   // Đường dẫn API (Cần đảm bảo Router Backend đã đăng ký prefix này)
-  static const String _endpoint = '/api/v1/iqc-results';
+  static const String _endpoint = '/api/v1/iqc-results/';
 
   // 1. Lấy danh sách kết quả (Có thể lọc theo Batch ID)
   Future<List<IQCResult>> getIQCResults({int? batchId, int skip = 0, int limit = 100}) async {

@@ -1,5 +1,3 @@
-// C:\Users\nhan_\Documents\production_app_frontend\lib\features\inventory\bom\presentation\screens\bom_detail_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -29,6 +27,7 @@ class BOMDetailScreen extends StatefulWidget {
 class _BOMDetailScreenState extends State<BOMDetailScreen> {
   final _numberFormat = NumberFormat("#,##0.000");
   final _percentFormat = NumberFormat("#,##0.0'%'");
+  final _precisionFormat = NumberFormat("#,##0.#####");
 
   @override
   void initState() {
@@ -38,6 +37,41 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
     }
     context.read<mat_bloc.MaterialCubit>().loadMaterials();
     context.read<ProductCubit>().loadProducts();
+  }
+
+  // Helper: Create a full list including missing component types (virtual rows)
+  List<BOMDetail> _generateFullDisplayList(List<BOMDetail> currentDetails, int bomId) {
+    List<BOMDetail> fullList = [];
+
+    // Loop through all Enum values
+    for (var type in BOMComponentType.values) {
+      // Find existing items for this type
+      final existingItems = currentDetails.where((d) => d.componentType == type).toList();
+
+      if (existingItems.isNotEmpty) {
+        fullList.addAll(existingItems);
+      } else {
+        // If missing, add a dummy/virtual row (ID = 0)
+        fullList.add(BOMDetail(
+          detailId: 0, // 0 marks this as virtual
+          bomId: bomId,
+          materialId: 0,
+          componentType: type,
+          threads: 0,
+          yarnTypeName: "",
+          twisted: 0,
+          crossweaveRate: 0,
+          actualLengthCm: 0,
+          yarnDtex: 0,
+          weightPerYarnGm: 0,
+          actualWeightCal: 0,
+          weightPercentage: 0,
+          bomGm: 0,
+          note: "",
+        ));
+      }
+    }
+    return fullList;
   }
 
   Color _getComponentColor(BOMComponentType type) {
@@ -56,6 +90,9 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
   }
 
   void _showAddEditDetailDialog(BuildContext context, BOMDetail? detail, BOMHeader header) async {
+    // If detailId == 0, treat as Add new, but pre-fill componentType
+    final isNew = detail == null || detail.detailId == 0;
+    
     final BOMDetail? result = await showDialog(
       context: context,
       barrierDismissible: false,
@@ -66,7 +103,7 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
     );
 
     if (result != null && mounted) {
-      context.read<BOMCubit>().saveBOMDetail(result, detail != null);
+      context.read<BOMCubit>().saveBOMDetail(result, !isNew);
     }
   }
 
@@ -96,7 +133,6 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
     return Scaffold(
@@ -130,11 +166,17 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
           }
 
           BOMHeader? bom;
+          List<BOMMaterialSummary> summary = [];
+
           if (state is BOMDetailViewLoaded) {
             bom = state.bom;
+            summary = state.summary;
           }
 
-          if (bom == null) return const Center(child: Text("BOM not found or Loading..."));
+          if (bom == null) return const Center(child: Text("Loading data..."));
+
+          // [LOGIC] Generate full list for display
+          final displayList = _generateFullDisplayList(bom.bomDetails, bom.bomId);
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -142,41 +184,52 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
               _buildHeaderInfo(context, bom),
               const Divider(height: 1, thickness: 1, color: Colors.grey),
               
-              // [SELECTION AREA] Cho phép copy text trong bảng
+              // CONTENT TABLE
               Expanded(
                 child: SelectionArea( 
                   child: Container(
                     color: Colors.white,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                "Components (${bom.bomDetails.length})",
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
-                              ),
-                              ElevatedButton.icon(
-                                onPressed: () => _showAddEditDetailDialog(context, null, bom!),
-                                icon: const Icon(Icons.add, size: 16),
-                                label: const Text("Add Component"),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFE3F2FD),
-                                  foregroundColor: const Color(0xFF0055AA),
-                                  elevation: 0,
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "Components (${displayList.length})",
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
                                 ),
-                              )
-                            ],
+                                ElevatedButton.icon(
+                                  onPressed: () => _showAddEditDetailDialog(context, null, bom!),
+                                  icon: const Icon(Icons.add, size: 16),
+                                  label: const Text("Add Component"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFE3F2FD),
+                                    foregroundColor: const Color(0xFF0055AA),
+                                    elevation: 0,
+                                  ),
+                                )
+                              ],
+                            ),
                           ),
                         ),
-                        const Divider(height: 1),
-                        Expanded(
-                          child: isDesktop
-                              ? _buildDesktopTable(bom.bomDetails, bom)
-                              : _buildMobileList(bom.bomDetails, bom),
+                        SliverFillRemaining(
+                          hasScrollBody: true,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const Divider(height: 1),
+                              Expanded(
+                                child: isDesktop
+                                    ? _buildDesktopTable(displayList, bom)
+                                    : _buildMobileList(displayList, bom),
+                              ),
+                              if (summary.isNotEmpty)
+                                _buildRollsSummaryTable(summary),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -187,6 +240,41 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildRollsSummaryTable(List<BOMMaterialSummary> summary) {
+    return Container(
+      color: Colors.grey.shade50,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("ROLLS SUMMARY", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF003366))),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(4),
+              color: Colors.white,
+            ),
+            child: DataTable(
+              headingRowHeight: 40,
+              dataRowMinHeight: 40,
+              dataRowMaxHeight: 40,
+              headingRowColor: MaterialStateProperty.all(Colors.grey.shade100),
+              columns: const [
+                DataColumn(label: Text("Material / Yarn Name", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                DataColumn(label: Text("Total Rolls", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)), numeric: true),
+              ],
+              rows: summary.map((s) => DataRow(cells: [
+                DataCell(Text(s.materialName, style: const TextStyle(fontSize: 13))),
+                DataCell(Text("${s.totalRolls}", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
+              ])).toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -250,6 +338,7 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
                     _buildStatItem("Width", bom.widthBehindLoom != null ? "${bom.widthBehindLoom} mm" : "-"),
                     _buildStatItem("Picks", "${bom.picks ?? '-'}"),
                     _buildStatItem("Scrap", _percentFormat.format(bom.totalScrapRate)),
+                    _buildStatItem("Shrinkage", _percentFormat.format(bom.totalShrinkageRate)),
                   ],
                 ),
               ),
@@ -271,11 +360,7 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
     );
   }
 
-  // [FIX] Sử dụng LayoutBuilder + ConstrainedBox để ép full width
   Widget _buildDesktopTable(List<BOMDetail> details, BOMHeader bom) {
-    final sortedDetails = List<BOMDetail>.from(details)
-      ..sort((a, b) => a.componentType.index.compareTo(b.componentType.index));
-
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
@@ -283,12 +368,12 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: ConstrainedBox(
-              constraints: BoxConstraints(minWidth: constraints.maxWidth), // Ép chiều rộng tối thiểu
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
               child: DataTable(
                 headingRowColor: MaterialStateProperty.all(Colors.grey.shade50),
-                columnSpacing: 24,
-                dataRowMinHeight: 50,
-                dataRowMaxHeight: 60,
+                columnSpacing: 20, 
+                dataRowMinHeight: 45,
+                dataRowMaxHeight: 55,
                 columns: const [
                   DataColumn(label: Text("Type", style: TextStyle(fontWeight: FontWeight.bold))),
                   DataColumn(label: Text("Material / Yarn", style: TextStyle(fontWeight: FontWeight.bold))),
@@ -297,42 +382,61 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
                   DataColumn(label: Text("Twist", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
                   DataColumn(label: Text("Crossweave", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
                   DataColumn(label: Text("Actual Len", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text("Actual (g/m)", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text("Weight (g/m)", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+                  DataColumn(label: Text("Actual (g/m)", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true), 
+                  DataColumn(label: Text("Weight (g/m)", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true), // Theoretical
                   DataColumn(label: Text("% Ratio", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
                   DataColumn(label: Text("BOM (g/m)", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)), numeric: true),
                   DataColumn(label: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold))),
                 ],
-                rows: sortedDetails.map((d) {
+                rows: details.map((d) {
                   final typeColor = _getComponentColor(d.componentType);
-                  
-                  return DataRow(cells: [
+                  final isVirtual = d.detailId == 0; 
+                  final isEmpty = d.yarnTypeName.isEmpty && d.threads == 0;
+
+                  // Text style for empty/virtual rows
+                  final textStyle = TextStyle(fontSize: 13, color: isVirtual ? Colors.grey.shade400 : Colors.black87);
+                  final numStyle = TextStyle(fontSize: 13, color: isVirtual ? Colors.grey.shade300 : Colors.black87);
+
+                  return DataRow(
+                    color: isVirtual ? MaterialStateProperty.all(Colors.white) : null,
+                    cells: [
+                    // Col 1: Type
                     DataCell(Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(color: typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: typeColor.withOpacity(0.3))),
                       child: Text(d.componentType.value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: typeColor)),
                     )),
-                    DataCell(Text(d.yarnTypeName, style: const TextStyle(fontWeight: FontWeight.w500))),
-                    DataCell(Text("${d.threads}")),
-                    DataCell(Text(d.yarnDtex.toStringAsFixed(0))),
-                    DataCell(Text(d.twisted.toString())),
-                    DataCell(Text(d.crossweaveRate.toString())),
-                    DataCell(Text(d.actualLengthCm.toString())),
-                    DataCell(Text(d.actualWeightCal.toString())),
-                    DataCell(Text(d.weightPerYarnGm.toString())),
-                    DataCell(Text(_percentFormat.format(d.weightPercentage))),
-                    DataCell(Text(_numberFormat.format(d.bomGm), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))),
+                    
+                    // Col 2: Name
+                    DataCell(Text(isEmpty ? "-" : d.yarnTypeName, style: textStyle.copyWith(fontWeight: FontWeight.w500))),
+                    
+                    // Cols 3-11: Values
+                    DataCell(Text(isEmpty ? "-" : "${d.threads}", style: numStyle)),
+                    DataCell(Text(isEmpty ? "-" : d.yarnDtex.toStringAsFixed(0), style: numStyle)),
+                    DataCell(Text(isEmpty ? "-" : d.twisted.toString(), style: numStyle)),
+                    DataCell(Text(isEmpty ? "-" : "${d.crossweaveRate}%", style: numStyle)),
+                    DataCell(Text(isEmpty ? "-" : d.actualLengthCm.toString(), style: numStyle)),
+                    DataCell(Text(isEmpty ? "-" : _precisionFormat.format(d.actualWeightCal), style: numStyle)),
+                    DataCell(Text(isEmpty ? "-" : _numberFormat.format(d.weightPerYarnGm), style: numStyle)),
+                    DataCell(Text(isEmpty ? "-" : _percentFormat.format(d.weightPercentage), style: numStyle)),
+                    DataCell(Text(isEmpty ? "-" : _precisionFormat.format(d.bomGm), style: numStyle.copyWith(fontWeight: FontWeight.bold, color: isVirtual ? Colors.grey.shade300 : Colors.blue))),
+                    
+                    // Col 12: Actions
                     DataCell(Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // Edit/Add Button
                         IconButton(
-                          icon: const Icon(Icons.edit, size: 18, color: Colors.orange),
+                          icon: Icon(isVirtual ? Icons.add_circle_outline : Icons.edit, size: 18, color: isVirtual ? Colors.green : Colors.orange),
+                          tooltip: isVirtual ? "Add" : "Edit",
                           onPressed: () => _showAddEditDetailDialog(context, d, bom),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                          onPressed: () => _confirmDeleteDetail(context, d, bom.bomId),
-                        ),
+                        // Delete Button (Only for real data)
+                        if (!isVirtual)
+                          IconButton(
+                            icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                            onPressed: () => _confirmDeleteDetail(context, d, bom.bomId),
+                          ),
                       ],
                     )),
                   ]);
@@ -346,38 +450,46 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
   }
 
   Widget _buildMobileList(List<BOMDetail> details, BOMHeader bom) {
-    final sortedDetails = List<BOMDetail>.from(details)
-      ..sort((a, b) => a.componentType.index.compareTo(b.componentType.index));
-
     return ListView.separated(
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
       padding: const EdgeInsets.all(12),
-      itemCount: sortedDetails.length,
+      itemCount: details.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
-        final d = sortedDetails[index];
+        final d = details[index];
         final typeColor = _getComponentColor(d.componentType);
+        final isVirtual = d.detailId == 0;
 
         return Card(
           elevation: 0,
+          color: isVirtual ? Colors.grey.shade50 : Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.grey.shade200)),
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            onTap: () => _showAddEditDetailDialog(context, d, bom),
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(child: Text(d.yarnTypeName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14))),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(color: typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                  child: Text(d.componentType.value, style: TextStyle(fontSize: 10, color: typeColor, fontWeight: FontWeight.bold)),
+                  child: Text(d.componentType.value, style: TextStyle(fontSize: 11, color: typeColor, fontWeight: FontWeight.bold)),
                 ),
+                if (!isVirtual)
+                  Expanded(child: Text(d.yarnTypeName, textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
               ],
             ),
-            subtitle: Column(
+            subtitle: isVirtual 
+              ? const Padding(
+                  padding: EdgeInsets.only(top: 8.0),
+                  child: Text("(No Data - Tap to Add)", style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: Colors.grey)),
+                )
+              : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 6),
-                Text("${d.threads} ends | ${d.yarnDtex.toInt()} dtex", style: TextStyle(color: Colors.grey.shade700)),
+                Text("${d.threads} ends | ${d.yarnDtex.toInt()} dtex", style: TextStyle(color: Colors.grey.shade700, fontSize: 12)),
                 const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -388,16 +500,9 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
                 )
               ],
             ),
-            trailing: PopupMenuButton(
-              onSelected: (val) {
-                if (val == 'edit') _showAddEditDetailDialog(context, d, bom);
-                if (val == 'delete') _confirmDeleteDetail(context, d, bom.bomId);
-              },
-              itemBuilder: (ctx) => [
-                const PopupMenuItem(value: 'edit', child: Text("Edit")),
-                const PopupMenuItem(value: 'delete', child: Text("Delete", style: TextStyle(color: Colors.red))),
-              ],
-            ),
+            trailing: isVirtual 
+              ? const Icon(Icons.add, color: Colors.green)
+              : const Icon(Icons.chevron_right, color: Colors.grey),
           ),
         );
       },

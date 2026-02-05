@@ -1,9 +1,9 @@
-
 import 'package:production_app_frontend/features/inventory/unit/domain/unit_model.dart';
 
 class MaterialModel {
   final int id;
   final String materialCode;
+  final String? materialName; // [BỔ SUNG]
   final String? materialType;
   final String? specDenier;
   final int? specFilament;
@@ -21,6 +21,7 @@ class MaterialModel {
   MaterialModel({
     required this.id,
     required this.materialCode,
+    this.materialName, // [BỔ SUNG]
     this.materialType,
     this.specDenier,
     this.specFilament,
@@ -35,6 +36,7 @@ class MaterialModel {
   MaterialModel copyWith({
     int? id,
     String? materialCode,
+    String? materialName, // [BỔ SUNG]
     String? materialType,
     String? specDenier,
     int? specFilament,
@@ -48,6 +50,7 @@ class MaterialModel {
     return MaterialModel(
       id: id ?? this.id,
       materialCode: materialCode ?? this.materialCode,
+      materialName: materialName ?? this.materialName, // [BỔ SUNG]
       materialType: materialType ?? this.materialType,
       specDenier: specDenier ?? this.specDenier,
       specFilament: specFilament ?? this.specFilament,
@@ -64,6 +67,7 @@ class MaterialModel {
     return MaterialModel(
       id: json['id'] ?? 0,
       materialCode: json['material_code'] ?? '',
+      materialName: json['material_name'], // [BỔ SUNG]
       materialType: json['material_type'],
       specDenier: json['spec_denier'],
       specFilament: json['spec_filament'],
@@ -83,6 +87,7 @@ class MaterialModel {
   Map<String, dynamic> toJson() {
     return {
       'material_code': materialCode,
+      'material_name': materialName, // [BỔ SUNG]
       'material_type': materialType,
       'spec_denier': specDenier,
       'spec_filament': specFilament,

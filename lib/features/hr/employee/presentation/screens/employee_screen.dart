@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 // --- IMPORTS ---
 import '../../../../../core/widgets/responsive_layout.dart';
 import '../../../../../l10n/app_localizations.dart';
-import '../../../../../core/constants/api_endpoints.dart'; // <--- [QUAN TRỌNG] Import file này
+import '../../../../../core/constants/api_endpoints.dart';
 import '../../../department/domain/department_model.dart';
 import '../../../department/presentation/bloc/department_cubit.dart';
 import '../../domain/employee_model.dart';
@@ -29,6 +29,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
   @override
   void initState() {
     super.initState();
+    // Load data khi vào màn hình
     context.read<EmployeeCubit>().loadEmployees();
     context.read<DepartmentCubit>().loadDepartments();
   }
@@ -91,21 +92,27 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                           child: Icon(Icons.people_alt, color: _primaryColor, size: 24),
                         ),
                         const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.employeeTitle,
-                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey.shade800),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              "Manage your team members",
-                              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-                            ),
-                          ],
+                        // [FIX 1] Dùng Expanded để tránh lỗi RenderOverflow khi tên quá dài
+                        // Expanded cũng thay thế vai trò của Spacer() để đẩy nút Button sang phải
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.employeeTitle,
+                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey.shade800),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                "Manage your team members",
+                                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 16),
                         if (isDesktop)
                           ElevatedButton.icon(
                             onPressed: () => _showEditDialog(context, null, l10n),
@@ -249,13 +256,24 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                             children: [
                               _buildAvatar(emp.avatarUrl, emp.fullName, 20),
                               const SizedBox(width: 16),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(emp.fullName, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 14)),
-                                  Text(emp.email, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                                ],
+                              // [FIX 2] Thêm Expanded cho cột Tên/Email trong bảng để tránh vỡ layout
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      emp.fullName,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 14),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      emp.email,
+                                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           )),
@@ -356,9 +374,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  // --- [FIX] AVATAR LOGIC (SỬ DỤNG API ENDPOINTS) ---
+  // --- AVATAR LOGIC ---
   Widget _buildAvatar(String url, String name, double radius) {
-    // 1. Lấy Full URL từ Helper
     final fullUrl = ApiEndpoints.getImageUrl(url);
 
     String initials = "?";
@@ -377,7 +394,6 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     return CircleAvatar(
       radius: radius,
       backgroundColor: _primaryColor.withOpacity(0.1),
-      // 2. Sử dụng fullUrl thay vì url gốc
       backgroundImage: fullUrl.isNotEmpty ? NetworkImage(fullUrl) : null,
       child: fullUrl.isEmpty
           ? Text(initials,
@@ -411,7 +427,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  // --- DIALOG THÊM / SỬA ---
+  // --- DIALOG THÊM / SỬA (FIXED PROVIDER) ---
   void _showEditDialog(BuildContext context, Employee? emp, AppLocalizations l10n) {
     final fullNameCtrl = TextEditingController(text: emp?.fullName ?? '');
     final emailCtrl = TextEditingController(text: emp?.email ?? '');
@@ -423,7 +439,11 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     PlatformFile? pickedFile;
     Uint8List? pickedBytes;
     
-    final deptState = context.read<DepartmentCubit>().state;
+    // [FIX 3.1] Capture (Lấy) Cubits hiện tại từ context CHA trước khi mở dialog
+    final employeeCubit = context.read<EmployeeCubit>();
+    final departmentCubit = context.read<DepartmentCubit>();
+
+    final deptState = departmentCubit.state;
     if (emp == null && deptState is DepartmentLoaded && deptState.departments.isNotEmpty) {
       selectedDeptId = deptState.departments.first.id;
     }
@@ -433,132 +453,137 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setStateDialog) {
-          Future<void> pickImage() async {
-            try {
-              FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
-              if (result != null) {
-                setStateDialog(() {
-                  pickedFile = result.files.first;
-                  pickedBytes = result.files.first.bytes;
-                });
+      // [FIX 3.2] Bọc nội dung Dialog bằng MultiBlocProvider.value để truyền Cubits vào
+      builder: (ctx) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: employeeCubit),
+          BlocProvider.value(value: departmentCubit),
+        ],
+        child: StatefulBuilder(
+          builder: (context, setStateDialog) {
+            Future<void> pickImage() async {
+              try {
+                FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
+                if (result != null) {
+                  setStateDialog(() {
+                    pickedFile = result.files.first;
+                    pickedBytes = result.files.first.bytes;
+                  });
+                }
+              } catch (e) {
+                print("Error picking file: $e");
               }
-            } catch (e) {
-              print("Error picking file: $e");
             }
-          }
 
-          // [FIX] Xử lý hiển thị ảnh trong Dialog
-          ImageProvider? imageProvider;
-          if (pickedBytes != null) {
-            imageProvider = MemoryImage(pickedBytes!);
-          } else if (emp != null && emp.avatarUrl.isNotEmpty) {
-             // Sử dụng Helper để lấy link ảnh tuyệt đối
-             imageProvider = NetworkImage(ApiEndpoints.getImageUrl(emp.avatarUrl));
-          }
+            ImageProvider? imageProvider;
+            if (pickedBytes != null) {
+              imageProvider = MemoryImage(pickedBytes!);
+            } else if (emp != null && emp.avatarUrl.isNotEmpty) {
+               imageProvider = NetworkImage(ApiEndpoints.getImageUrl(emp.avatarUrl));
+            }
 
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            titlePadding: const EdgeInsets.all(24),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-            title: Text(emp == null ? l10n.addEmployee : l10n.editEmployee, style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
-            content: Form(
-              key: formKey,
-              child: SizedBox(
-                width: 500,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Center(
-                        child: Stack(
-                          children: [
-                            GestureDetector(
-                              onTap: pickImage,
-                              child: CircleAvatar(
-                                radius: 40,
-                                backgroundColor: Colors.grey.shade200,
-                                // Sử dụng imageProvider đã xử lý ở trên
-                                backgroundImage: imageProvider,
-                                child: imageProvider == null
-                                    ? const Icon(Icons.person, size: 40, color: Colors.grey)
-                                    : null,
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: InkWell(
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              titlePadding: const EdgeInsets.all(24),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+              title: Text(emp == null ? l10n.addEmployee : l10n.editEmployee, style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
+              content: Form(
+                key: formKey,
+                child: SizedBox(
+                  width: 500,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Center(
+                          child: Stack(
+                            children: [
+                              GestureDetector(
                                 onTap: pickImage,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(color: _primaryColor, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
-                                  child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                                child: CircleAvatar(
+                                  radius: 40,
+                                  backgroundColor: Colors.grey.shade200,
+                                  backgroundImage: imageProvider,
+                                  child: imageProvider == null
+                                      ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                                      : null,
                                 ),
                               ),
-                            )
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: InkWell(
+                                  onTap: pickImage,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(color: _primaryColor, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                                    child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                                  ),
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        TextFormField(controller: fullNameCtrl, decoration: _inputDeco(l10n.fullName), validator: (v) => v!.isEmpty ? "Required" : null),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(child: TextFormField(controller: emailCtrl, decoration: _inputDeco(l10n.email))),
+                            const SizedBox(width: 12),
+                            Expanded(child: TextFormField(controller: phoneCtrl, decoration: _inputDeco(l10n.phone))),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      TextFormField(controller: fullNameCtrl, decoration: _inputDeco(l10n.fullName), validator: (v) => v!.isEmpty ? "Required" : null),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(child: TextFormField(controller: emailCtrl, decoration: _inputDeco(l10n.email))),
-                          const SizedBox(width: 12),
-                          Expanded(child: TextFormField(controller: phoneCtrl, decoration: _inputDeco(l10n.phone))),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<int>(
-                        value: selectedDeptId,
-                        decoration: _inputDeco(l10n.department),
-                        items: (deptState is DepartmentLoaded) 
-                          ? deptState.departments.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))).toList() 
-                          : [],
-                        onChanged: (val) => selectedDeptId = val,
-                        validator: (v) => v == null ? "Required" : null,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(controller: positionCtrl, decoration: _inputDeco(l10n.position)),
-                      const SizedBox(height: 16),
-                      TextFormField(controller: noteCtrl, decoration: _inputDeco(l10n.note), maxLines: 2),
-                    ],
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<int>(
+                          value: selectedDeptId,
+                          decoration: _inputDeco(l10n.department),
+                          items: (departmentCubit.state is DepartmentLoaded) 
+                            ? (departmentCubit.state as DepartmentLoaded).departments.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))).toList() 
+                            : [],
+                          onChanged: (val) => selectedDeptId = val,
+                          validator: (v) => v == null ? "Required" : null,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(controller: positionCtrl, decoration: _inputDeco(l10n.position)),
+                        const SizedBox(height: 16),
+                        TextFormField(controller: noteCtrl, decoration: _inputDeco(l10n.note), maxLines: 2),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            actionsPadding: const EdgeInsets.all(24),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel, style: const TextStyle(color: Colors.grey))),
-              ElevatedButton(
-                onPressed: () {
-                  if (formKey.currentState!.validate() && selectedDeptId != null) {
-                    final newEmp = Employee(
-                      id: emp?.id ?? 0,
-                      fullName: fullNameCtrl.text,
-                      email: emailCtrl.text,
-                      phone: phoneCtrl.text,
-                      address: emp?.address ?? '',
-                      position: positionCtrl.text,
-                      departmentId: selectedDeptId!,
-                      note: noteCtrl.text,
-                      avatarUrl: emp?.avatarUrl ?? '',
-                    );
-                    
-                    context.read<EmployeeCubit>().saveEmployee(employee: newEmp, imageFile: pickedFile, isEdit: emp != null);
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(emp == null ? l10n.successAdded : l10n.successUpdated), backgroundColor: Colors.green));
-                  }
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                child: Text(l10n.save),
-              ),
-            ],
-          );
-        }
+              actionsPadding: const EdgeInsets.all(24),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel, style: const TextStyle(color: Colors.grey))),
+                ElevatedButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate() && selectedDeptId != null) {
+                      final newEmp = Employee(
+                        id: emp?.id ?? 0,
+                        fullName: fullNameCtrl.text,
+                        email: emailCtrl.text,
+                        phone: phoneCtrl.text,
+                        address: emp?.address ?? '',
+                        position: positionCtrl.text,
+                        departmentId: selectedDeptId!,
+                        note: noteCtrl.text,
+                        avatarUrl: emp?.avatarUrl ?? '',
+                      );
+                      
+                      // Sử dụng cubit đã capture
+                      context.read<EmployeeCubit>().saveEmployee(employee: newEmp, imageFile: pickedFile, isEdit: emp != null);
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(emp == null ? l10n.successAdded : l10n.successUpdated), backgroundColor: Colors.green));
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                  child: Text(l10n.save),
+                ),
+              ],
+            );
+          }
+        ),
       ),
     );
   }
@@ -574,24 +599,32 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
+  // --- DELETE DIALOG (FIXED PROVIDER) ---
   void _confirmDelete(BuildContext context, Employee emp, AppLocalizations l10n) {
+    // [FIX 3.3] Capture Cubit trước khi mở dialog
+    final employeeCubit = context.read<EmployeeCubit>();
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.red), const SizedBox(width: 8), Text(l10n.deleteEmployee)]),
-        content: Text(l10n.confirmDeleteEmployee(emp.fullName)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
-          ElevatedButton(
-            onPressed: () {
-              context.read<EmployeeCubit>().deleteEmployee(emp.id);
-              Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-            child: Text(l10n.deleteEmployee),
-          ),
-        ],
+      // Bọc bằng BlocProvider.value
+      builder: (ctx) => BlocProvider.value(
+        value: employeeCubit,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.red), const SizedBox(width: 8), Text(l10n.deleteEmployee)]),
+          content: Text(l10n.confirmDeleteEmployee(emp.fullName)),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+            ElevatedButton(
+              onPressed: () {
+                context.read<EmployeeCubit>().deleteEmployee(emp.id);
+                Navigator.pop(ctx);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+              child: Text(l10n.deleteEmployee),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -414,7 +414,7 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
                     DataCell(Text(_percentFormat.format(d.weightPercentage))),
                     
                     // [THAY ĐỔI] Hiển thị BOM full decimal
-                    DataCell(Text(d.bomGm.toString(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))),
+                    DataCell(Text(_precisionFormat.format(d.bomGm), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))),
                     DataCell(Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -625,7 +625,7 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
                               if (m != null) {
                                 setStateDialog(() {
                                   selectedMatId = m.id;
-                                  yarnNameCtrl.text = "${m.materialCode} ${m.specDenier ?? ''}";
+                                  yarnNameCtrl.text = "${m.materialName} ${m.specDenier ?? ''}";
                                   if (m.specDenier != null) {
                                     currentDtex = double.tryParse(m.specDenier.toString()) ?? 0.0;
                                   } else {

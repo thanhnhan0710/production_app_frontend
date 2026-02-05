@@ -1,12 +1,12 @@
-import 'dart:async'; 
-import 'package:flutter/material.dart'; 
+import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:production_app_frontend/l10n/app_localizations.dart';
 import 'package:production_app_frontend/core/widgets/responsive_layout.dart';
 
 import '../../domain/material_model.dart';
-// [FIX] Thêm 'as mat_bloc' để tránh trùng tên MaterialState với Flutter
-import '../bloc/material_cubit.dart' as mat_bloc; 
+// Sử dụng prefix 'mat_bloc' để tránh xung đột với MaterialState của Flutter UI
+import '../bloc/material_cubit.dart' as mat_bloc;
 import 'package:production_app_frontend/features/inventory/unit/presentation/bloc/unit_cubit.dart';
 
 class MaterialScreen extends StatefulWidget {
@@ -18,10 +18,12 @@ class MaterialScreen extends StatefulWidget {
 
 class _MaterialScreenState extends State<MaterialScreen> {
   final _searchController = TextEditingController();
+  
+  // Theme Colors
   final Color _primaryColor = const Color(0xFF003366);
   final Color _accentColor = const Color(0xFFC2185B);
   final Color _bgLight = const Color(0xFFF5F7FA);
-  
+
   Timer? _debounce;
 
   final List<String> _typeOptions = const [
@@ -32,7 +34,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
   @override
   void initState() {
     super.initState();
-    // [FIX] Dùng prefix mat_bloc
+    // Load dữ liệu khi vào màn hình
     context.read<mat_bloc.MaterialCubit>().loadMaterials();
     context.read<UnitCubit>().loadUnits();
   }
@@ -44,10 +46,11 @@ class _MaterialScreenState extends State<MaterialScreen> {
     super.dispose();
   }
 
+  // Xử lý tìm kiếm với Debounce (tránh reload liên tục)
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
-      setState(() {}); 
+      setState(() {}); // Trigger rebuild để lọc danh sách
     });
   }
 
@@ -58,24 +61,27 @@ class _MaterialScreenState extends State<MaterialScreen> {
 
     return Scaffold(
       backgroundColor: _bgLight,
-      // [FIX] Cập nhật BlocBuilder với prefix mat_bloc
       body: BlocBuilder<mat_bloc.MaterialCubit, mat_bloc.MaterialState>(
         builder: (context, state) {
           List<MaterialModel> displayedMaterials = [];
-          
-          // [FIX] Cập nhật kiểm tra state
+
           if (state is mat_bloc.MaterialLoaded) {
             displayedMaterials = state.materials;
           }
 
-          // Client-side search logic
+          // --- LOGIC TÌM KIẾM (Client-side) ---
           if (_searchController.text.isNotEmpty) {
             final query = _searchController.text.toLowerCase();
             displayedMaterials = displayedMaterials.where((item) {
               final code = item.materialCode.toLowerCase();
+              final name = (item.materialName ?? '').toLowerCase(); // [MỚI] Tìm theo tên
               final type = (item.materialType ?? '').toLowerCase();
               final hs = (item.hsCode ?? '').toLowerCase();
-              return code.contains(query) || type.contains(query) || hs.contains(query);
+              
+              return code.contains(query) || 
+                     name.contains(query) || 
+                     type.contains(query) || 
+                     hs.contains(query);
             }).toList();
           }
 
@@ -84,12 +90,13 @@ class _MaterialScreenState extends State<MaterialScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // --- HEADER SECTION ---
+              // --- 1. HEADER & TOOLBAR ---
               Container(
                 color: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 child: Column(
                   children: [
+                    // Title Row
                     Row(
                       children: [
                         Container(
@@ -126,7 +133,8 @@ class _MaterialScreenState extends State<MaterialScreen> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    // Search Bar & Stats
+                    
+                    // Search Bar & Stats Row
                     Row(
                       children: [
                         if (isDesktop) ...[
@@ -142,22 +150,22 @@ class _MaterialScreenState extends State<MaterialScreen> {
                             child: TextField(
                               controller: _searchController,
                               textInputAction: TextInputAction.search,
-                              onChanged: _onSearchChanged, 
+                              onChanged: _onSearchChanged,
                               decoration: InputDecoration(
-                                hintText: l10n.searchMaterialHint,
+                                hintText: l10n.searchMaterialHint, // "Tìm theo Mã, Tên, Loại..."
                                 hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
                                 prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                                suffixIcon: _searchController.text.isNotEmpty 
-                                  ? IconButton(
-                                      icon: const Icon(Icons.clear, color: Colors.grey, size: 18),
-                                      onPressed: () {
-                                        _searchController.clear();
-                                        setState(() {});
-                                      },
-                                    )
-                                  : null,
+                                suffixIcon: _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear, color: Colors.grey, size: 18),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          setState(() {});
+                                        },
+                                      )
+                                    : null,
                               ),
                             ),
                           ),
@@ -175,14 +183,17 @@ class _MaterialScreenState extends State<MaterialScreen> {
               ),
               Container(height: 1, color: Colors.grey.shade200),
 
-              // --- MAIN CONTENT ---
+              // --- 2. MAIN LIST CONTENT ---
               Expanded(
                 child: Builder(
                   builder: (context) {
-                    // [FIX] Cập nhật các trạng thái với prefix
-                    if (state is mat_bloc.MaterialLoading) return Center(child: CircularProgressIndicator(color: _primaryColor));
-                    if (state is mat_bloc.MaterialError) return Center(child: Text("${l10n.errorGeneric}: ${state.message}", style: const TextStyle(color: Colors.red)));
-                    
+                    if (state is mat_bloc.MaterialLoading) {
+                      return Center(child: CircularProgressIndicator(color: _primaryColor));
+                    }
+                    if (state is mat_bloc.MaterialError) {
+                      return Center(child: Text("${l10n.errorGeneric}: ${state.message}", style: const TextStyle(color: Colors.red)));
+                    }
+
                     if (state is mat_bloc.MaterialLoaded) {
                       if (displayedMaterials.isEmpty) {
                         return Center(
@@ -197,7 +208,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
                         );
                       }
                       return isDesktop
-                          ? _buildDesktopList(context, displayedMaterials, l10n) 
+                          ? _buildDesktopList(context, displayedMaterials, l10n)
                           : _buildMobileList(context, displayedMaterials, l10n);
                     }
                     return const SizedBox();
@@ -218,19 +229,22 @@ class _MaterialScreenState extends State<MaterialScreen> {
     );
   }
 
-  // --- OPTIMIZED DESKTOP VIEW (VIRTUALIZED LIST) ---
+  // ===========================================================================
+  // DESKTOP VIEW
+  // ===========================================================================
   Widget _buildDesktopList(BuildContext context, List<MaterialModel> materials, AppLocalizations l10n) {
-    final flexFactors = [2, 2, 2, 1, 1, 2, 1]; 
+    // [CẬP NHẬT] Tăng Flex cột đầu tiên lên 3 để chứa cả Mã và Tên
+    final flexFactors = [3, 2, 2, 1, 1, 2, 1];
 
     return Column(
       children: [
-        // 1. Header Row (Fixed)
+        // Table Header
         Container(
           color: const Color(0xFFF9FAFB),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           child: Row(
             children: [
-              _buildFlexHeader(l10n.materialCode, flexFactors[0]),
+              _buildFlexHeader("${l10n.materialCode} / ${l10n.materialName}", flexFactors[0]), // [MỚI] Header ghép
               _buildFlexHeader(l10n.materialType, flexFactors[1]),
               _buildFlexHeader(l10n.specs, flexFactors[2]),
               _buildFlexHeader(l10n.hsCode, flexFactors[3]),
@@ -241,8 +255,8 @@ class _MaterialScreenState extends State<MaterialScreen> {
           ),
         ),
         const Divider(height: 1, color: Color(0xFFEEEEEE)),
-        
-        // 2. Body List (Virtualized - Lazy Loading)
+
+        // Table Body
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -254,21 +268,42 @@ class _MaterialScreenState extends State<MaterialScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Row(
                   children: [
-                    // Code
+                    // Cột 1: Mã + Tên
                     Expanded(
                       flex: flexFactors[0],
-                      child: SelectableText(item.materialCode, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SelectableText(
+                            item.materialCode, 
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)
+                          ),
+                          if (item.materialName != null && item.materialName!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                item.materialName!, 
+                                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                    // Type
+                    
+                    // Cột 2: Loại
                     Expanded(
                       flex: flexFactors[1],
                       child: Align(alignment: Alignment.centerLeft, child: _buildTypeBadge(item.materialType)),
                     ),
-                    // Specs
+
+                    // Cột 3: Thông số
                     Expanded(
                       flex: flexFactors[2],
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(item.specDenier ?? '-', style: const TextStyle(fontSize: 13)),
                           if (item.specFilament != null && item.specFilament! > 0)
@@ -276,17 +311,20 @@ class _MaterialScreenState extends State<MaterialScreen> {
                         ],
                       ),
                     ),
-                    // HS Code
+
+                    // Cột 4: HS Code
                     Expanded(
                       flex: flexFactors[3],
                       child: Text(item.hsCode ?? '-', style: const TextStyle(fontSize: 13)),
                     ),
-                    // Min Stock
+
+                    // Cột 5: Tồn tối thiểu
                     Expanded(
                       flex: flexFactors[4],
                       child: Text("${item.minStockLevel}", style: TextStyle(fontWeight: FontWeight.bold, color: item.minStockLevel > 0 ? Colors.black : Colors.grey)),
                     ),
-                    // UOM
+
+                    // Cột 6: Đơn vị tính
                     Expanded(
                       flex: flexFactors[5],
                       child: Row(
@@ -299,7 +337,8 @@ class _MaterialScreenState extends State<MaterialScreen> {
                         ],
                       ),
                     ),
-                    // Actions
+
+                    // Cột 7: Actions
                     Expanded(
                       flex: flexFactors[6],
                       child: Row(
@@ -308,12 +347,12 @@ class _MaterialScreenState extends State<MaterialScreen> {
                           IconButton(
                             icon: const Icon(Icons.edit_note, color: Colors.grey, size: 20),
                             tooltip: l10n.editMaterial,
-                            onPressed: () => _showEditDialog(context, item, l10n)
+                            onPressed: () => _showEditDialog(context, item, l10n),
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
                             tooltip: l10n.delete,
-                            onPressed: () => _confirmDelete(context, item, l10n)
+                            onPressed: () => _confirmDelete(context, item, l10n),
                           ),
                         ],
                       ),
@@ -339,7 +378,9 @@ class _MaterialScreenState extends State<MaterialScreen> {
     );
   }
 
-  // --- MOBILE LIST ---
+  // ===========================================================================
+  // MOBILE VIEW
+  // ===========================================================================
   Widget _buildMobileList(BuildContext context, List<MaterialModel> materials, AppLocalizations l10n) {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
@@ -365,7 +406,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
                       backgroundColor: Colors.blue.shade50,
                       child: Text(
                         item.materialCode.isNotEmpty ? item.materialCode.substring(0, 1) : '?',
-                        style: TextStyle(color: Colors.blue.shade800, fontWeight: FontWeight.bold, fontSize: 16)
+                        style: TextStyle(color: Colors.blue.shade800, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -373,7 +414,19 @@ class _MaterialScreenState extends State<MaterialScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SelectableText(item.materialCode, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)),
+                          SelectableText(
+                            item.materialCode, 
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)
+                          ),
+                          // [MỚI] Hiển thị Tên sợi trên Mobile
+                          if (item.materialName != null && item.materialName!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2.0, bottom: 4.0),
+                              child: Text(
+                                item.materialName!, 
+                                style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontStyle: FontStyle.italic)
+                              ),
+                            ),
                           const SizedBox(height: 4),
                           _buildTypeBadge(item.materialType, isChip: true),
                         ],
@@ -420,7 +473,9 @@ class _MaterialScreenState extends State<MaterialScreen> {
     );
   }
 
-  // --- HELPER WIDGETS ---
+  // ===========================================================================
+  // WIDGET HELPER
+  // ===========================================================================
   Widget _buildStatBadge(IconData icon, String label, String value, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -441,7 +496,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
     Color bg = Colors.grey.shade100;
     Color text = Colors.black87;
 
-    if (type == 'Polyester') { bg = Colors.blue.shade50; text = Colors.blue.shade800; } 
+    if (type == 'Polyester') { bg = Colors.blue.shade50; text = Colors.blue.shade800; }
     else if (type.contains('Polyamide') || type == 'Nylon') { bg = Colors.orange.shade50; text = Colors.orange.shade800; }
     else if (type == 'Polypropylene') { bg = Colors.purple.shade50; text = Colors.purple.shade800; }
     else if (type == 'Cotton' || type == 'Viscose') { bg = Colors.green.shade50; text = Colors.green.shade800; }
@@ -469,7 +524,9 @@ class _MaterialScreenState extends State<MaterialScreen> {
     );
   }
 
-  // --- DIALOGS ---
+  // ===========================================================================
+  // DIALOGS
+  // ===========================================================================
   void _confirmDelete(BuildContext context, MaterialModel item, AppLocalizations l10n) {
     showDialog(
       context: context,
@@ -481,7 +538,6 @@ class _MaterialScreenState extends State<MaterialScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
           ElevatedButton(
             onPressed: () {
-              // [FIX] Cập nhật gọi hàm từ Cubit
               context.read<mat_bloc.MaterialCubit>().deleteMaterial(item.id);
               Navigator.pop(ctx);
             },
@@ -495,6 +551,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
 
   void _showEditDialog(BuildContext context, MaterialModel? item, AppLocalizations l10n) {
     final codeCtrl = TextEditingController(text: item?.materialCode ?? '');
+    final nameCtrl = TextEditingController(text: item?.materialName ?? ''); 
     final denierCtrl = TextEditingController(text: item?.specDenier ?? '');
     final filamentCtrl = TextEditingController(text: item?.specFilament?.toString() ?? '');
     final hsCtrl = TextEditingController(text: item?.hsCode ?? '');
@@ -525,12 +582,21 @@ class _MaterialScreenState extends State<MaterialScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // [CẬP NHẬT] Tách Mã và Tên ra thành 2 dòng riêng biệt
                         TextFormField(
-                            controller: codeCtrl,
-                            decoration: _inputDeco("${l10n.materialCode} *"),
-                            validator: (v) => v!.isEmpty ? l10n.required : null),
+                          controller: codeCtrl,
+                          decoration: _inputDeco("${l10n.materialCode} *"),
+                          validator: (v) => v!.isEmpty ? l10n.required : null,
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        TextFormField(
+                          controller: nameCtrl,
+                          decoration: _inputDeco(l10n.materialName),
+                        ),
                         const SizedBox(height: 16),
 
+                        // Row 2: Loại + HS Code
                         Row(
                           children: [
                             Expanded(
@@ -547,6 +613,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
                         ),
                         const SizedBox(height: 16),
 
+                        // Row 3: Denier + Filament + Min Stock
                         Row(
                           children: [
                             Expanded(child: TextFormField(controller: denierCtrl, decoration: _inputDeco(l10n.denierHint))),
@@ -566,6 +633,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
                         ),
                         const SizedBox(height: 16),
 
+                        // Row 4: Units (Dropdowns)
                         BlocBuilder<UnitCubit, UnitState>(
                           builder: (context, unitState) {
                             List<dynamic> units = [];
@@ -610,13 +678,17 @@ class _MaterialScreenState extends State<MaterialScreen> {
               ),
               actionsPadding: const EdgeInsets.all(24),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel, style: const TextStyle(color: Colors.grey))),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx), 
+                  child: Text(l10n.cancel, style: const TextStyle(color: Colors.grey))
+                ),
                 ElevatedButton(
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
                       final newItem = MaterialModel(
                         id: item?.id ?? 0,
                         materialCode: codeCtrl.text,
+                        materialName: nameCtrl.text, 
                         materialType: selectedType,
                         specDenier: denierCtrl.text,
                         specFilament: int.tryParse(filamentCtrl.text),
@@ -625,8 +697,9 @@ class _MaterialScreenState extends State<MaterialScreen> {
                         uomBaseId: selectedUomBase!,
                         uomProductionId: selectedUomProd!,
                       );
-                      // [FIX] Cập nhật gọi hàm từ Cubit
+                      
                       context.read<mat_bloc.MaterialCubit>().saveMaterial(material: newItem, isEdit: item != null);
+                      
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text(item == null ? l10n.successAdded : l10n.successUpdated), backgroundColor: Colors.green));

@@ -9,7 +9,7 @@ class ProductRepository {
 
   Future<List<Product>> getProducts() async {
     try {
-      final response = await _dio.get('/api/v1/products');
+      final response = await _dio.get('/api/v1/products/');
       if (response.data is List) {
         return (response.data as List).map((e) => Product.fromJson(e)).toList();
       }
@@ -36,7 +36,7 @@ class ProductRepository {
 
   Future<void> createProduct(Product item) async {
     try {
-      await _dio.post('/api/v1/products', data: item.toJson());
+      await _dio.post('/api/v1/products/', data: item.toJson());
     } catch (e) {
       throw Exception("Failed to create product: $e");
     }

@@ -193,8 +193,8 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 150, 
-                              mainAxisExtent: 150, 
+                              maxCrossAxisExtent: 120, // Kích thước nhỏ gọn
+                              mainAxisExtent: 120,     // Hình vuông
                               childAspectRatio: 1.0,
                               crossAxisSpacing: 6,
                               mainAxisSpacing: 6,
@@ -228,6 +228,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     return Card(
       elevation: 2,
       color: bgColor,
+      margin: EdgeInsets.zero, // [QUAN TRỌNG] Bỏ margin để tránh lãng phí không gian trong Grid
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(6),
         side: BorderSide(color: statusColor, width: 1),
@@ -236,9 +237,9 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
         borderRadius: BorderRadius.circular(6),
         child: Column(
           children: [
-            // HEADER
+            // HEADER [THU NHỎ CHIỀU CAO]
             Container(
-              height: 30,
+              height: 24, // Giảm từ 30 xuống 24
               padding: const EdgeInsets.fromLTRB(6, 0, 0, 0),
               decoration: BoxDecoration(color: statusColor),
               child: Row(
@@ -246,12 +247,12 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                   Expanded(
                     child: Row(
                       children: [
-                        const Icon(Icons.precision_manufacturing, color: Colors.white, size: 14),
+                        const Icon(Icons.precision_manufacturing, color: Colors.white, size: 12), // Icon nhỏ hơn
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             machine.name,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10), // Font nhỏ hơn
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -306,15 +307,15 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
               ),
             ),
 
-            // STATUS LABEL
+            // STATUS LABEL [THU NHỎ CHIỀU CAO]
             Container(
-              height: 20,
+              height: 16, // Giảm từ 20 xuống 16
               width: double.infinity,
               color: statusColor.withOpacity(0.15),
               alignment: Alignment.center,
               child: Text(
                 displayStatus.toUpperCase(),
-                style: TextStyle(color: statusColor, fontSize: 9, fontWeight: FontWeight.bold),
+                style: TextStyle(color: statusColor, fontSize: 8, fontWeight: FontWeight.bold), // Font nhỏ hơn
               ),
             ),
 
@@ -337,14 +338,12 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
   // --- WIDGET SLOT TRỤC ---
   Widget _buildLineSlot(BuildContext context, Machine machine, String lineCode, WeavingTicket? ticket, List<Basket> readyBaskets, AppLocalizations l10n) {
     bool hasTicket = ticket != null;
-    
-    // Check nếu rổ chưa được gán (null hoặc 0)
     bool isPendingBasket = hasTicket && (ticket.basketId == null || ticket.basketId == 0);
     bool isFullyActive = hasTicket && !isPendingBasket;
 
     Color slotColor = Colors.transparent;
     
-    if (isPendingBasket) slotColor = const Color(0xFFFFF9C4); // Vàng nhạt
+    if (isPendingBasket) slotColor = const Color(0xFFFFF9C4);
     if (isFullyActive) slotColor = Colors.green.shade50;
 
     return Container(
@@ -355,7 +354,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
             child: InkWell(
               onTap: () {
                 if (!hasTicket) {
-                  // Chưa có phiếu -> Báo user
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text("Vui lòng tạo phiếu xuất kho để khởi tạo lệnh chạy."),
@@ -363,10 +361,8 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                     )
                   );
                 } else if (isPendingBasket) {
-                  // Có phiếu nhưng chưa có rổ -> Mở dialog chọn rổ & tiêu chuẩn
                   _showAssignBasketDialog(context, ticket, l10n);
                 } else {
-                  // Mở Menu Action
                   _showTicketActionMenu(context, machine, lineCode, ticket, l10n);
                 }
               },
@@ -375,37 +371,35 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                 children: [
                   Text(
                     "${l10n.line}$lineCode", 
-                    style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 10)
+                    style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 9) // Giảm font
                   ),
                   const SizedBox(height: 2),
                   
                   if (isFullyActive) ...[
-                    // Hiển thị Rổ như cũ
-                    const Icon(Icons.settings_backup_restore, color: Colors.green, size: 16),
-                    const SizedBox(height: 2),
+                    const Icon(Icons.settings_backup_restore, color: Colors.green, size: 14), // Giảm icon
+                    const SizedBox(height: 1),
                     Text(
                       ticket.basketCode ?? "",
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10), // Giảm font
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       "#${ticket.code.substring(ticket.code.length > 4 ? ticket.code.length - 4 : 0)}", 
-                      style: const TextStyle(fontSize: 9, color: Colors.grey)
+                      style: const TextStyle(fontSize: 8, color: Colors.grey) // Giảm font
                     ),
                   ] else if (isPendingBasket) ...[
-                    const Icon(Icons.warning_amber_rounded, color: Colors.deepOrange, size: 24),
-                    const SizedBox(height: 2),
+                    const Icon(Icons.warning_amber_rounded, color: Colors.deepOrange, size: 20), // Giảm icon
+                    const SizedBox(height: 1),
                     const Text(
-                      "Chưa có rổ",
-                      style: TextStyle(fontSize: 10, color: Colors.deepOrange, fontWeight: FontWeight.bold),
+                      "Chưa gán",
+                      style: TextStyle(fontSize: 9, color: Colors.deepOrange, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                   ] else ...[
-                    // Không có phiếu
-                    Icon(Icons.hourglass_empty, color: Colors.grey.shade300, size: 24),
+                    Icon(Icons.hourglass_empty, color: Colors.grey.shade300, size: 20), // Giảm icon
                     const Text(
                       "---",
-                      style: TextStyle(fontSize: 10, color: Colors.grey),
+                      style: TextStyle(fontSize: 9, color: Colors.grey),
                     )
                   ]
                 ],
@@ -479,7 +473,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // 1. Chọn Tiêu chuẩn (Lọc theo Product)
                       DropdownButtonFormField<Standard>(
                         decoration: const InputDecoration(labelText: "Tiêu chuẩn *", border: OutlineInputBorder()),
                         items: availableStandards.map((s) => DropdownMenuItem(value: s, child: Text("W:${s.widthMm} | T:${s.thicknessMm}"))).toList(),
@@ -488,7 +481,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // 2. Chọn Rổ (Có nút Scan)
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -535,13 +527,10 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
                       Navigator.pop(ctx);
-                      
-                      // Gọi API Update Ticket trong Cubit
                       context.read<MachineOperationCubit>().updateTicketInfo(
                         ticketId: ticket.id,
                         basketId: selectedBasket!.id,
                         standardId: selectedStandard!.id,
-                        // Lấy ID người đang đăng nhập
                         employeeInId: currentEmployeeId,
                       );
                     }
@@ -563,7 +552,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
         context: context,
         builder: (ctx) => Wrap(
           children: [
-            // [MỚI] Mục xem chi tiết phiếu
             ListTile(
               leading: const Icon(Icons.info_outline, color: Colors.teal),
               title: Text(l10n.viewTicket),
@@ -600,13 +588,11 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
               },
             ),
             
-            // [MỚI] Nút Cân rổ cuối ca - Gọi hàm kiểm tra
             ListTile(
               leading: const Icon(Icons.monitor_weight, color: Colors.indigo),
               title: const Text("Cân rổ cuối ca"), 
               onTap: () {
                 Navigator.pop(ctx);
-                // Gọi hàm kiểm tra ràng buộc trước khi mở dialog
                 _handleWeighingCheck(context, machine, lineCode, ticket);
               },
             ),
@@ -626,23 +612,19 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
 
   // [CẬP NHẬT] Hàm Kiểm tra ràng buộc: Mỗi ca chỉ cân 1 lần TRONG NGÀY
   void _handleWeighingCheck(BuildContext context, Machine machine, String lineCode, WeavingTicket ticket) async {
-    // 1. Xác định ID Ca làm việc hiện tại
     final shiftState = context.read<ShiftCubit>().state;
     if (shiftState is! ShiftLoaded) {
        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Chưa tải được thông tin Ca làm việc!"), backgroundColor: Colors.orange));
-       // Vẫn cho mở dialog nếu lỗi load data (Optional)
        _showWeighingDialog(context, machine, lineCode, ticket);
        return;
     }
     
     final currentShiftName = _calculateCurrentShiftName(); 
-    // Tìm shift object tương ứng
     final currentShift = shiftState.shifts.firstWhere(
         (s) => s.name.contains(currentShiftName) || s.name.contains(currentShiftName.replaceAll("Ca ", "")),
         orElse: () => shiftState.shifts.first
     );
 
-    // 2. Hiển thị Loading khi đang check
     showDialog(
       context: context, 
       barrierDismissible: false,
@@ -650,36 +632,22 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
     );
     
     try {
-        // 3. Gọi Cubit lấy lịch sử bản ghi của Ticket
         final records = await context.read<WeavingRecordCubit>().getRecordsByTicketId(ticket.id);
         
-        // Đóng Loading
         if (context.mounted) Navigator.pop(context);
 
-        // --- [LOGIC MỚI BẮT ĐẦU TỪ ĐÂY] ---
-        
-        // Lấy ngày hôm nay (chỉ lấy ngày, tháng, năm; bỏ qua giờ phút)
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
 
-        // 4. Kiểm tra xem đã có bản ghi nào thuộc Ca hiện tại VÀ trong Ngày hôm nay chưa
         final hasWeighedToday = records.any((r) {
-            // Check 1: Phải trùng Ca
             if (r.shiftId != currentShift.id) return false;
-            
-            // Check 2: Phải trùng Ngày
             if (r.updatedAt == null) return false;
-            
-            // Chuyển đổi thời gian record sang Local time để so sánh chính xác ngày
             final recordTime = r.updatedAt!.toLocal(); 
             final recordDate = DateTime(recordTime.year, recordTime.month, recordTime.day);
-            
-            // So sánh ngày của record với ngày hôm nay
             return recordDate.isAtSameMomentAs(today);
         });
         
         if (hasWeighedToday) {
-            // [RÀNG BUỘC] Nếu đã cân hôm nay -> Báo lỗi & Không mở dialog
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -690,13 +658,11 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
               );
             }
         } else {
-            // [OK] Chưa cân hôm nay -> Mở Dialog
             if (context.mounted) {
               _showWeighingDialog(context, machine, lineCode, ticket);
             }
         }
     } catch (e) {
-        // Lỗi khi check -> Đóng loading và vẫn cho mở (Fallback)
         if (context.mounted) {
           Navigator.pop(context);
           _showWeighingDialog(context, machine, lineCode, ticket);
@@ -724,7 +690,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setStateDialog) {
-          // Tính Net Weight
           double gross = double.tryParse(grossWeightCtrl.text) ?? 0;
           double net = gross > basketTare ? gross - basketTare : 0;
 
@@ -939,7 +904,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Rổ
                   TextFormField(
                     initialValue: existingTicket.basketCode ?? "CHƯA GÁN",
                     decoration: const InputDecoration(labelText: "Mã Rổ", border: OutlineInputBorder(), filled: true, fillColor: Colors.white70),
@@ -948,7 +912,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                   ),
                   const SizedBox(height: 16),
                   
-                  // Sản phẩm
                   DropdownSearch<Product>(
                     items: (filter, loadProps) => products,
                     itemAsString: (Product p) => p.itemCode,
@@ -961,7 +924,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Tiêu chuẩn
                   DropdownSearch<Standard>(
                     items: (filter, loadProps) => filteredStandards,
                     itemAsString: (Standard s) => "W:${s.widthMm} | T:${s.thicknessMm}",
@@ -974,7 +936,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // [THAY ĐỔI] Lô sợi (Hiển thị list thay vì Dropdown đơn)
                   InputDecorator(
                     decoration: const InputDecoration(labelText: "Lô sợi", border: OutlineInputBorder(), filled: true, fillColor: Color(0xFFEEEEEE)),
                     child: _TicketBatchList(yarns: existingTicket.yarns),
@@ -1328,7 +1289,6 @@ class _SimpleBarcodeScannerState extends State<SimpleBarcodeScanner> {
   }
 }
 
-// [MỚI] Widget hiển thị danh sách Batch chi tiết
 class _TicketBatchList extends StatelessWidget {
   final List<WeavingTicketYarn> yarns;
   const _TicketBatchList({required this.yarns});
@@ -1344,7 +1304,6 @@ class _TicketBatchList extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: yarns.map((yarnItem) {
-            // Tìm thông tin Batch trong Cubit
             final batch = allBatches.where((b) => b.batchId == yarnItem.batchId).firstOrNull;
             final internalCode = batch?.internalBatchCode ?? "ID:${yarnItem.batchId}";
             final supplierCode = batch?.supplierBatchNo ?? "";
