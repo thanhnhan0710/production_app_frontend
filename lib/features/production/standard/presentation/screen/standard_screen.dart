@@ -85,16 +85,19 @@ class _StandardScreenState extends State<StandardScreen> {
                           child: Icon(Icons.assignment, color: Colors.brown.shade800, size: 24),
                         ),
                         const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(l10n.standardTitle, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
-                            const SizedBox(height: 2),
-                            Text("Production > Quality Control", style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
-                          ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(l10n.standardTitle, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
+                              const SizedBox(height: 2),
+                              Text("Production > Quality Control", style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                            ],
+                          ),
                         ),
-                        const Spacer(),
+                        
                         if (isDesktop)
+                          const SizedBox(width: 16),
                           ElevatedButton.icon(
                             onPressed: () => _showEditDialog(context, null, l10n),
                             icon: const Icon(Icons.add, size: 18),
