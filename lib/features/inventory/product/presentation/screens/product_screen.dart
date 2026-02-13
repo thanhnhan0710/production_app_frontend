@@ -1,13 +1,14 @@
+import 'dart:async'; // [MỚI] Import để dùng Timer
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 // --- IMPORTS ---
-// Đảm bảo đường dẫn import này đúng với cấu trúc dự án của bạn
+import '../../../../../core/network/websocket_service.dart'; // [THÊM] Import WebSocketService
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../../core/widgets/responsive_layout.dart';
-import '../../../../../core/constants/api_endpoints.dart'; // <--- Import quan trọng để lấy Server URL
+import '../../../../../core/constants/api_endpoints.dart';
 import '../../domain/product_model.dart';
 import '../bloc/product_cubit.dart';
 
@@ -20,8 +21,10 @@ class ProductScreen extends StatefulWidget {
 
 class _ProductScreenState extends State<ProductScreen> {
   final _searchController = TextEditingController();
-  
-  // Màu sắc chủ đạo (có thể đưa vào Theme sau này)
+
+  // [MỚI] Timer để debounce (chờ người dùng gõ xong mới tìm)
+  Timer? _debounce;
+
   final Color _primaryColor = const Color(0xFF003366);
   final Color _accentColor = const Color(0xFFD81B60);
   final Color _bgLight = const Color(0xFFF5F7FA);
@@ -29,14 +32,50 @@ class _ProductScreenState extends State<ProductScreen> {
   @override
   void initState() {
     super.initState();
-    // Load dữ liệu khi màn hình khởi tạo
+    // 1. Load dữ liệu ban đầu
     context.read<ProductCubit>().loadProducts();
+
+    // 2. [THÊM] Kết nối WebSocket và đăng ký lắng nghe tín hiệu làm mới
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
   }
 
   @override
   void dispose() {
+    // [MỚI] Hủy timer khi thoát màn hình để tránh lỗi memory leak
+    _debounce?.cancel();
     _searchController.dispose();
+
+    // 3. [THÊM] Hủy lắng nghe WebSocket khi thoát màn hình
+    WebSocketService().removeListener(_onWebSocketMessage);
     super.dispose();
+  }
+
+  // [THÊM] Hàm xử lý tín hiệu WebSocket gửi tới
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_PRODUCTS") {
+      debugPrint("✅ [WebSocket] Nhận tín hiệu làm mới danh mục sản phẩm.");
+      if (mounted) {
+        context.read<ProductCubit>().loadProducts();
+      }
+    }
+  }
+
+  // [MỚI] Hàm xử lý tìm kiếm khi gõ phím
+  void _onSearchChanged(String query) {
+    // Nếu đang có timer chạy thì hủy đi để đếm lại từ đầu
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    // Đợi 500ms sau khi ngừng gõ mới gọi API
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      if (query.trim().isEmpty) {
+        // Nếu ô tìm kiếm rỗng -> Load lại danh sách gốc
+        context.read<ProductCubit>().loadProducts();
+      } else {
+        // Nếu có chữ -> Gọi API tìm kiếm
+        context.read<ProductCubit>().searchProducts(query);
+      }
+    });
   }
 
   @override
@@ -46,12 +85,20 @@ class _ProductScreenState extends State<ProductScreen> {
 
     return Scaffold(
       backgroundColor: _bgLight,
-      // SelectionArea cho phép user bôi đen/copy text trên màn hình (UX tốt cho Desktop)
       body: SelectionArea(
         child: BlocBuilder<ProductCubit, ProductState>(
           builder: (context, state) {
+            List<Product> displayedProducts = [];
             int total = 0;
-            if (state is ProductLoaded) total = state.products.length;
+
+            if (state is ProductLoaded) {
+              // [LOGIC SẮP XẾP] Tạo bản sao danh sách và sắp xếp ID giảm dần (mới nhất lên trước)
+              displayedProducts = List<Product>.from(state.products);
+              displayedProducts.sort((a, b) => b.id.compareTo(a.id));
+
+              // Cập nhật lại tổng số sau khi gán
+              total = displayedProducts.length;
+            }
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -61,7 +108,8 @@ class _ProductScreenState extends State<ProductScreen> {
                 // ==========================
                 Container(
                   color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   child: Column(
                     children: [
                       // Title Row
@@ -88,14 +136,15 @@ class _ProductScreenState extends State<ProductScreen> {
                               const SizedBox(height: 2),
                               Text("Inventory > Finished Goods",
                                   style: TextStyle(
-                                      fontSize: 13, color: Colors.grey.shade500)),
+                                      fontSize: 13,
+                                      color: Colors.grey.shade500)),
                             ],
                           ),
                           const Spacer(),
-                          // Nút thêm mới (Chỉ hiện trên Desktop)
                           if (isDesktop)
                             ElevatedButton.icon(
-                              onPressed: () => _showEditDialog(context, null, l10n),
+                              onPressed: () =>
+                                  _showEditDialog(context, null, l10n),
                               icon: const Icon(Icons.add, size: 18),
                               label: Text(l10n.addProduct.toUpperCase()),
                               style: ElevatedButton.styleFrom(
@@ -111,7 +160,7 @@ class _ProductScreenState extends State<ProductScreen> {
                         ],
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Search & Filter Row
                       Row(
                         children: [
@@ -121,39 +170,55 @@ class _ProductScreenState extends State<ProductScreen> {
                             const SizedBox(width: 16),
                             const Spacer(),
                           ],
-                          
+
                           // Ô Tìm kiếm
                           Expanded(
-                            flex: isDesktop ? 0 : 1,
                             child: Container(
                               width: isDesktop ? 350 : double.infinity,
                               decoration: BoxDecoration(
                                   color: _bgLight,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.grey.shade200)),
+                                  border:
+                                      Border.all(color: Colors.grey.shade200)),
                               child: TextField(
                                 controller: _searchController,
                                 textInputAction: TextInputAction.search,
+                                // Gắn hàm onChange
+                                onChanged: _onSearchChanged,
                                 decoration: InputDecoration(
                                   hintText: l10n.searchProduct,
                                   hintStyle: TextStyle(
-                                      color: Colors.grey.shade400, fontSize: 14),
+                                      color: Colors.grey.shade400,
+                                      fontSize: 14),
                                   prefixIcon: Icon(Icons.search,
                                       color: Colors.grey.shade500, size: 20),
                                   border: InputBorder.none,
                                   contentPadding:
                                       const EdgeInsets.symmetric(vertical: 14),
-                                  suffixIcon: IconButton(
-                                    icon: const Icon(Icons.arrow_forward,
-                                        color: Colors.blue),
-                                    onPressed: () => context
-                                        .read<ProductCubit>()
-                                        .searchProducts(_searchController.text),
-                                  ),
+                                  // Đổi icon thành nút xóa (Clear) nếu có text
+                                  suffixIcon: _searchController.text.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.clear,
+                                              color: Colors.grey, size: 18),
+                                          onPressed: () {
+                                            _searchController.clear();
+                                            _onSearchChanged(
+                                                ''); // Xóa xong load lại list
+                                            setState(
+                                                () {}); // Rebuild để ẩn nút clear
+                                          },
+                                        )
+                                      : null,
                                 ),
-                                onSubmitted: (value) => context
-                                    .read<ProductCubit>()
-                                    .searchProducts(value),
+                                onSubmitted: (value) {
+                                  if (value.isEmpty) {
+                                    context.read<ProductCubit>().loadProducts();
+                                  } else {
+                                    context
+                                        .read<ProductCubit>()
+                                        .searchProducts(value);
+                                  }
+                                },
                               ),
                             ),
                           ),
@@ -164,7 +229,8 @@ class _ProductScreenState extends State<ProductScreen> {
                             decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.grey.shade300)),
+                                border:
+                                    Border.all(color: Colors.grey.shade300)),
                             child: const Icon(Icons.filter_list,
                                 color: Colors.grey, size: 20),
                           ),
@@ -183,7 +249,8 @@ class _ProductScreenState extends State<ProductScreen> {
                     builder: (context) {
                       if (state is ProductLoading) {
                         return Center(
-                            child: CircularProgressIndicator(color: _primaryColor));
+                            child: CircularProgressIndicator(
+                                color: _primaryColor));
                       }
                       if (state is ProductError) {
                         return Center(
@@ -191,7 +258,7 @@ class _ProductScreenState extends State<ProductScreen> {
                                 style: const TextStyle(color: Colors.red)));
                       }
                       if (state is ProductLoaded) {
-                        if (state.products.isEmpty) {
+                        if (displayedProducts.isEmpty) {
                           return Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -200,15 +267,17 @@ class _ProductScreenState extends State<ProductScreen> {
                                     size: 60, color: Colors.grey.shade300),
                                 const SizedBox(height: 16),
                                 Text(l10n.noProductFound,
-                                    style: TextStyle(color: Colors.grey.shade500)),
+                                    style:
+                                        TextStyle(color: Colors.grey.shade500)),
                               ],
                             ),
                           );
                         }
-                        // Responsive Switch: Table vs List
                         return isDesktop
-                            ? _buildDesktopTable(context, state.products, l10n)
-                            : _buildMobileList(context, state.products, l10n);
+                            ? _buildDesktopTable(
+                                context, displayedProducts, l10n)
+                            : _buildMobileList(
+                                context, displayedProducts, l10n);
                       }
                       return const SizedBox();
                     },
@@ -219,7 +288,6 @@ class _ProductScreenState extends State<ProductScreen> {
           },
         ),
       ),
-      // Floating Button cho Mobile
       floatingActionButton: !isDesktop
           ? FloatingActionButton(
               backgroundColor: _accentColor,
@@ -272,7 +340,8 @@ class _ProductScreenState extends State<ProductScreen> {
                     rows: products.map((item) {
                       return DataRow(
                         cells: [
-                          DataCell(_buildImagePreview(context, item.imageUrl, 60)),
+                          DataCell(
+                              _buildImagePreview(context, item.imageUrl, 60)),
                           DataCell(Text(item.itemCode,
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 14))),
@@ -370,7 +439,6 @@ class _ProductScreenState extends State<ProductScreen> {
 
   // --- WIDGET: IMAGE PREVIEW (CÓ ZOOM) ---
   Widget _buildImagePreview(BuildContext context, String url, double size) {
-    // [CLEAN CODE] Sử dụng Helper để lấy Full URL (đã xử lý logic localhost/IP)
     final fullUrl = ApiEndpoints.getImageUrl(url);
 
     return GestureDetector(
@@ -391,8 +459,8 @@ class _ProductScreenState extends State<ProductScreen> {
                     child: Image.network(
                       fullUrl,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.error, color: Colors.white, size: 50),
+                      errorBuilder: (_, __, ___) => const Icon(Icons.error,
+                          color: Colors.white, size: 50),
                     ),
                   ),
                   Positioned(
@@ -414,7 +482,9 @@ class _ProductScreenState extends State<ProductScreen> {
         }
       },
       child: MouseRegion(
-        cursor: fullUrl.isNotEmpty ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        cursor: fullUrl.isNotEmpty
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
         child: Container(
           width: size,
           height: size,
@@ -466,8 +536,7 @@ class _ProductScreenState extends State<ProductScreen> {
       BuildContext context, Product? item, AppLocalizations l10n) {
     final codeCtrl = TextEditingController(text: item?.itemCode ?? '');
     final noteCtrl = TextEditingController(text: item?.note ?? '');
-    
-    // State local để hiển thị ảnh preview khi user vừa chọn file
+
     PlatformFile? pickedFile;
     Uint8List? pickedBytes;
 
@@ -475,13 +544,11 @@ class _ProductScreenState extends State<ProductScreen> {
 
     showDialog(
       context: context,
-      barrierDismissible: false, // Bắt buộc user phải nhấn Cancel hoặc Save
+      barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setStateDialog) {
-          
           Future<void> pickImage() async {
             try {
-              // withData: true để lấy bytes (quan trọng cho Web)
               FilePickerResult? result = await FilePicker.platform
                   .pickFiles(type: FileType.image, withData: true);
               if (result != null) {
@@ -495,13 +562,12 @@ class _ProductScreenState extends State<ProductScreen> {
             }
           }
 
-          // Xử lý ảnh preview trong Dialog
           ImageProvider? imageProvider;
           if (pickedBytes != null) {
             imageProvider = MemoryImage(pickedBytes!);
           } else if (item != null && item.imageUrl.isNotEmpty) {
-             // Sử dụng Helper cho ảnh hiện có
-            imageProvider = NetworkImage(ApiEndpoints.getImageUrl(item.imageUrl));
+            imageProvider =
+                NetworkImage(ApiEndpoints.getImageUrl(item.imageUrl));
           }
 
           return AlertDialog(
@@ -511,8 +577,8 @@ class _ProductScreenState extends State<ProductScreen> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 24),
             title: Text(
               item == null ? l10n.addProduct : l10n.editProduct,
-              style: TextStyle(
-                  color: _primaryColor, fontWeight: FontWeight.bold),
+              style:
+                  TextStyle(color: _primaryColor, fontWeight: FontWeight.bold),
             ),
             content: Form(
               key: formKey,
@@ -617,8 +683,7 @@ class _ProductScreenState extends State<ProductScreen> {
     return InputDecoration(
       labelText: label,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
   }
 

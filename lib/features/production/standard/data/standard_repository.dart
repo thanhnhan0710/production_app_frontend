@@ -7,9 +7,11 @@ class StandardRepository {
 
   Future<List<Standard>> getStandards() async {
     try {
-      final response = await _dio.get('/api/v1/standards');
+      final response = await _dio.get('/api/v1/standards/');
       if (response.data is List) {
-        return (response.data as List).map((e) => Standard.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => Standard.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -20,11 +22,13 @@ class StandardRepository {
   Future<List<Standard>> searchStandards(String keyword) async {
     try {
       final response = await _dio.get(
-        '/api/v1/standards/search',
+        '/api/v1/standards/search/',
         queryParameters: {'keyword': keyword, 'skip': 0, 'limit': 100},
       );
       if (response.data is List) {
-        return (response.data as List).map((e) => Standard.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => Standard.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -34,7 +38,7 @@ class StandardRepository {
 
   Future<void> createStandard(Standard item) async {
     try {
-      await _dio.post('/api/v1/standards', data: item.toJson());
+      await _dio.post('/api/v1/standards/', data: item.toJson());
     } catch (e) {
       throw Exception("Failed to create standard: $e");
     }

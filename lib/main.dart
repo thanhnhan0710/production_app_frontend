@@ -32,12 +32,12 @@ import 'package:production_app_frontend/features/production/weaving_record/prese
 import 'package:production_app_frontend/features/production/weaving_record/presentation/screens/weaving_record_screen.dart';
 
 import 'core/bloc/language_cubit.dart';
-import 'l10n/app_localizations.dart'; 
+import 'l10n/app_localizations.dart';
 
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/data/user_repository.dart';
 import 'features/auth/presentation/bloc/auth_cubit.dart';
-// [QUAN TRỌNG] Import AuthState để dùng trong logic redirect 
+// [QUAN TRỌNG] Import AuthState để dùng trong logic redirect
 import 'features/auth/presentation/bloc/user_cubit.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/user_screen.dart';
@@ -117,40 +117,60 @@ class MyApp extends StatelessWidget {
       child: MultiBlocProvider(
         providers: [
           // 1. Core Providers
-          BlocProvider(create: (context) => AuthCubit(context.read<AuthRepository>())),
+          BlocProvider(
+              create: (context) => AuthCubit(context.read<AuthRepository>())),
           BlocProvider(create: (context) => LanguageCubit()),
-          
+
           // 2. HR Providers
-          BlocProvider(create: (context) => DepartmentCubit(DepartmentRepository())),
-          BlocProvider(create: (context) => EmployeeCubit(EmployeeRepository())),
+          BlocProvider(
+              create: (context) => DepartmentCubit(DepartmentRepository())),
+          BlocProvider(
+              create: (context) => EmployeeCubit(EmployeeRepository())),
           BlocProvider(create: (context) => ShiftCubit(ShiftRepository())),
-          BlocProvider(create: (context) => WorkScheduleCubit(WorkScheduleRepository())),
+          BlocProvider(
+              create: (context) => WorkScheduleCubit(WorkScheduleRepository())),
           //Admintrator
           BlocProvider(create: (context) => UserCubit(UserRepository())),
           BlocProvider(create: (context) => LogCubit(LogRepository())),
-          
+
           // 3. Inventory Providers
-          BlocProvider(create: (context) => SupplierCubit(SupplierRepository())),
+          BlocProvider(
+              create: (context) => SupplierCubit(SupplierRepository())),
           BlocProvider(create: (context) => YarnCubit(YarnRepository())),
-          BlocProvider(create: (context) => MaterialCubit(MaterialRepository())),
+          BlocProvider(
+              create: (context) => MaterialCubit(MaterialRepository())),
           BlocProvider(create: (context) => UnitCubit(UnitRepository())),
           BlocProvider(create: (context) => BasketCubit(BasketRepository())),
-          BlocProvider(create: (context) => DyeColorCubit(DyeColorRepository())),
+          BlocProvider(
+              create: (context) => DyeColorCubit(DyeColorRepository())),
           BlocProvider(create: (context) => ProductCubit(ProductRepository())),
           BlocProvider(create: (context) => BOMCubit(BOMRepository())),
-          BlocProvider(create: (context) => PurchaseOrderCubit(PurchaseOrderRepository())),
-          BlocProvider(create: (context) => ImportDeclarationCubit(ImportDeclarationRepository())),
-          BlocProvider(create: (context) => WarehouseCubit(WarehouseRepository())),
+          BlocProvider(
+              create: (context) =>
+                  PurchaseOrderCubit(PurchaseOrderRepository())),
+          BlocProvider(
+              create: (context) =>
+                  ImportDeclarationCubit(ImportDeclarationRepository())),
+          BlocProvider(
+              create: (context) => WarehouseCubit(WarehouseRepository())),
           BlocProvider(create: (context) => BatchCubit(BatchRepository())),
-          BlocProvider(create: (context) => InventoryCubit(InventoryRepository())),
-          BlocProvider(create: (context) => MaterialExportCubit(MaterialExportRepository())),
-          
+          BlocProvider(
+              create: (context) => InventoryCubit(InventoryRepository())),
+          BlocProvider(
+              create: (context) =>
+                  MaterialExportCubit(MaterialExportRepository())),
+
           // 4. Production Providers
           BlocProvider(create: (context) => MachineCubit(MachineRepository())),
-          BlocProvider(create: (context) => StandardCubit(StandardRepository())),
+          BlocProvider(
+              create: (context) => StandardCubit(StandardRepository())),
           BlocProvider(create: (context) => WeavingCubit(WeavingRepository())),
-          BlocProvider(create: (context) => WeavingProductionCubit(WeavingProductionRepository())),
-          BlocProvider(create: (context) => WeavingRecordCubit(WeavingRecordRepository())),
+          BlocProvider(
+              create: (context) =>
+                  WeavingProductionCubit(WeavingProductionRepository())),
+          BlocProvider(
+              create: (context) =>
+                  WeavingRecordCubit(WeavingRecordRepository())),
           BlocProvider(
             create: (context) => MachineOperationCubit(
               MachineRepository(),
@@ -177,14 +197,14 @@ class AppView extends StatelessWidget {
       initialLocation: '/login',
       // [NEW] Dùng Stream để GoRouter tự refresh khi trạng thái Auth thay đổi (Logout/Login)
       refreshListenable: GoRouterRefreshStream(authCubit.stream),
-      
+
       // [NEW] Logic Redirect (Bảo vệ Route)
       redirect: (context, state) {
         final authState = authCubit.state;
-        
+
         // 1. Kiểm tra đăng nhập
         // AuthAuthenticated nghĩa là đã có Token và User info
-        final bool loggedIn = authState is AuthAuthenticated; 
+        final bool loggedIn = authState is AuthAuthenticated;
         final bool loggingIn = state.matchedLocation == '/login';
 
         if (!loggedIn) {
@@ -195,33 +215,32 @@ class AppView extends StatelessWidget {
         // Nếu đã đăng nhập
         if (loggingIn) {
           // Đã đăng nhập mà vào login -> Vào dashboard (hoặc trang phù hợp role)
-          return '/dashboard'; 
+          return '/dashboard';
         }
 
         // 2. PHÂN QUYỀN (RBAC) - Chặn truy cập các trang Admin
         // Danh sách các trang chỉ dành cho Admin (Administrator)
-        final adminRoutes = ['/users', '/logs']; 
-        
+        final adminRoutes = ['/users', '/logs'];
+
         // Kiểm tra xem trang đang truy cập có nằm trong danh sách cấm không
         if (adminRoutes.contains(state.matchedLocation)) {
           // Lấy role từ AuthState
-          final userRole = (authState).user.role; 
+          final userRole = (authState).user.role;
           final isSuperuser = (authState).user.isSuperuser;
-          
+
           // Nếu không phải admin và không phải superuser -> Chặn -> Về dashboard
           if (userRole != 'admin' && !isSuperuser) {
-             return '/dashboard'; 
+            return '/dashboard';
           }
         }
 
         // (Tùy chọn) Redirect cho Worker (Công nhân vận hành)
         // Nếu role là 'worker' và đang vào dashboard -> Chuyển sang màn hình vận hành máy
-        
+
         final userRole = (authState).user.role;
         if (userRole == 'worker' && state.matchedLocation == '/dashboard') {
-           return '/worker-dashboard';
+          return '/worker-dashboard';
         }
-        
 
         return null; // Cho phép truy cập bình thường
       },
@@ -232,63 +251,100 @@ class AppView extends StatelessWidget {
           path: '/login',
           builder: (context, state) => const LoginScreen(),
         ),
-        
+
         // --- DASHBOARD ---
         GoRoute(
           path: '/dashboard',
           builder: (context, state) => const DashboardScreen(),
         ),
-        
+
         // --- HR ROUTES ---
-        GoRoute(path: '/departments', builder: (context, state) => const DepartmentScreen()),
+        GoRoute(
+            path: '/departments',
+            builder: (context, state) => const DepartmentScreen()),
         GoRoute(
           path: '/employees',
           builder: (context, state) {
-              final deptId = state.uri.queryParameters['departmentId'];
-              if (deptId != null) {
-                return EmployeeDepartmentScreen(departmentId: int.parse(deptId));
-              }
-              return const EmployeeScreen();
+            final deptId = state.uri.queryParameters['departmentId'];
+            if (deptId != null) {
+              return EmployeeDepartmentScreen(departmentId: int.parse(deptId));
+            }
+            return const EmployeeScreen();
           },
         ),
         GoRoute(
           path: '/employees/department/:deptId',
           builder: (context, state) {
-            final deptId = int.tryParse(state.pathParameters['deptId'] ?? '0') ?? 0;
+            final deptId =
+                int.tryParse(state.pathParameters['deptId'] ?? '0') ?? 0;
             return EmployeeDepartmentScreen(departmentId: deptId);
           },
         ),
-        GoRoute(path: '/schedules', builder: (context, state) => const WorkScheduleScreen()),
-        GoRoute(path: '/shifts', builder: (context, state) => const ShiftScreen()),
-        GoRoute(path: '/users', builder: (context, state) => const UserScreen()),
-        GoRoute(path: '/logs', builder: (context, state) => const AuditLogScreen()),
+        GoRoute(
+            path: '/schedules',
+            builder: (context, state) => const WorkScheduleScreen()),
+        GoRoute(
+            path: '/shifts', builder: (context, state) => const ShiftScreen()),
+        GoRoute(
+            path: '/users', builder: (context, state) => const UserScreen()),
+        GoRoute(
+            path: '/logs', builder: (context, state) => const AuditLogScreen()),
 
         // --- INVENTORY ROUTES ---
-        GoRoute(path: '/suppliers', builder: (context, state) => const SupplierScreen()),
-        GoRoute(path: '/materials', builder: (context, state) => const MaterialScreen()),
-        GoRoute(path: '/units', builder: (context, state) => const UnitScreen()),
-        GoRoute(path: '/baskets', builder: (context, state) => const BasketScreen()),
-        GoRoute(path: '/dye-colors', builder: (context, state) => const DyeColorScreen()),
-        GoRoute(path: '/products', builder: (context, state) => const ProductScreen()),
+        GoRoute(
+            path: '/suppliers',
+            builder: (context, state) => const SupplierScreen()),
+        GoRoute(
+            path: '/materials',
+            builder: (context, state) => const MaterialScreen()),
+        GoRoute(
+            path: '/units', builder: (context, state) => const UnitScreen()),
+        GoRoute(
+            path: '/baskets',
+            builder: (context, state) => const BasketScreen()),
+        GoRoute(
+            path: '/dye-colors',
+            builder: (context, state) => const DyeColorScreen()),
+        GoRoute(
+            path: '/products',
+            builder: (context, state) => const ProductScreen()),
         GoRoute(path: '/boms', builder: (context, state) => const BOMScreen()),
-        GoRoute(path: '/import-declarations', builder: (context, state) => const ImportDeclarationScreen()),
-        GoRoute(path: '/warehouses', builder: (context, state) => const WarehouseScreen()),
-        GoRoute(path: '/stock-in', builder: (context, state) => const StockInScreen()),
-        GoRoute(path: '/batches', builder: (context, state) => const BatchScreen()),
-        GoRoute(path: '/inventorys', builder: (context, state) => const InventoryScreen()),
-        GoRoute(path: '/material-exports', builder: (context, state) => const MaterialExportListScreen()),
-        
+        GoRoute(
+            path: '/import-declarations',
+            builder: (context, state) => const ImportDeclarationScreen()),
+        GoRoute(
+            path: '/warehouses',
+            builder: (context, state) => const WarehouseScreen()),
+        GoRoute(
+            path: '/stock-in',
+            builder: (context, state) => const StockInScreen()),
+        GoRoute(
+            path: '/batches', builder: (context, state) => const BatchScreen()),
+        GoRoute(
+            path: '/inventorys',
+            builder: (context, state) => const InventoryScreen()),
+        GoRoute(
+            path: '/material-exports',
+            builder: (context, state) => const MaterialExportListScreen()),
+
         // Purchase Order Route
-        GoRoute(path: '/purchase-orders', builder: (context, state) => const PurchaseOrderScreen()),
+        GoRoute(
+            path: '/purchase-orders',
+            builder: (context, state) => const PurchaseOrderScreen()),
 
         // --- PRODUCTION ROUTES ---
-        GoRoute(path: '/machines', builder: (context, state) => const MachineScreen()),
-        GoRoute(path: '/standards', builder: (context, state) => const StandardScreen()),
-        GoRoute(path: '/machine-operation',builder: (context, state) => const MachineOperationScreen()),
         GoRoute(
-          path: '/weaving-management', 
-          builder: (context, state) => const WeavingManagementScreen()
-        ),
+            path: '/machines',
+            builder: (context, state) => const MachineScreen()),
+        GoRoute(
+            path: '/standards',
+            builder: (context, state) => const StandardScreen()),
+        GoRoute(
+            path: '/machine-operation',
+            builder: (context, state) => const MachineOperationScreen()),
+        GoRoute(
+            path: '/weaving-management',
+            builder: (context, state) => const WeavingManagementScreen()),
         //GoRoute(path: '/weaving', builder: (context, state) => const WeavingScreen()),
         //GoRoute(path: '/weaving-productions', builder: (context, state) => const WeavingProductionScreen()),
         //GoRoute(path: '/weaving-records', builder: (context, state) => const WeavingRecordScreen()),
@@ -304,10 +360,8 @@ class AppView extends StatelessWidget {
         return MaterialApp.router(
           title: 'Production App',
           debugShowCheckedModeBanner: false,
-          
           routerConfig: router,
           locale: locale,
-          
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -318,7 +372,6 @@ class AppView extends StatelessWidget {
             Locale('en'),
             Locale('vi'),
           ],
-          
           theme: ThemeData(
             primarySwatch: Colors.blue,
             useMaterial3: true,
@@ -339,8 +392,8 @@ class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
     _subscription = stream.asBroadcastStream().listen(
-      (dynamic _) => notifyListeners(),
-    );
+          (dynamic _) => notifyListeners(),
+        );
   }
 
   late final dynamic _subscription;

@@ -8,7 +8,7 @@ class DepartmentRepository {
   // Get all departments
   Future<List<Department>> getDepartments() async {
     try {
-      final response = await _dio.get('/api/v1/departments');
+      final response = await _dio.get('/api/v1/departments/');
       if (response.data is List) {
         return (response.data as List)
             .map((e) => Department.fromJson(e))
@@ -24,14 +24,16 @@ class DepartmentRepository {
   Future<List<Department>> searchDepartments(String keyword) async {
     try {
       final response = await _dio.get(
-        '/api/v1/departments/search', // Endpoint theo yêu cầu
+        '/api/v1/departments/search/', // Endpoint theo yêu cầu
         queryParameters: {
           'keyword': keyword,
         },
       );
-      
+
       if (response.data is List) {
-        return (response.data as List).map((e) => Department.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => Department.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -41,7 +43,7 @@ class DepartmentRepository {
 
   Future<void> createDepartment(Department dept) async {
     try {
-      await _dio.post('/api/v1/departments', data: dept.toJson());
+      await _dio.post('/api/v1/departments/', data: dept.toJson());
     } catch (e) {
       throw Exception("Failed to create department: $e");
     }

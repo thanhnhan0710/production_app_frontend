@@ -8,9 +8,11 @@ class WeavingRepository {
   // --- TICKETS ---
   Future<List<WeavingTicket>> getTickets() async {
     try {
-      final response = await _dio.get('/api/v1/weaving-basket-tickets');
+      final response = await _dio.get('/api/v1/weaving-basket-tickets/');
       if (response.data is List) {
-        return (response.data as List).map((e) => WeavingTicket.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => WeavingTicket.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -26,12 +28,12 @@ class WeavingRepository {
         'product_id': ticket.productId,
         'standard_id': ticket.standardId,
         'machine_id': ticket.machineId,
-        'machine_line': ticket.machineLine, 
+        'machine_line': ticket.machineLine,
         'yarn_load_date': ticket.yarnLoadDate, // YYYY-MM-DD
-        
+
         // [THAY ĐỔI] Gửi danh sách yarns thay vì batch_id đơn lẻ
         'yarns': ticket.yarns.map((e) => e.toJson()).toList(),
-        
+
         'basket_id': ticket.basketId,
         'employee_in_id': ticket.employeeInId,
         'time_in': ticket.timeIn,
@@ -40,18 +42,19 @@ class WeavingRepository {
 
       print("Payload Create Ticket: $data");
 
-      await _dio.post('/api/v1/weaving-basket-tickets', data: data);
+      await _dio.post('/api/v1/weaving-basket-tickets/', data: data);
     } catch (e) {
       if (e is DioException) {
-         print("API Error Details: ${e.response?.data}");
+        print("API Error Details: ${e.response?.data}");
       }
       throw Exception("Failed to create ticket: $e");
     }
   }
-  
+
   Future<void> updateTicket(WeavingTicket ticket) async {
     // ticket.toJson() trong Model đã được cập nhật để bao gồm 'yarns'
-    await _dio.put('/api/v1/weaving-basket-tickets/${ticket.id}', data: ticket.toJson());
+    await _dio.put('/api/v1/weaving-basket-tickets/${ticket.id}',
+        data: ticket.toJson());
   }
 
   Future<void> deleteTicket(int id) async {
@@ -62,12 +65,14 @@ class WeavingRepository {
   Future<List<WeavingInspection>> getInspections(int ticketId) async {
     try {
       final response = await _dio.get(
-        '/api/v1/weaving-inspections', 
+        '/api/v1/weaving-inspections/',
         queryParameters: {'ticket_id': ticketId},
       );
-      
+
       if (response.data is List) {
-        return (response.data as List).map((e) => WeavingInspection.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => WeavingInspection.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -77,7 +82,8 @@ class WeavingRepository {
 
   Future<void> createInspection(WeavingInspection inspection) async {
     try {
-      await _dio.post('/api/v1/weaving-inspections', data: inspection.toJson());
+      await _dio.post('/api/v1/weaving-inspections/',
+          data: inspection.toJson());
     } catch (e) {
       throw Exception("Failed to create inspection: $e");
     }

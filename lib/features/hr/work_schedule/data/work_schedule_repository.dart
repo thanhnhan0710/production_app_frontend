@@ -7,9 +7,11 @@ class WorkScheduleRepository {
 
   Future<List<WorkSchedule>> getSchedules() async {
     try {
-      final response = await _dio.get('/api/v1/work-schedules');
+      final response = await _dio.get('/api/v1/work-schedules/');
       if (response.data is List) {
-        return (response.data as List).map((e) => WorkSchedule.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => WorkSchedule.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -20,11 +22,13 @@ class WorkScheduleRepository {
   Future<List<WorkSchedule>> searchSchedules(String keyword) async {
     try {
       final response = await _dio.get(
-        '/api/v1/work-schedules/search',
+        '/api/v1/work-schedules/search/',
         queryParameters: {'keyword': keyword, 'skip': 0, 'limit': 100},
       );
       if (response.data is List) {
-        return (response.data as List).map((e) => WorkSchedule.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => WorkSchedule.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -46,7 +50,7 @@ class WorkScheduleRepository {
 
   Future<void> createSchedule(WorkSchedule item) async {
     try {
-      await _dio.post('/api/v1/work-schedules', data: item.toJson());
+      await _dio.post('/api/v1/work-schedules/', data: item.toJson());
     } catch (e) {
       // Ném ra exception với nội dung đã xử lý
       throw Exception(_handleDioError(e));

@@ -76,7 +76,7 @@ class _BOMScreenState extends State<BOMScreen> {
   }
 
   void _navigateToDetailView(BOMHeader bom) {
-     Navigator.push(
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => BOMDetailScreen(bomId: bom.bomId),
@@ -96,7 +96,8 @@ class _BOMScreenState extends State<BOMScreen> {
           listener: (context, state) {
             if (state is BOMError) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+                SnackBar(
+                    content: Text(state.message), backgroundColor: Colors.red),
               );
             }
           },
@@ -110,11 +111,14 @@ class _BOMScreenState extends State<BOMScreen> {
               boms = state.boms;
               // Nếu có filter từ màn hình cha (Product Detail)
               if (widget.filterProductId != null) {
-                boms = boms.where((b) => b.productId == widget.filterProductId).toList();
+                boms = boms
+                    .where((b) => b.productId == widget.filterProductId)
+                    .toList();
               }
             } else if (state is BOMDetailViewLoaded) {
-               // Fallback state nếu quay lại từ detail mà chưa refresh kịp
-               return Center(child: CircularProgressIndicator(color: _primaryColor));
+              // Fallback state nếu quay lại từ detail mà chưa refresh kịp
+              return Center(
+                  child: CircularProgressIndicator(color: _primaryColor));
             }
 
             return Column(
@@ -123,10 +127,14 @@ class _BOMScreenState extends State<BOMScreen> {
                 // --- HEADER SECTION ---
                 Container(
                   color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   child: Column(
                     children: [
+                      // [FIXED] Row Header
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment
+                            .center, // Căn giữa theo chiều dọc
                         children: [
                           Container(
                             padding: const EdgeInsets.all(10),
@@ -134,40 +142,46 @@ class _BOMScreenState extends State<BOMScreen> {
                               color: Colors.indigo.shade50,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Icon(Icons.layers, color: Colors.indigo.shade800, size: 24),
+                            child: Icon(Icons.layers,
+                                color: Colors.indigo.shade800, size: 24),
                           ),
                           const SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                loc.bomTitle, 
-                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey.shade800),
+
+                          // [FIXED] Dùng Expanded để text không bị đẩy
+                          Expanded(
+                            child: Text(
+                              loc.bomTitle,
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade800,
+                                height:
+                                    1.2, // Điều chỉnh chiều cao dòng để không bị cắt
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                "Manage Yarn BOMs & Technical Specs",
-                                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-                              ),
-                            ],
+                            ),
                           ),
-                          const Spacer(),
+
+                          const SizedBox(width: 16),
+
                           if (isDesktop)
                             ElevatedButton.icon(
-                              onPressed: () => _navigateToCreateOrEdit(bom: null),
+                              onPressed: () =>
+                                  _navigateToCreateOrEdit(bom: null),
                               icon: const Icon(Icons.add, size: 18),
-                              label: const Text("CREATE BOM"), 
+                              label: const Text("CREATE BOM"),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _primaryColor,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
                               ),
                             ),
                         ],
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // --- SEARCH BAR ---
                       Row(
                         children: [
@@ -181,28 +195,37 @@ class _BOMScreenState extends State<BOMScreen> {
                               child: TextField(
                                 controller: _searchController,
                                 textInputAction: TextInputAction.search,
+                                onChanged:
+                                    _onSearchChanged, // [MỚI] Gắn hàm tìm kiếm
                                 decoration: InputDecoration(
-                                  hintText: "Search Year (e.g. 2026) or Product Code...",
-                                  prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
+                                  hintText:
+                                      "Search Year (e.g. 2026) or Product Code...",
+                                  prefixIcon: Icon(Icons.search,
+                                      color: Colors.grey.shade500, size: 20),
                                   border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                                  suffixIcon: _searchController.text.isNotEmpty 
-                                    ? IconButton(
-                                        icon: const Icon(Icons.clear, size: 18),
-                                        onPressed: () {
-                                          _searchController.clear();
-                                          _loadData();
-                                        },
-                                      ) 
-                                    : null,
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  // [MỚI] Nút Clear Text
+                                  suffixIcon: _searchController.text.isNotEmpty
+                                      ? IconButton(
+                                          icon:
+                                              const Icon(Icons.clear, size: 18),
+                                          onPressed: () {
+                                            _searchController.clear();
+                                            _onSearchChanged(
+                                                ''); // Load lại list
+                                            setState(() {}); // Update UI
+                                          },
+                                        )
+                                      : null,
                                 ),
-                                onChanged: _onSearchChanged,
                               ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           IconButton(
-                            onPressed: _loadData,
+                            onPressed: () =>
+                                context.read<BOMCubit>().loadBOMHeaders(),
                             icon: const Icon(Icons.refresh, color: Colors.grey),
                             tooltip: "Refresh",
                           )
@@ -216,15 +239,20 @@ class _BOMScreenState extends State<BOMScreen> {
                 // --- CONTENT ---
                 Expanded(
                   child: isLoading
-                      ? Center(child: CircularProgressIndicator(color: _primaryColor))
+                      ? Center(
+                          child:
+                              CircularProgressIndicator(color: _primaryColor))
                       : boms.isEmpty
                           ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.layers_clear, size: 60, color: Colors.grey.shade300),
+                                  Icon(Icons.layers_clear,
+                                      size: 60, color: Colors.grey.shade300),
                                   const SizedBox(height: 16),
-                                  Text(loc.noBOMFound, style: TextStyle(color: Colors.grey.shade500)),
+                                  Text(loc.noBOMFound,
+                                      style: TextStyle(
+                                          color: Colors.grey.shade500)),
                                 ],
                               ),
                             )
@@ -248,14 +276,17 @@ class _BOMScreenState extends State<BOMScreen> {
   }
 
   // --- DESKTOP TABLE ---
-  Widget _buildDesktopTable(BuildContext context, List<BOMHeader> items, AppLocalizations loc) {
+  Widget _buildDesktopTable(
+      BuildContext context, List<BOMHeader> items, AppLocalizations loc) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: SizedBox(
         width: double.infinity,
         child: Card(
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey.shade200)),
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
@@ -263,7 +294,8 @@ class _BOMScreenState extends State<BOMScreen> {
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minWidth: constraints.maxWidth),
                   child: DataTable(
-                    headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
+                    headingRowColor:
+                        MaterialStateProperty.all(const Color(0xFFF9FAFB)),
                     horizontalMargin: 24,
                     columnSpacing: 24,
                     dataRowMinHeight: 60,
@@ -272,32 +304,46 @@ class _BOMScreenState extends State<BOMScreen> {
                       // [THAY ĐỔI] Hiển thị Năm và Tên
                       DataColumn(label: Text("YEAR", style: _headerStyle)),
                       DataColumn(label: Text("PRODUCT", style: _headerStyle)),
-                      DataColumn(label: Text("DESCRIPTION", style: _headerStyle)), // Thay cho Code/Name cũ
-                      DataColumn(label: Text("TARGET (g/m)", style: _headerStyle)),
-                      DataColumn(label: Text("WIDTH (mm)", style: _headerStyle)),
-                      DataColumn(label: Text(loc.version.toUpperCase(), style: _headerStyle)),
-                      DataColumn(label: Text(loc.status.toUpperCase(), style: _headerStyle)),
+                      DataColumn(
+                          label: Text("DESCRIPTION",
+                              style: _headerStyle)), // Thay cho Code/Name cũ
+                      DataColumn(
+                          label: Text("TARGET (g/m)", style: _headerStyle)),
+                      DataColumn(
+                          label: Text("WIDTH (mm)", style: _headerStyle)),
+                      DataColumn(
+                          label: Text(loc.version.toUpperCase(),
+                              style: _headerStyle)),
+                      DataColumn(
+                          label: Text(loc.status.toUpperCase(),
+                              style: _headerStyle)),
                       DataColumn(label: Text("UPDATED", style: _headerStyle)),
-                      DataColumn(label: Text(loc.actions.toUpperCase(), style: _headerStyle)),
+                      DataColumn(
+                          label: Text(loc.actions.toUpperCase(),
+                              style: _headerStyle)),
                     ],
                     rows: items.map((bom) {
                       return DataRow(
                         onSelectChanged: (_) => _navigateToDetailView(bom),
                         cells: [
                           // Cột Năm
-                          DataCell(Text(
-                            "${bom.applicableYear}", 
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)
-                          )),
-                          
+                          DataCell(Text("${bom.applicableYear}",
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue))),
+
                           // Cột Sản phẩm
                           DataCell(
                             BlocBuilder<ProductCubit, ProductState>(
                               builder: (context, pState) {
                                 if (pState is ProductLoaded) {
-                                  final p = pState.products.where((e) => e.id == bom.productId).firstOrNull;
+                                  final p = pState.products
+                                      .where((e) => e.id == bom.productId)
+                                      .firstOrNull;
                                   if (p != null) {
-                                    return Text(p.itemCode, style: const TextStyle(fontWeight: FontWeight.bold));
+                                    return Text(p.itemCode,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold));
                                   }
                                 }
                                 return Text("ID: ${bom.productId}");
@@ -306,33 +352,47 @@ class _BOMScreenState extends State<BOMScreen> {
                           ),
 
                           // Cột Description (Display Name từ Backend)
-                          DataCell(Text(bom.displayName ?? "-", style: const TextStyle(color: Colors.black87))),
-                          
+                          DataCell(Text(bom.displayName ?? "-",
+                              style: const TextStyle(color: Colors.black87))),
+
                           DataCell(Text(bom.targetWeightGm.toStringAsFixed(2))),
-                          DataCell(Text(bom.widthBehindLoom?.toString() ?? "-")),
                           DataCell(
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)),
-                              child: Text("v${bom.version}", style: TextStyle(color: Colors.blue.shade800, fontSize: 12, fontWeight: FontWeight.bold)),
-                            )
-                          ),
+                              Text(bom.widthBehindLoom?.toString() ?? "-")),
+                          DataCell(Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(4)),
+                            child: Text("v${bom.version}",
+                                style: TextStyle(
+                                    color: Colors.blue.shade800,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold)),
+                          )),
                           DataCell(_buildStatusBadge(bom.isActive, loc)),
                           DataCell(Text(
-                            bom.updatedAt != null ? DateFormat('dd/MM/yyyy').format(bom.updatedAt!) : "-",
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                            bom.updatedAt != null
+                                ? DateFormat('dd/MM/yyyy')
+                                    .format(bom.updatedAt!)
+                                : "-",
+                            style: TextStyle(
+                                color: Colors.grey.shade600, fontSize: 13),
                           )),
                           DataCell(
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.edit_outlined, color: Colors.orange, size: 20),
+                                  icon: const Icon(Icons.edit_outlined,
+                                      color: Colors.orange, size: 20),
                                   tooltip: "Edit BOM",
-                                  onPressed: () => _navigateToCreateOrEdit(bom: bom),
+                                  onPressed: () =>
+                                      _navigateToCreateOrEdit(bom: bom),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                  icon: const Icon(Icons.delete_outline,
+                                      color: Colors.redAccent, size: 20),
                                   onPressed: () => _confirmDelete(context, bom),
                                 ),
                               ],
@@ -351,7 +411,11 @@ class _BOMScreenState extends State<BOMScreen> {
     );
   }
 
-  TextStyle get _headerStyle => TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5);
+  TextStyle get _headerStyle => TextStyle(
+      color: Colors.grey.shade600,
+      fontWeight: FontWeight.bold,
+      fontSize: 12,
+      letterSpacing: 0.5);
 
   Widget _buildStatusBadge(bool isActive, AppLocalizations loc) {
     return Container(
@@ -359,20 +423,22 @@ class _BOMScreenState extends State<BOMScreen> {
       decoration: BoxDecoration(
         color: isActive ? Colors.green.shade50 : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: isActive ? Colors.green.shade200 : Colors.grey.shade300),
+        border: Border.all(
+            color: isActive ? Colors.green.shade200 : Colors.grey.shade300),
       ),
       child: Text(
         isActive ? loc.active : loc.inactive,
         style: TextStyle(
-          color: isActive ? Colors.green.shade700 : Colors.grey.shade600,
-          fontSize: 11, fontWeight: FontWeight.bold
-        ),
+            color: isActive ? Colors.green.shade700 : Colors.grey.shade600,
+            fontSize: 11,
+            fontWeight: FontWeight.bold),
       ),
     );
   }
 
   // --- MOBILE LIST ---
-  Widget _buildMobileList(BuildContext context, List<BOMHeader> items, AppLocalizations loc) {
+  Widget _buildMobileList(
+      BuildContext context, List<BOMHeader> items, AppLocalizations loc) {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: items.length,
@@ -381,7 +447,9 @@ class _BOMScreenState extends State<BOMScreen> {
         final bom = items[index];
         return Card(
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey.shade200)),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: () => _navigateToDetailView(bom),
@@ -394,39 +462,51 @@ class _BOMScreenState extends State<BOMScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Hiển thị Năm
-                      Text("Year: ${bom.applicableYear}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+                      Text("Year: ${bom.applicableYear}",
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue)),
                       _buildStatusBadge(bom.isActive, loc),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  
                   BlocBuilder<ProductCubit, ProductState>(
                     builder: (context, pState) {
                       String pName = "PID: ${bom.productId}";
                       if (pState is ProductLoaded) {
-                        final p = pState.products.where((e) => e.id == bom.productId).firstOrNull;
+                        final p = pState.products
+                            .where((e) => e.id == bom.productId)
+                            .firstOrNull;
                         if (p != null) pName = p.itemCode;
                       }
                       return Row(
                         children: [
-                          Icon(Icons.inventory_2_outlined, size: 16, color: Colors.grey.shade500),
+                          Icon(Icons.inventory_2_outlined,
+                              size: 16, color: Colors.grey.shade500),
                           const SizedBox(width: 6),
-                          Text(pName, style: const TextStyle(fontWeight: FontWeight.w500)),
+                          Text(pName,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w500)),
                         ],
                       );
                     },
                   ),
-                  
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(Icons.scale, size: 16, color: Colors.grey.shade500),
                       const SizedBox(width: 6),
-                      Text("Target: ${bom.targetWeightGm} g/m", style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+                      Text("Target: ${bom.targetWeightGm} g/m",
+                          style: TextStyle(
+                              fontSize: 13, color: Colors.grey.shade700)),
                       const SizedBox(width: 12),
-                      Icon(Icons.straighten, size: 16, color: Colors.grey.shade500),
+                      Icon(Icons.straighten,
+                          size: 16, color: Colors.grey.shade500),
                       const SizedBox(width: 6),
-                      Text("Width: ${bom.widthBehindLoom ?? '-'} mm", style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+                      Text("Width: ${bom.widthBehindLoom ?? '-'} mm",
+                          style: TextStyle(
+                              fontSize: 13, color: Colors.grey.shade700)),
                     ],
                   ),
                 ],
@@ -441,21 +521,23 @@ class _BOMScreenState extends State<BOMScreen> {
   void _confirmDelete(BuildContext context, BOMHeader item) {
     final loc = AppLocalizations.of(context)!;
     showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.deleteBOM),
-        content: Text("Confirm delete BOM for Year ${item.applicableYear}?"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
-          TextButton(
-            onPressed: () {
-              context.read<BOMCubit>().deleteBOMHeader(item.bomId);
-              Navigator.pop(ctx);
-            }, 
-            child: Text(loc.delete, style: const TextStyle(color: Colors.red))
-          )
-        ],
-      )
-    );
+        context: context,
+        builder: (ctx) => AlertDialog(
+              title: Text(loc.deleteBOM),
+              content:
+                  Text("Confirm delete BOM for Year ${item.applicableYear}?"),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(loc.cancel)),
+                TextButton(
+                    onPressed: () {
+                      context.read<BOMCubit>().deleteBOMHeader(item.bomId);
+                      Navigator.pop(ctx);
+                    },
+                    child: Text(loc.delete,
+                        style: const TextStyle(color: Colors.red)))
+              ],
+            ));
   }
 }

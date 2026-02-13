@@ -13,7 +13,6 @@ import 'package:production_app_frontend/features/inventory/product/domain/produc
 import 'package:production_app_frontend/features/production/standard/presentation/bloc/standard_cubit.dart';
 import 'package:production_app_frontend/features/production/standard/domain/standard_model.dart';
 
-// [THAY ĐỔI] Import Batch thay vì YarnLot
 import 'package:production_app_frontend/features/inventory/batch/presentation/bloc/batch_cubit.dart';
 import 'package:production_app_frontend/features/inventory/batch/domain/batch_model.dart';
 
@@ -26,22 +25,24 @@ import 'package:production_app_frontend/features/auth/presentation/bloc/auth_cub
 class WeavingInspectionDialog extends StatefulWidget {
   final WeavingTicket ticket;
   final VoidCallback? onRelease;
-  final String? shiftName; 
+  final String? shiftName;
 
   const WeavingInspectionDialog({
-    super.key, 
-    required this.ticket, 
+    super.key,
+    required this.ticket,
     this.onRelease,
     this.shiftName,
   });
 
   @override
-  State<WeavingInspectionDialog> createState() => _WeavingInspectionDialogState();
+  State<WeavingInspectionDialog> createState() =>
+      _WeavingInspectionDialogState();
 }
 
-class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with SingleTickerProviderStateMixin {
+class _WeavingInspectionDialogState extends State<WeavingInspectionDialog>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controllers
   final _widthCtrl = TextEditingController();
   final _densityCtrl = TextEditingController();
@@ -59,15 +60,14 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    
+
     // Load data
     context.read<WeavingCubit>().selectTicket(widget.ticket);
     context.read<EmployeeCubit>().loadEmployees();
     context.read<ShiftCubit>().loadShifts();
     context.read<ProductCubit>().loadProducts();
     context.read<StandardCubit>().loadStandards();
-    
-    // [THAY ĐỔI] Load Batch thay vì YarnLot
+
     context.read<BatchCubit>().loadBatches();
   }
 
@@ -92,68 +92,116 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
         height: isDesktop ? 800 : height * 0.95,
         child: Column(
           children: [
-            // --- 1. HEADER ---
+            // --- 1. HEADER (Đã Fix Overflow) ---
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
                 color: Colors.blue.shade900,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.fact_check, color: Colors.white),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Inspection: Ticket: ${widget.ticket.code}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                          Text("Machine ${widget.ticket.machineId} (Line ${widget.ticket.machineLine})", style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                        ],
-                      ),
-                    ],
+                  // LEFT SIDE (Thông tin Ticket) - Dùng Expanded để chiếm chỗ còn lại
+                  Expanded(
+                    child: Row(
+                      children: [
+                        const Icon(Icons.fact_check, color: Colors.white),
+                        const SizedBox(width: 12),
+                        // Wrap Column trong Flexible để text tự xuống dòng hoặc cắt bớt
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Phiếu: ${widget.ticket.code}",
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white),
+                                overflow: TextOverflow
+                                    .ellipsis, // Cắt bớt nếu quá dài
+                                maxLines: 1,
+                              ),
+                              Text(
+                                "Machine ${widget.ticket.machineId} (Line ${widget.ticket.machineLine})",
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 12),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+
+                  // RIGHT SIDE (Nút bấm)
                   Row(
                     children: [
                       if (widget.onRelease != null)
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.stop_circle_outlined, size: 18),
-                          label: Text(l10n.releaseBasket),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent, 
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.stop_circle_outlined,
+                                size: 16),
+                            label: Text(l10n.releaseBasket,
+                                style: const TextStyle(fontSize: 12)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.redAccent,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            onPressed: widget.onRelease,
                           ),
-                          onPressed: widget.onRelease,
                         ),
-                      const SizedBox(width: 16),
-                      IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close, color: Colors.white)),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(), // Thu gọn vùng bấm
+                        style: const ButtonStyle(
+                            tapTargetSize: MaterialTapTargetSize
+                                .shrinkWrap), // Thu gọn vùng bấm
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
 
-            // --- 2. TICKET FULL INFO (STANDARD DETAIL) ---
+            // --- 2. TICKET FULL INFO (Đã Fix Overflow) ---
             Container(
               width: double.infinity,
               color: Colors.blue.shade50,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start, // Căn trên cùng để danh sách batch không bị lệch
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.assignment, size: 18, color: Colors.black54),
+                      const Icon(Icons.assignment,
+                          size: 18, color: Colors.black54),
                       const SizedBox(width: 8),
-                      const Text("Standard & Product Info", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                      // Text tiêu đề cố định
+                      const Text("Standard & Product",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87)),
+
                       const Spacer(),
-                      
-                      // [THAY ĐỔI] Hiển thị danh sách lô sợi thay vì _YarnLotInfo
-                      _TicketBatchList(yarns: widget.ticket.yarns),
+
+                      // Batch list (Giới hạn chiều rộng tối đa 50% màn hình để không lấn title)
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: width * 0.5),
+                        child: _TicketBatchList(yarns: widget.ticket.yarns),
+                      ),
                     ],
                   ),
                   const Divider(),
@@ -164,9 +212,8 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
 
             // --- 3. BODY (History & Form) ---
             Expanded(
-              child: isDesktop 
-                ? _buildDesktopBody(l10n) 
-                : _buildMobileBody(l10n),
+              child:
+                  isDesktop ? _buildDesktopBody(l10n) : _buildMobileBody(l10n),
             ),
           ],
         ),
@@ -212,8 +259,12 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
             unselectedLabelColor: Colors.grey,
             indicatorColor: Colors.blue.shade900,
             tabs: [
-              Tab(icon: const Icon(Icons.history), text: l10n.inspectionHistory),
-              Tab(icon: const Icon(Icons.add_circle_outline), text: l10n.newInspection),
+              Tab(
+                  icon: const Icon(Icons.history),
+                  text: l10n.inspectionHistory),
+              Tab(
+                  icon: const Icon(Icons.add_circle_outline),
+                  text: l10n.newInspection),
             ],
           ),
         ),
@@ -221,8 +272,12 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
           child: TabBarView(
             controller: _tabController,
             children: [
-              Padding(padding: const EdgeInsets.all(8), child: _buildHistoryList(l10n)),
-              SingleChildScrollView(padding: const EdgeInsets.all(16), child: _buildInputForm(l10n)),
+              Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: _buildHistoryList(l10n)),
+              SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: _buildInputForm(l10n)),
             ],
           ),
         ),
@@ -234,8 +289,10 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
   Widget _buildHistoryList(AppLocalizations l10n) {
     return BlocBuilder<WeavingCubit, WeavingState>(
       builder: (context, state) {
-        if (state is WeavingLoading) return const Center(child: CircularProgressIndicator());
-        
+        if (state is WeavingLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
         List<WeavingInspection> list = [];
         if (state is WeavingLoaded) list = state.inspections;
 
@@ -244,9 +301,11 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.assignment_outlined, size: 48, color: Colors.grey.shade300),
+                Icon(Icons.assignment_outlined,
+                    size: 48, color: Colors.grey.shade300),
                 const SizedBox(height: 12),
-                Text(l10n.noInspectionsRecorded, style: TextStyle(color: Colors.grey.shade500)),
+                Text(l10n.noInspectionsRecorded,
+                    style: TextStyle(color: Colors.grey.shade500)),
               ],
             ),
           );
@@ -254,45 +313,61 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
 
         return ListView.separated(
           itemCount: list.length,
-          separatorBuilder: (_,__) => const SizedBox(height: 8),
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (ctx, index) {
             final item = list[index];
             return Card(
               elevation: 0,
               color: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.grey.shade300)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: Colors.grey.shade300)),
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundColor: Colors.blue.shade50,
-                  child: Text("${list.length - index}", style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.bold)),
+                  child: Text("${list.length - index}",
+                      style: TextStyle(
+                          color: Colors.blue.shade900,
+                          fontWeight: FontWeight.bold)),
                 ),
-                title: Text(item.stageName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                title: Text(item.stageName,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Time: ${DateFormat('HH:mm dd/MM').format(DateTime.parse(item.inspectionTime))}"),
-                    Text("Emp: ${item.employeeName ?? 'ID:${item.employeeId}'}"),
+                    Text(
+                        "Time: ${DateFormat('HH:mm dd/MM').format(DateTime.parse(item.inspectionTime))}"),
+                    Text(
+                        "Emp: ${item.employeeName ?? 'ID:${item.employeeId}'}"),
                   ],
                 ),
                 trailing: IconButton(
                   icon: const Icon(Icons.info_outline, color: Colors.grey),
                   onPressed: () {
-                    showDialog(context: context, builder: (ctx) => AlertDialog(
-                      title: Text(item.stageName),
-                      content: Column(
-                         mainAxisSize: MainAxisSize.min,
-                         crossAxisAlignment: CrossAxisAlignment.start,
-                         children: [
-                            Text("${l10n.width}: ${item.widthMm} mm"),
-                            Text("${l10n.density}: ${item.weftDensity}"),
-                            Text("${l10n.tension}: ${item.tensionDan} daN"),
-                            Text("${l10n.thickness}: ${item.thicknessMm} mm"),
-                            Text("${l10n.weight}: ${item.weightGm} g/m"),
-                            Text("${l10n.bow}: ${item.bowing} %"),
-                         ],
-                      ),
-                      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Close"))],
-                    ));
+                    showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                              title: Text(item.stageName),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("${l10n.width}: ${item.widthMm} mm"),
+                                  Text("${l10n.density}: ${item.weftDensity}"),
+                                  Text(
+                                      "${l10n.tension}: ${item.tensionDan} daN"),
+                                  Text(
+                                      "${l10n.thickness}: ${item.thicknessMm} mm"),
+                                  Text("${l10n.weight}: ${item.weightGm} g/m"),
+                                  Text("${l10n.bow}: ${item.bowing} %"),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text("Close"))
+                              ],
+                            ));
                   },
                 ),
               ),
@@ -307,91 +382,123 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
   Widget _buildInputForm(AppLocalizations l10n) {
     final authState = context.read<AuthCubit>().state;
     if (authState is AuthAuthenticated && authState.user.employeeId != null) {
-        _selectedEmpId = authState.user.employeeId; 
+      _selectedEmpId = authState.user.employeeId;
     }
-    
+
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           BlocBuilder<WeavingCubit, WeavingState>(
-             builder: (context, state) {
-               int nextCount = 1;
-               if (state is WeavingLoaded) nextCount = state.inspections.length + 1;
-               return Text("Check #$nextCount", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
-             }
-           ),
-           const SizedBox(height: 20),
-           
-           if (widget.shiftName != null)
-             Container(
-               width: double.infinity,
-               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-               decoration: BoxDecoration(
-                 color: Colors.grey.shade200,
-                 borderRadius: BorderRadius.circular(8),
-                 border: Border.all(color: Colors.grey.shade300)
-               ),
-               child: Row(
-                 children: [
-                   const Icon(Icons.access_time, size: 20, color: Colors.blueGrey),
-                   const SizedBox(width: 8),
-                   Text("Ca làm việc: ${widget.shiftName} (Tự động)", style: const TextStyle(fontWeight: FontWeight.bold)),
-                 ],
-               ),
-             )
-           else
-             Expanded(
-                 child: BlocBuilder<ShiftCubit, ShiftState>(
-                   builder: (context, state) {
-                     List<Shift> items = (state is ShiftLoaded) ? state.shifts : [];
-                     return DropdownButtonFormField<int>(
-                       value: _selectedShiftId,
-                       decoration: _inputDeco(l10n.shiftTitle),
-                       isExpanded: true,
-                       items: items.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
-                       onChanged: (v) => setState(() => _selectedShiftId = v),
-                       validator: (v) => v == null ? l10n.required : null,
-                     );
-                   }
-                 ),
+          BlocBuilder<WeavingCubit, WeavingState>(builder: (context, state) {
+            int nextCount = 1;
+            if (state is WeavingLoaded) {
+              nextCount = state.inspections.length + 1;
+            }
+            return Text("Lần $nextCount",
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
+          }),
+          const SizedBox(height: 20),
+          if (widget.shiftName != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300)),
+              child: Row(
+                children: [
+                  const Icon(Icons.access_time,
+                      size: 20, color: Colors.blueGrey),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Ca làm việc: ${widget.shiftName} (Tự động)",
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            DropdownButtonFormField<int>(
+              value: _selectedShiftId,
+              decoration: _inputDeco(l10n.shiftTitle),
+              isExpanded: true,
+              items: (context.watch<ShiftCubit>().state is ShiftLoaded)
+                  ? (context.watch<ShiftCubit>().state as ShiftLoaded)
+                      .shifts
+                      .map((s) =>
+                          DropdownMenuItem(value: s.id, child: Text(s.name)))
+                      .toList()
+                  : [],
+              onChanged: (v) => setState(() => _selectedShiftId = v),
+              validator: (v) => v == null ? l10n.required : null,
             ),
-           
-           const SizedBox(height: 16),
-
-           Text(l10n.measurements, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-           const SizedBox(height: 8),
-           
-           Row(children: [
-             Expanded(child: TextFormField(controller: _widthCtrl, decoration: _inputDeco(l10n.width), keyboardType: TextInputType.number)),
-             const SizedBox(width: 12),
-             Expanded(child: TextFormField(controller: _densityCtrl, decoration: _inputDeco(l10n.density), keyboardType: TextInputType.number)),
-           ]),
-           const SizedBox(height: 12),
-           Row(children: [
-             Expanded(child: TextFormField(controller: _tensionCtrl, decoration: _inputDeco(l10n.tension), keyboardType: TextInputType.number)),
-             const SizedBox(width: 12),
-             Expanded(child: TextFormField(controller: _thickCtrl, decoration: _inputDeco(l10n.thickness), keyboardType: TextInputType.number)),
-           ]),
-           const SizedBox(height: 12),
-           Row(children: [
-             Expanded(child: TextFormField(controller: _weightCtrl, decoration: _inputDeco(l10n.weight), keyboardType: TextInputType.number)),
-             const SizedBox(width: 12),
-             Expanded(child: TextFormField(controller: _bowingCtrl, decoration: _inputDeco(l10n.bow), keyboardType: TextInputType.number)),
-           ]),
-           const SizedBox(height: 24),
-
-           SizedBox(
-             width: double.infinity,
-             height: 48,
-             child: ElevatedButton.icon(
-               icon: const Icon(Icons.check_circle),
-               label: Text(l10n.save),
-               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade800, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-               onPressed: () => _saveInspection(l10n),
-             ),
-           )
+          const SizedBox(height: 16),
+          Text(l10n.measurements,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold, color: Colors.grey)),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+                child: TextFormField(
+                    controller: _widthCtrl,
+                    decoration: _inputDeco(l10n.width),
+                    keyboardType: TextInputType.number)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: TextFormField(
+                    controller: _densityCtrl,
+                    decoration: _inputDeco(l10n.density),
+                    keyboardType: TextInputType.number)),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(
+                child: TextFormField(
+                    controller: _tensionCtrl,
+                    decoration: _inputDeco(l10n.tension),
+                    keyboardType: TextInputType.number)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: TextFormField(
+                    controller: _thickCtrl,
+                    decoration: _inputDeco(l10n.thickness),
+                    keyboardType: TextInputType.number)),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(
+                child: TextFormField(
+                    controller: _weightCtrl,
+                    decoration: _inputDeco(l10n.weight),
+                    keyboardType: TextInputType.number)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: TextFormField(
+                    controller: _bowingCtrl,
+                    decoration: _inputDeco(l10n.bow),
+                    keyboardType: TextInputType.number)),
+          ]),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.check_circle),
+              label: Text(l10n.save),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade800,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8))),
+              onPressed: () => _saveInspection(l10n),
+            ),
+          )
         ],
       ),
     );
@@ -405,18 +512,23 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
       if (shiftState is ShiftLoaded) {
         final foundShift = shiftState.shifts.firstWhere(
           (s) => s.name.toUpperCase() == widget.shiftName!.toUpperCase(),
-          orElse: () => Shift(id: 0, name: "", note: ""), 
+          orElse: () => Shift(id: 0, name: "", note: ""),
         );
         if (foundShift.id != 0) {
           finalShiftId = foundShift.id;
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Lỗi: Không tìm thấy ID của ca làm việc tự động trong hệ thống."), backgroundColor: Colors.red));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text(
+                  "Lỗi: Không tìm thấy ID của ca làm việc tự động trong hệ thống."),
+              backgroundColor: Colors.red));
           return;
         }
       }
     }
 
-    if (_formKey.currentState!.validate() && _selectedEmpId != null && finalShiftId != null) {
+    if (_formKey.currentState!.validate() &&
+        _selectedEmpId != null &&
+        finalShiftId != null) {
       final state = context.read<WeavingCubit>().state;
       int count = (state is WeavingLoaded) ? state.inspections.length : 0;
       String stageName = "Lần ${count + 1}";
@@ -437,19 +549,31 @@ class _WeavingInspectionDialogState extends State<WeavingInspectionDialog> with 
       );
 
       context.read<WeavingCubit>().saveInspection(newItem);
-      
-      _widthCtrl.clear(); _densityCtrl.clear(); _tensionCtrl.clear(); 
-      _thickCtrl.clear(); _weightCtrl.clear(); _bowingCtrl.clear();
-      
+
+      _widthCtrl.clear();
+      _densityCtrl.clear();
+      _tensionCtrl.clear();
+      _thickCtrl.clear();
+      _weightCtrl.clear();
+      _bowingCtrl.clear();
+
       if (!ResponsiveLayout.isDesktop(context)) _tabController.animateTo(0);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.saveSuccess), backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(l10n.saveSuccess), backgroundColor: Colors.green));
     } else if (finalShiftId == null) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng chọn Ca làm việc."), backgroundColor: Colors.orange));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Vui lòng chọn Ca làm việc."),
+          backgroundColor: Colors.orange));
     }
   }
 
   InputDecoration _inputDeco(String label) {
-    return InputDecoration(labelText: label, isDense: true, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true, fillColor: Colors.white);
+    return InputDecoration(
+        labelText: label,
+        isDense: true,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        filled: true,
+        fillColor: Colors.white);
   }
 }
 
@@ -475,116 +599,166 @@ class _StandardFullDetails extends StatelessWidget {
     return BlocBuilder<StandardCubit, StandardState>(
       builder: (context, state) {
         if (state is StandardLoaded) {
-          final item = state.standards.where((s) => s.id == standardId).firstOrNull;
-          if (item == null) return const Text("Standard info not loaded", style: TextStyle(color: Colors.grey));
-          
+          final item =
+              state.standards.where((s) => s.id == standardId).firstOrNull;
+          if (item == null) {
+            return const Text("Standard info not loaded",
+                style: TextStyle(color: Colors.grey));
+          }
+
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-               Container(
-                 width: 80, height: 80,
-                 margin: const EdgeInsets.only(right: 16),
-                 decoration: BoxDecoration(
-                   color: Colors.grey.shade100,
-                   borderRadius: BorderRadius.circular(8),
-                   border: Border.all(color: Colors.grey.shade300),
-                 ),
-                 child: ClipRRect(
-                   borderRadius: BorderRadius.circular(8),
-                   child: (item.productImage != null && item.productImage!.isNotEmpty)
-                       ? Image.network(item.productImage!, fit: BoxFit.cover, errorBuilder: (_,__,___)=>const Icon(Icons.image_not_supported, color: Colors.grey))
-                       : const Icon(Icons.image, color: Colors.grey),
-                 ),
-               ),
-
-               Expanded(
-                 child: Column(
-                   crossAxisAlignment: CrossAxisAlignment.start,
-                   children: [
-                      Text(item.productItemCode ?? "Unknown Code", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
-                      Text(item.productName ?? "Unknown Name", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                      const SizedBox(height: 8),
-                      
-                      Wrap(
-                        spacing: 12, runSpacing: 6,
-                        children: [
-                           _specItem("W", "${item.widthMm}mm"),
-                           _specItem("T", "${item.thicknessMm}mm"),
-                           _specItem("G/m", "${item.weightGm}g/m"),
-                           _specItem("Str", "${item.breakingStrength}daN", color: Colors.red.shade700),
-                           _specItem("El", "${item.elongation}%", color: Colors.indigo),
-                           _specItem("Den", item.weftDensity),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      Row(
-                        children: [
-                          Container(width: 12, height: 12, decoration: BoxDecoration(color: _hexToColor(item.colorHex), shape: BoxShape.circle, border: Border.all(color: Colors.grey.shade300))),
-                          const SizedBox(width: 6),
-                          Text(item.colorName ?? "-", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                          if (item.deltaE.isNotEmpty) ...[
-                             const SizedBox(width: 8),
-                             Text("ΔE: ${item.deltaE}", style: const TextStyle(fontSize: 11, color: Colors.purple)),
-                          ]
-                        ],
-                      )
-                   ],
-                 ),
-               ),
+              Container(
+                width: 80,
+                height: 80,
+                margin: const EdgeInsets.only(right: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: (item.productImage != null &&
+                          item.productImage!.isNotEmpty)
+                      ? Image.network(item.productImage!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.image_not_supported,
+                              color: Colors.grey))
+                      : const Icon(Icons.image, color: Colors.grey),
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.productItemCode ?? "Unknown Code",
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.black87)),
+                    Text(item.productName ?? "Unknown Name",
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.grey.shade600)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 6,
+                      children: [
+                        _specItem("W", "${item.widthMm}mm"),
+                        _specItem("T", "${item.thicknessMm}mm"),
+                        _specItem("G/m", "${item.weightGm}g/m"),
+                        _specItem("Str", "${item.breakingStrength}daN",
+                            color: Colors.red.shade700),
+                        _specItem("El", "${item.elongation}%",
+                            color: Colors.indigo),
+                        _specItem("Den", item.weftDensity),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                                color: _hexToColor(item.colorHex),
+                                shape: BoxShape.circle,
+                                border:
+                                    Border.all(color: Colors.grey.shade300))),
+                        const SizedBox(width: 6),
+                        Text(item.colorName ?? "-",
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.bold)),
+                        if (item.deltaE.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Text("ΔE: ${item.deltaE}",
+                              style: const TextStyle(
+                                  fontSize: 11, color: Colors.purple)),
+                        ]
+                      ],
+                    )
+                  ],
+                ),
+              ),
             ],
           );
         }
-        return const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2));
+        return const SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(strokeWidth: 2));
       },
     );
   }
 
   Widget _specItem(String label, String value, {Color? color}) {
     return Row(mainAxisSize: MainAxisSize.min, children: [
-        Text("$label: ", style: const TextStyle(fontSize: 11, color: Colors.grey)),
-        Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color ?? Colors.black87)),
+      Text("$label: ",
+          style: const TextStyle(fontSize: 11, color: Colors.grey)),
+      Text(value,
+          style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: color ?? Colors.black87)),
     ]);
   }
 }
 
-// [MỚI] Widget hiển thị danh sách Batch chi tiết
+// Widget hiển thị danh sách Batch chi tiết (Đã fix overflow)
 class _TicketBatchList extends StatelessWidget {
   final List<WeavingTicketYarn> yarns;
   const _TicketBatchList({required this.yarns});
 
   @override
   Widget build(BuildContext context) {
-    if (yarns.isEmpty) return const Text("-", style: TextStyle(color: Colors.grey));
+    if (yarns.isEmpty) {
+      return const Text("-", style: TextStyle(color: Colors.grey));
+    }
 
     return BlocBuilder<BatchCubit, BatchState>(
       builder: (context, state) {
-        final List<Batch> allBatches = (state is BatchLoaded) ? state.batches : [];
+        final List<Batch> allBatches =
+            (state is BatchLoaded) ? state.batches : [];
 
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.end, // Căn phải để khớp với Spacer()
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: yarns.map((yarnItem) {
-            // Tìm thông tin Batch trong Cubit
-            final batch = allBatches.where((b) => b.batchId == yarnItem.batchId).firstOrNull;
-            final internalCode = batch?.internalBatchCode ?? "ID:${yarnItem.batchId}";
+            final batch = allBatches
+                .where((b) => b.batchId == yarnItem.batchId)
+                .firstOrNull;
+            final internalCode =
+                batch?.internalBatchCode ?? "ID:${yarnItem.batchId}";
             final supplierCode = batch?.supplierBatchNo ?? "";
-            
-            final displayCode = supplierCode.isNotEmpty 
-                ? "$internalCode (Sup:$supplierCode)" 
+
+            final displayCode = supplierCode.isNotEmpty
+                ? "$internalCode (Sup:$supplierCode)"
                 : internalCode;
-            
+
+            // Dùng Flexible hoặc TextOverflow để cắt bớt nếu batch code quá dài
             return Padding(
               padding: const EdgeInsets.only(bottom: 2.0),
               child: RichText(
-                textAlign: TextAlign.right,
-                text: TextSpan(
-                  style: const TextStyle(color: Colors.black87, fontSize: 12, fontFamily: 'Roboto'),
-                  children: [
-                    TextSpan(text: "${yarnItem.componentType}: ", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
-                    TextSpan(text: displayCode, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  ]
-                )
-              ),
+                  textAlign: TextAlign.right,
+                  overflow: TextOverflow.ellipsis, // Cắt bớt nếu tràn
+                  text: TextSpan(
+                      style: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 12,
+                          fontFamily: 'Roboto'),
+                      children: [
+                        TextSpan(
+                            text: "${yarnItem.componentType}: ",
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blueGrey)),
+                        TextSpan(
+                            text: displayCode,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600)),
+                      ])),
             );
           }).toList(),
         );

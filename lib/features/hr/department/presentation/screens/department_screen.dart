@@ -1,3 +1,4 @@
+import 'dart:async'; // [MỚI] Import Timer
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +16,10 @@ class DepartmentScreen extends StatefulWidget {
 
 class _DepartmentScreenState extends State<DepartmentScreen> {
   final _searchController = TextEditingController();
+
+  // [MỚI] Timer cho tìm kiếm
+  Timer? _debounce;
+
   final Color _primaryColor = const Color(0xFF003366);
   final Color _accentColor = const Color(0xFF0055AA);
 
@@ -22,6 +27,27 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
   void initState() {
     super.initState();
     context.read<DepartmentCubit>().loadDepartments();
+  }
+
+  @override
+  void dispose() {
+    // [MỚI] Hủy timer và controller
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // [MỚI] Hàm xử lý tìm kiếm khi gõ phím
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      if (query.trim().isEmpty) {
+        context.read<DepartmentCubit>().loadDepartments();
+      } else {
+        context.read<DepartmentCubit>().searchDepartments(query);
+      }
+    });
   }
 
   @override
@@ -69,7 +95,8 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                                 color: _primaryColor.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Icon(Icons.domain, color: _primaryColor, size: 28),
+                              child: Icon(Icons.domain,
+                                  color: _primaryColor, size: 28),
                             ),
                             const SizedBox(width: 16),
                             Column(
@@ -99,34 +126,43 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                         ),
                         if (isDesktop)
                           ElevatedButton.icon(
-                            onPressed: () => _showEditDialog(context, null, l10n),
-                            icon: const Icon(Icons.add_circle_outline, size: 18),
+                            onPressed: () =>
+                                _showEditDialog(context, null, l10n),
+                            icon:
+                                const Icon(Icons.add_circle_outline, size: 18),
                             label: Text(l10n.addDept.toUpperCase()),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _primaryColor,
                               foregroundColor: Colors.white,
                               elevation: 2,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              textStyle: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 18),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                              textStyle: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5),
                             ),
                           ),
                       ],
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Stats & Search Row
                     Row(
                       children: [
                         if (isDesktop) ...[
-                          // [FIX] Sử dụng l10n
-                          _buildStatBadge(Icons.grid_view_rounded, l10n.totalDepartments, "$totalDepts", Colors.blue),
+                          _buildStatBadge(
+                              Icons.grid_view_rounded,
+                              l10n.totalDepartments,
+                              "$totalDepts",
+                              Colors.blue),
                           const SizedBox(width: 16),
-                          // [FIX] Sử dụng l10n
-                          _buildStatBadge(Icons.check_circle_outline, l10n.status, l10n.active, Colors.green),
+                          _buildStatBadge(Icons.check_circle_outline,
+                              l10n.status, l10n.active, Colors.green),
                           const Spacer(),
                         ],
-                        
+
                         // Search Bar
                         Expanded(
                           flex: isDesktop ? 0 : 1,
@@ -136,26 +172,45 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: Colors.grey.shade300),
-                              boxShadow: [BoxShadow(color: Colors.grey.shade100, blurRadius: 4, offset: const Offset(0, 2))],
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.grey.shade100,
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2))
+                              ],
                             ),
                             child: TextField(
                               controller: _searchController,
                               textInputAction: TextInputAction.search,
+                              onChanged:
+                                  _onSearchChanged, // [MỚI] Gắn hàm onChange
                               decoration: InputDecoration(
                                 hintText: l10n.searchDept,
-                                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                                prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
-                                suffixIcon: IconButton(
-                                  icon: const Icon(Icons.arrow_forward_rounded, color: Colors.blue),
-                                  onPressed: () {
-                                    context.read<DepartmentCubit>().searchDepartments(_searchController.text);
-                                  },
-                                ),
+                                hintStyle: TextStyle(
+                                    color: Colors.grey.shade400, fontSize: 14),
+                                prefixIcon: Icon(Icons.search,
+                                    color: Colors.grey.shade400),
+                                // [MỚI] Nút Clear text
+                                suffixIcon: _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear,
+                                            color: Colors.grey, size: 18),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          _onSearchChanged(''); // Load lại list
+                                          setState(
+                                              () {}); // Update UI để ẩn nút clear
+                                        },
+                                      )
+                                    : null,
                                 border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 14),
                               ),
                               onSubmitted: (value) {
-                                context.read<DepartmentCubit>().searchDepartments(value);
+                                context
+                                    .read<DepartmentCubit>()
+                                    .searchDepartments(value);
                               },
                             ),
                           ),
@@ -173,7 +228,9 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                   child: Builder(
                     builder: (context) {
                       if (state is DepartmentLoading) {
-                        return Center(child: CircularProgressIndicator(color: _primaryColor));
+                        return Center(
+                            child: CircularProgressIndicator(
+                                color: _primaryColor));
                       } else if (state is DepartmentError) {
                         return _buildErrorState(state.message);
                       } else if (state is DepartmentLoaded) {
@@ -181,8 +238,10 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                           return _buildEmptyState();
                         }
                         return isDesktop
-                            ? _buildDesktopTable(context, state.departments, l10n)
-                            : _buildMobileListView(context, state.departments, l10n);
+                            ? _buildDesktopTable(
+                                context, state.departments, l10n)
+                            : _buildMobileListView(
+                                context, state.departments, l10n);
                       }
                       return const SizedBox();
                     },
@@ -205,7 +264,8 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
   }
 
   // --- DESKTOP TABLE VIEW (FULL WIDTH + NO ID) ---
-  Widget _buildDesktopTable(BuildContext context, List<Department> departments, AppLocalizations l10n) {
+  Widget _buildDesktopTable(BuildContext context, List<Department> departments,
+      AppLocalizations l10n) {
     return SingleChildScrollView(
       // ignore: sized_box_for_whitespace
       child: Container(
@@ -224,76 +284,94 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minWidth: constraints.maxWidth),
                   child: DataTable(
-                    headingRowColor: MaterialStateProperty.all(const Color(0xFFF9FAFB)),
+                    headingRowColor:
+                        MaterialStateProperty.all(const Color(0xFFF9FAFB)),
                     headingRowHeight: 56,
                     dataRowMinHeight: 64,
                     dataRowMaxHeight: 64,
                     horizontalMargin: 32,
                     columnSpacing: 40,
                     columns: [
-                      DataColumn(label: Text(l10n.deptName.toUpperCase(), style: _headerStyle)),
-                      DataColumn(label: Text(l10n.deptDesc.toUpperCase(), style: _headerStyle)),
-                      // [FIX] Sử dụng l10n cho tiêu đề cột
-                      DataColumn(label: Text(l10n.members.toUpperCase(), style: _headerStyle)), 
-                      DataColumn(label: Text(l10n.actions.toUpperCase(), style: _headerStyle)),
+                      DataColumn(
+                          label: Text(l10n.deptName.toUpperCase(),
+                              style: _headerStyle)),
+                      DataColumn(
+                          label: Text(l10n.deptDesc.toUpperCase(),
+                              style: _headerStyle)),
+                      DataColumn(
+                          label: Text(l10n.members.toUpperCase(),
+                              style: _headerStyle)),
+                      DataColumn(
+                          label: Text(l10n.actions.toUpperCase(),
+                              style: _headerStyle)),
                     ],
                     rows: departments.asMap().entries.map((entry) {
                       final index = entry.key;
                       final dept = entry.value;
                       final color = MaterialStateProperty.all(
-                        index % 2 == 0 ? Colors.white : const Color(0xFFF9FAFB).withOpacity(0.5),
+                        index % 2 == 0
+                            ? Colors.white
+                            : const Color(0xFFF9FAFB).withOpacity(0.5),
                       );
 
                       return DataRow(
                         color: color,
                         cells: [
-                          DataCell(
-                            Row(
-                              children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: _getRandomColor(dept.name).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    dept.name.substring(0, 1).toUpperCase(),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: _getRandomColor(dept.name),
-                                    ),
+                          DataCell(Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: _getRandomColor(dept.name)
+                                      .withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  dept.name.substring(0, 1).toUpperCase(),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: _getRandomColor(dept.name),
                                   ),
                                 ),
-                                const SizedBox(width: 16),
-                                Text(dept.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 14)),
-                              ],
-                            )
-                          ),
+                              ),
+                              const SizedBox(width: 16),
+                              Text(dept.name,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                      fontSize: 14)),
+                            ],
+                          )),
                           DataCell(
                             Text(
                               dept.description,
-                              style: TextStyle(color: Colors.grey.shade600, height: 1.4),
+                              style: TextStyle(
+                                  color: Colors.grey.shade600, height: 1.4),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           DataCell(
-                            _buildActionButton(
-                              Icons.people_alt_outlined, 
-                              Colors.teal, 
-                              "View Employees",
-                              () {
-                                context.go('/employees/department/${dept.id}');
-                              }
-                            ),
+                            _buildActionButton(Icons.people_alt_outlined,
+                                Colors.teal, "View Employees", () {
+                              context.go('/employees?departmentId=${dept.id}');
+                            }),
                           ),
                           DataCell(Row(
                             children: [
-                              _buildActionButton(Icons.edit_outlined, Colors.blue, "Edit", () => _showEditDialog(context, dept, l10n)),
+                              _buildActionButton(
+                                  Icons.edit_outlined,
+                                  Colors.blue,
+                                  "Edit",
+                                  () => _showEditDialog(context, dept, l10n)),
                               const SizedBox(width: 12),
-                              _buildActionButton(Icons.delete_outline, Colors.red, "Delete", () => _confirmDelete(context, dept, l10n)),
+                              _buildActionButton(
+                                  Icons.delete_outline,
+                                  Colors.red,
+                                  "Delete",
+                                  () => _confirmDelete(context, dept, l10n)),
                             ],
                           )),
                         ],
@@ -310,13 +388,13 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
   }
 
   TextStyle get _headerStyle => TextStyle(
-    color: Colors.grey.shade600, 
-    fontWeight: FontWeight.bold, 
-    fontSize: 12, 
-    letterSpacing: 0.8
-  );
+      color: Colors.grey.shade600,
+      fontWeight: FontWeight.bold,
+      fontSize: 12,
+      letterSpacing: 0.8);
 
-  Widget _buildActionButton(IconData icon, Color color, String tooltip, VoidCallback onTap) {
+  Widget _buildActionButton(
+      IconData icon, Color color, String tooltip, VoidCallback onTap) {
     return Tooltip(
       message: tooltip,
       child: InkWell(
@@ -336,7 +414,8 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
   }
 
   // --- MOBILE LIST VIEW ---
-  Widget _buildMobileListView(BuildContext context, List<Department> departments, AppLocalizations l10n) {
+  Widget _buildMobileListView(BuildContext context,
+      List<Department> departments, AppLocalizations l10n) {
     return ListView.separated(
       itemCount: departments.length,
       separatorBuilder: (_, __) => const SizedBox(height: 16),
@@ -357,80 +436,113 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
           ),
           child: Material(
             color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => _showEditDialog(context, dept, l10n),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: _getRandomColor(dept.name).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            dept.name.substring(0, 1).toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: _getRandomColor(dept.name),
-                            ),
+            child: Padding(
+              padding:
+                  const EdgeInsets.all(16), // Giảm padding một chút để gọn hơn
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: _getRandomColor(dept.name).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          dept.name.substring(0, 1).toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: _getRandomColor(dept.name),
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(dept.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
-                              const SizedBox(height: 4),
-                              Text(
-                                dept.description,
-                                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuButton(
-                          icon: Icon(Icons.more_vert, color: Colors.grey.shade400),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          onSelected: (value) {
-                            if (value == 'employees') context.go('/employees?departmentId=${dept.id}');
-                            if (value == 'edit') _showEditDialog(context, dept, l10n);
-                            if (value == 'delete') _confirmDelete(context, dept, l10n);
-                          },
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
-                              value: 'employees',
-                              child: Row(children: [Icon(Icons.people_alt_outlined, size: 18, color: Colors.teal), SizedBox(width: 12), Text("View Employees")]),
-                            ),
-                            PopupMenuItem(
-                              value: 'edit',
-                              child: Row(children: [Icon(Icons.edit, size: 18, color: Colors.blue.shade400), const SizedBox(width: 12), Text(l10n.editDept)]),
-                            ),
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red.shade400), const SizedBox(width: 12), Text(l10n.deleteDept)]),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(dept.name,
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87)),
+                            const SizedBox(height: 4),
+                            Text(
+                              dept.description,
+                              style: TextStyle(
+                                  fontSize: 13, color: Colors.grey.shade600),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                  const SizedBox(height: 12),
+
+                  // [MỚI] 3 Nút hành động nằm ngang bên dưới
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildMobileActionButton(
+                        icon: Icons.people_alt_outlined,
+                        label: "Employees",
+                        color: Colors.teal,
+                        onTap: () =>
+                            context.go('/employees?departmentId=${dept.id}'),
+                      ),
+                      _buildMobileActionButton(
+                        icon: Icons.edit_outlined,
+                        label: l10n.editDept,
+                        color: Colors.blue,
+                        onTap: () => _showEditDialog(context, dept, l10n),
+                      ),
+                      _buildMobileActionButton(
+                        icon: Icons.delete_outline,
+                        label: l10n.deleteDept,
+                        color: Colors.red,
+                        onTap: () => _confirmDelete(context, dept, l10n),
+                      ),
+                    ],
+                  )
+                ],
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  // Widget helper cho nút bấm trên mobile
+  Widget _buildMobileActionButton(
+      {required IconData icon,
+      required String label,
+      required Color color,
+      required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 4),
+            Text(label,
+                style: TextStyle(
+                    color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -446,7 +558,8 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
     return colors[seed.hashCode.abs() % colors.length];
   }
 
-  Widget _buildStatBadge(IconData icon, String label, String value, Color color) {
+  Widget _buildStatBadge(
+      IconData icon, String label, String value, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -462,8 +575,14 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.w600)),
-              Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+              Text(label,
+                  style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600)),
+              Text(value,
+                  style: TextStyle(
+                      color: color, fontWeight: FontWeight.bold, fontSize: 14)),
             ],
           )
         ],
@@ -478,11 +597,17 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
-            child: Icon(Icons.folder_off_outlined, size: 48, color: Colors.grey.shade400),
+            decoration: BoxDecoration(
+                color: Colors.grey.shade100, shape: BoxShape.circle),
+            child: Icon(Icons.folder_off_outlined,
+                size: 48, color: Colors.grey.shade400),
           ),
           const SizedBox(height: 16),
-          Text("No departments found", style: TextStyle(fontSize: 16, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+          Text("No departments found",
+              style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -498,23 +623,25 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
           Text(message, style: const TextStyle(color: Colors.red)),
           const SizedBox(height: 16),
           ElevatedButton.icon(
-            onPressed: () => context.read<DepartmentCubit>().loadDepartments(),
-            icon: const Icon(Icons.refresh, size: 18),
-            label: const Text("Reload"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black87,
-              elevation: 1,
-            )
-          )
+              onPressed: () =>
+                  context.read<DepartmentCubit>().loadDepartments(),
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text("Reload"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black87,
+                elevation: 1,
+              ))
         ],
       ),
     );
   }
 
-  void _showEditDialog(BuildContext context, Department? department, AppLocalizations l10n) {
+  void _showEditDialog(
+      BuildContext context, Department? department, AppLocalizations l10n) {
     final nameController = TextEditingController(text: department?.name ?? '');
-    final descController = TextEditingController(text: department?.description ?? '');
+    final descController =
+        TextEditingController(text: department?.description ?? '');
     final formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -539,10 +666,13 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                   controller: nameController,
                   decoration: InputDecoration(
                     labelText: l10n.deptName,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
                     filled: true,
                     fillColor: Colors.grey.shade50,
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300)),
                   ),
                   validator: (v) => v!.isEmpty ? "Required" : null,
                 ),
@@ -551,10 +681,13 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                   controller: descController,
                   decoration: InputDecoration(
                     labelText: l10n.deptDesc,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
                     filled: true,
                     fillColor: Colors.grey.shade50,
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300)),
                   ),
                   maxLines: 3,
                 ),
@@ -584,7 +717,9 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                 }
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text(department == null ? l10n.successAdded : l10n.successUpdated),
+                  content: Text(department == null
+                      ? l10n.successAdded
+                      : l10n.successUpdated),
                   behavior: SnackBarBehavior.floating,
                   backgroundColor: Colors.green,
                 ));
@@ -595,7 +730,8 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
             child: Text(l10n.save),
           ),
@@ -604,7 +740,8 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
     );
   }
 
-  void _confirmDelete(BuildContext context, Department dept, AppLocalizations l10n) {
+  void _confirmDelete(
+      BuildContext context, Department dept, AppLocalizations l10n) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -616,9 +753,11 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
             Text(l10n.deleteDept),
           ],
         ),
-        content: Text(l10n.confirmDelete(dept.name), style: TextStyle(color: Colors.grey.shade800)),
+        content: Text(l10n.confirmDelete(dept.name),
+            style: TextStyle(color: Colors.grey.shade800)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
           ElevatedButton(
             onPressed: () {
               context.read<DepartmentCubit>().deleteDepartment(dept.id);
@@ -629,7 +768,10 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                 backgroundColor: Colors.redAccent,
               ));
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white, elevation: 0),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                elevation: 0),
             child: Text(l10n.deleteDept),
           ),
         ],

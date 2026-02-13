@@ -8,11 +8,9 @@ class ShiftRepository {
   // Get all departments
   Future<List<Shift>> getShifts() async {
     try {
-      final response = await _dio.get('/api/v1/shifts');
+      final response = await _dio.get('/api/v1/shifts/');
       if (response.data is List) {
-        return (response.data as List)
-            .map((e) => Shift.fromJson(e))
-            .toList();
+        return (response.data as List).map((e) => Shift.fromJson(e)).toList();
       }
       return [];
     } catch (e) {
@@ -23,12 +21,12 @@ class ShiftRepository {
   Future<List<Shift>> searchShifts(String keyword) async {
     try {
       final response = await _dio.get(
-        '/api/v1/shifts/search', // Endpoint theo yêu cầu
+        '/api/v1/shifts/search/', // Endpoint theo yêu cầu
         queryParameters: {
           'keyword': keyword,
         },
       );
-      
+
       if (response.data is List) {
         return (response.data as List).map((e) => Shift.fromJson(e)).toList();
       }
@@ -40,7 +38,7 @@ class ShiftRepository {
 
   Future<void> createShift(Shift shif) async {
     try {
-      await _dio.post('/api/v1/shifts', data: shif.toJson());
+      await _dio.post('/api/v1/shifts/', data: shif.toJson());
     } catch (e) {
       throw Exception("Failed to create shifts: $e");
     }

@@ -1,17 +1,17 @@
 class ApiEndpoints {
   // [CẤU HÌNH GỐC] Chỉ cần sửa duy nhất dòng này khi đổi Server/IP
-  static const String serverDomain = 'http://localhost:8000'; 
+  static const String serverDomain = 'https://192.168.0.175:8443';
 
   // Base URL cho API (tự động nối thêm /api/v1)
   static const String baseUrl = '$serverDomain/api/v1';
-  
-  static const String authLogin = '$baseUrl/login/access-token';
-  static const String usersMe = '$baseUrl/users/me';
+
+  static const String authLogin = '$baseUrl/login/access-token/';
+  static const String usersMe = '$baseUrl/users/me/';
 
   // [MỚI] Hàm Helper xử lý ảnh: Tự động nối Domain nếu là đường dẫn tương đối
   static String getImageUrl(String? path) {
     if (path == null || path.isEmpty) return '';
-    
+
     // Nếu ảnh đã là link online (http...) thì giữ nguyên
     if (path.contains('http')) return path;
 

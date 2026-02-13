@@ -140,6 +140,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get note => 'Note';
 
   @override
+  String get notice => 'Notice';
+
+  @override
+  String get featureUnderDevelopment =>
+      'This feature is under development.\nPlease come back later.';
+
+  @override
+  String pageContent(String path) {
+    return 'Page Content: $path';
+  }
+
+  @override
+  String get erpSystemShort => 'ERP System';
+
+  @override
+  String get oppermannHeader => 'OPPERMANN';
+
+  @override
+  String get searchPlaceholder => 'Search...';
+
+  @override
+  String get productionOutput => 'Production Output';
+
+  @override
+  String get justNow => 'Just now';
+
+  @override
+  String get statusDone => 'Done';
+
+  @override
   String get departmentTitle => 'Departments';
 
   @override
@@ -561,6 +591,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get maintenance => 'Maintenance';
+
+  @override
+  String get spinning => 'Spinning';
+
+  @override
+  String get yarnOut => 'Yarn Out';
 
   @override
   String get unassignedArea => 'Unassigned Area';
@@ -1730,4 +1766,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String unknownMaterial(int id) {
     return 'Unknown Material #$id';
   }
+
+  @override
+  String get materialPurchaseOrders => 'Material Purchase Orders';
+
+  @override
+  String get importExport => 'Import/Export';
+
+  @override
+  String get stockOutHeader => 'Stock Out';
+
+  @override
+  String get materialExport => 'Material Export';
+
+  @override
+  String get semiFinishedExport => 'Semi-finished Export';
+
+  @override
+  String get finishedProductExport => 'Finished Product Export';
+
+  @override
+  String get inventoryStock => 'Inventory Stock';
+
+  @override
+  String get semiFinishedProducts => 'Semi-finished Products';
+
+  @override
+  String get finishedProducts => 'Finished Products';
+
+  @override
+  String get materialBatches => 'Material Batches';
+
+  @override
+  String get weaving => 'Weaving';
+
+  @override
+  String get machineBasketInfo => 'Machine & Basket Info';
+
+  @override
+  String get weavingManagement => 'Weaving Management';
+
+  @override
+  String get dyeing => 'Dyeing';
+
+  @override
+  String get printing => 'Printing';
+
+  @override
+  String get safeFinishedProducts => 'Safe Finished Products';
+
+  @override
+  String get packing => 'Packing';
+
+  @override
+  String get rolling => 'Rolling';
+
+  @override
+  String get cutting => 'Cutting';
+
+  @override
+  String get adminTitle => 'Administrator';
+
+  @override
+  String get activityLog => 'Activity Log';
+
+  @override
+  String get quickAccess => 'Quick Access';
+
+  @override
+  String get rememberMe => 'Remember login';
 }

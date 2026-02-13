@@ -7,9 +7,12 @@ class DyeColorRepository {
 
   Future<List<DyeColor>> getColors() async {
     try {
-      final response = await _dio.get('/api/v1/dye-colors'); // Endpoint giả định
+      final response =
+          await _dio.get('/api/v1/dye-colors/'); // Endpoint giả định
       if (response.data is List) {
-        return (response.data as List).map((e) => DyeColor.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => DyeColor.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -20,11 +23,13 @@ class DyeColorRepository {
   Future<List<DyeColor>> searchColors(String keyword) async {
     try {
       final response = await _dio.get(
-        '/api/v1/dye-colors/search',
+        '/api/v1/dye-colors/search/',
         queryParameters: {'keyword': keyword, 'skip': 0, 'limit': 100},
       );
       if (response.data is List) {
-        return (response.data as List).map((e) => DyeColor.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => DyeColor.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -34,7 +39,7 @@ class DyeColorRepository {
 
   Future<void> createColor(DyeColor color) async {
     try {
-      await _dio.post('/api/v1/dye-colors', data: color.toJson());
+      await _dio.post('/api/v1/dye-colors/', data: color.toJson());
     } catch (e) {
       throw Exception("Failed to create color: $e");
     }

@@ -8,9 +8,11 @@ class SupplierRepository {
   // Lấy danh sách tất cả (Mặc định)
   Future<List<Supplier>> getSuppliers() async {
     try {
-      final response = await _dio.get('/api/v1/suppliers');
+      final response = await _dio.get('/api/v1/suppliers/');
       if (response.data is List) {
-        return (response.data as List).map((e) => Supplier.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => Supplier.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -23,14 +25,16 @@ class SupplierRepository {
   Future<List<Supplier>> searchSuppliers(String keyword) async {
     try {
       final response = await _dio.get(
-        '/api/v1/suppliers/search',
+        '/api/v1/suppliers/search/',
         queryParameters: {
           'keyword': keyword,
         },
       );
-      
+
       if (response.data is List) {
-        return (response.data as List).map((e) => Supplier.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => Supplier.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -39,7 +43,7 @@ class SupplierRepository {
   }
 
   Future<void> createSupplier(Supplier item) async {
-    await _dio.post('/api/v1/suppliers', data: item.toJson());
+    await _dio.post('/api/v1/suppliers/', data: item.toJson());
   }
 
   Future<void> updateSupplier(Supplier item) async {

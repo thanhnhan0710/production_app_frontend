@@ -1,4 +1,4 @@
-class Shift{
+class Shift {
   final int id;
   final String name;
   final String note;
@@ -17,6 +17,10 @@ class Shift{
       note: json['note'] ?? '',
     );
   }
+
+  get startTime => null;
+
+  get endTime => null;
 
   // Map ngược lại để gửi lên API
   Map<String, dynamic> toJson() {

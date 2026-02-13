@@ -5,22 +5,32 @@ import '../domain/import_declaration_model.dart';
 
 class ImportDeclarationRepository {
   final Dio _dio = ApiClient().dio;
-  final String _endpoint = '/api/v1/import-declarations';
+  final String _endpoint = '/api/v1/import-declarations/';
 
   Future<List<ImportDeclaration>> getDeclarations({
-    int skip = 0, int limit = 100, String? search,
-    ImportType? type, DateTime? fromDate, DateTime? toDate,
+    int skip = 0,
+    int limit = 100,
+    String? search,
+    ImportType? type,
+    DateTime? fromDate,
+    DateTime? toDate,
   }) async {
     try {
       final Map<String, dynamic> queryParams = {'skip': skip, 'limit': limit};
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
       if (type != null) queryParams['import_type'] = type.name;
-      if (fromDate != null) queryParams['from_date'] = fromDate.toIso8601String().split('T').first;
-      if (toDate != null) queryParams['to_date'] = toDate.toIso8601String().split('T').first;
+      if (fromDate != null) {
+        queryParams['from_date'] = fromDate.toIso8601String().split('T').first;
+      }
+      if (toDate != null) {
+        queryParams['to_date'] = toDate.toIso8601String().split('T').first;
+      }
 
       final response = await _dio.get(_endpoint, queryParameters: queryParams);
       if (response.data is List) {
-        return (response.data as List).map((e) => ImportDeclaration.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => ImportDeclaration.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -42,13 +52,15 @@ class ImportDeclarationRepository {
       final response = await _dio.post(_endpoint, data: decl.toJson());
       return ImportDeclaration.fromJson(response.data);
     } on DioException catch (e) {
-       throw Exception(e.response?.data['detail'] ?? "Failed to create declaration");
+      throw Exception(
+          e.response?.data['detail'] ?? "Failed to create declaration");
     } catch (e) {
       throw Exception("Error creating declaration: $e");
     }
   }
 
-  Future<ImportDeclaration> updateDeclaration(int id, ImportDeclaration decl) async {
+  Future<ImportDeclaration> updateDeclaration(
+      int id, ImportDeclaration decl) async {
     try {
       final data = decl.toJson();
       data.remove('details');
@@ -68,15 +80,18 @@ class ImportDeclarationRepository {
   }
 
   // --- DETAILS ---
-  Future<void> addDetail(int declarationId, ImportDeclarationDetail detail) async {
+  Future<void> addDetail(
+      int declarationId, ImportDeclarationDetail detail) async {
     try {
-      await _dio.post('$_endpoint/$declarationId/details', data: detail.toJson());
+      await _dio.post('$_endpoint/$declarationId/details/',
+          data: detail.toJson());
     } catch (e) {
       throw Exception("Failed to add item: $e");
     }
   }
 
-  Future<void> updateDetail(int detailId, ImportDeclarationDetail detail) async {
+  Future<void> updateDetail(
+      int detailId, ImportDeclarationDetail detail) async {
     try {
       await _dio.put('$_endpoint/details/$detailId', data: detail.toJson());
     } catch (e) {

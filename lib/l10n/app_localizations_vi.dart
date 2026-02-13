@@ -38,7 +38,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get loginSubtitle => 'Vui lòng đăng nhập để truy cập ERP';
 
   @override
-  String get copyright => '© 2026 Oppermann Việt Nam';
+  String get copyright => '© 2026 Oppermann Vietnam';
 
   @override
   String get errorRequired => 'Vui lòng không để trống';
@@ -139,6 +139,36 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get note => 'Ghi chú';
+
+  @override
+  String get notice => 'Thông báo';
+
+  @override
+  String get featureUnderDevelopment =>
+      'Tính năng này đang được phát triển.\nVui lòng quay lại sau.';
+
+  @override
+  String pageContent(String path) {
+    return 'Nội dung trang: $path';
+  }
+
+  @override
+  String get erpSystemShort => 'Hệ thống ERP';
+
+  @override
+  String get oppermannHeader => 'OPPERMANN';
+
+  @override
+  String get searchPlaceholder => 'Tìm kiếm...';
+
+  @override
+  String get productionOutput => 'Sản lượng sản xuất';
+
+  @override
+  String get justNow => 'Vừa xong';
+
+  @override
+  String get statusDone => 'Hoàn thành';
 
   @override
   String get departmentTitle => 'Quản lý Bộ phận';
@@ -488,7 +518,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get uomProduction => 'ĐVT Sản xuất';
 
   @override
-  String get uomBP => 'ĐVT (Mua/SX)';
+  String get uomBP => 'Đơn vị tính (Mua/SX)';
 
   @override
   String get specs => 'Thông số kỹ thuật';
@@ -562,6 +592,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get maintenance => 'Bảo trì';
+
+  @override
+  String get spinning => 'Lên sợi';
+
+  @override
+  String get yarnOut => 'Hết sợi';
 
   @override
   String get unassignedArea => 'Khu vực chung';
@@ -1731,4 +1767,73 @@ class AppLocalizationsVi extends AppLocalizations {
   String unknownMaterial(int id) {
     return 'Vật tư không xác định #$id';
   }
+
+  @override
+  String get materialPurchaseOrders => 'Đơn mua NVL';
+
+  @override
+  String get importExport => 'Nhập Xuất kho';
+
+  @override
+  String get stockOutHeader => 'Xuất kho';
+
+  @override
+  String get materialExport => 'Xuất kho NVL';
+
+  @override
+  String get semiFinishedExport => 'Xuất bán thành phẩm';
+
+  @override
+  String get finishedProductExport => 'Xuất thành phẩm';
+
+  @override
+  String get inventoryStock => 'Tồn kho';
+
+  @override
+  String get semiFinishedProducts => 'Bán thành phẩm';
+
+  @override
+  String get finishedProducts => 'Thành phẩm';
+
+  @override
+  String get materialBatches => 'Lô nguyên vật liệu';
+
+  @override
+  String get weaving => 'Dệt';
+
+  @override
+  String get machineBasketInfo => 'Thông tin Máy & Rổ dệt';
+
+  @override
+  String get weavingManagement => 'Quản lý sản xuất dệt';
+
+  @override
+  String get dyeing => 'Nhuộm';
+
+  @override
+  String get printing => 'In';
+
+  @override
+  String get safeFinishedProducts => 'Thành phẩm an toàn';
+
+  @override
+  String get packing => 'Đóng gói';
+
+  @override
+  String get rolling => 'Cuộn';
+
+  @override
+  String get cutting => 'Cắt';
+
+  @override
+  String get adminTitle => 'Administrator';
+
+  @override
+  String get activityLog => 'Nhật ký hoạt động';
+
+  @override
+  String get quickAccess => 'Truy cập nhanh';
+
+  @override
+  String get rememberMe => 'Ghi nhớ đăng nhập';
 }

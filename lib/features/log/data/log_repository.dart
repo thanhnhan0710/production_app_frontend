@@ -17,7 +17,7 @@ class LogRepository {
   }) async {
     try {
       final response = await _dio.get(
-        '/api/v1/logs', // Endpoint backend bạn đã viết
+        '/api/v1/logs/', // Endpoint backend bạn đã viết
         queryParameters: {
           'skip': skip,
           'limit': limit,
@@ -30,21 +30,23 @@ class LogRepository {
       );
 
       if (response.data is List) {
-        return (response.data as List).map((e) => LogModel.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => LogModel.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
       throw Exception("Lỗi tải nhật ký: $e");
     }
   }
-  
+
   Future<void> revertLog(int logId) async {
     try {
-      await _dio.post('/api/v1/logs/$logId/revert');
+      await _dio.post('/api/v1/logs/$logId/revert/');
     } catch (e) {
       // Xử lý lỗi đẹp hơn để hiển thị UI
       if (e is DioException) {
-         throw Exception(e.response?.data['detail'] ?? "Lỗi kết nối");
+        throw Exception(e.response?.data['detail'] ?? "Lỗi kết nối");
       }
       throw Exception("Không thể hoàn tác: $e");
     }

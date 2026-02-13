@@ -10,7 +10,7 @@ class EmployeeRepository {
   // Get all employees
   Future<List<Employee>> getEmployees() async {
     try {
-      final response = await _dio.get('/api/v1/employees');
+      final response = await _dio.get('/api/v1/employees/');
       if (response.data is List) {
         return (response.data as List)
             .map((e) => Employee.fromJson(e))
@@ -26,7 +26,7 @@ class EmployeeRepository {
   Future<List<Employee>> searchEmployees(String keyword) async {
     try {
       final response = await _dio.get(
-        '/api/v1/employees/search',
+        '/api/v1/employees/search/',
         queryParameters: {
           'keyword': keyword,
           'skip': 0,
@@ -48,7 +48,8 @@ class EmployeeRepository {
   // Endpoint: /api/v1/employees/department/{id}
   Future<List<Employee>> getEmployeesByDepartmentId(int departmentId) async {
     try {
-      final response = await _dio.get('/api/v1/employees/department/$departmentId');
+      final response =
+          await _dio.get('/api/v1/employees/department/$departmentId');
       if (response.data is List) {
         return (response.data as List)
             .map((e) => Employee.fromJson(e))
@@ -56,13 +57,14 @@ class EmployeeRepository {
       }
       return [];
     } catch (e) {
-      throw Exception("Failed to load employees for department $departmentId: $e");
+      throw Exception(
+          "Failed to load employees for department $departmentId: $e");
     }
   }
 
   Future<void> createEmployee(Employee emp) async {
     try {
-      await _dio.post('/api/v1/employees', data: emp.toJson());
+      await _dio.post('/api/v1/employees/', data: emp.toJson());
     } catch (e) {
       throw Exception("Failed to create employee: $e");
     }
@@ -94,7 +96,7 @@ class EmployeeRepository {
         'file': MultipartFile.fromBytes(
           file.bytes!,
           filename: file.name,
-          contentType: MediaType('image', 'jpeg'), 
+          contentType: MediaType('image', 'jpeg'),
         ),
       });
 
@@ -105,4 +107,3 @@ class EmployeeRepository {
     }
   }
 }
-

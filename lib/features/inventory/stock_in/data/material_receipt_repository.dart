@@ -2,10 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:production_app_frontend/features/inventory/stock_in/domain/material_receipt_model.dart';
 import '../../../../../core/network/api_client.dart';
 
-
 class MaterialReceiptRepository {
   final Dio _dio = ApiClient().dio;
-  static const String _endpoint = '/api/v1/material-receipts';
+  static const String _endpoint = '/api/v1/material-receipts/';
 
   // Get All with Filters
   Future<List<MaterialReceipt>> getReceipts({
@@ -24,8 +23,10 @@ class MaterialReceiptRepository {
         if (search != null && search.isNotEmpty) 'search': search,
         if (poId != null) 'po_id': poId,
         if (declarationId != null) 'declaration_id': declarationId,
-        if (fromDate != null) 'from_date': fromDate.toIso8601String().substring(0, 10),
-        if (toDate != null) 'to_date': toDate.toIso8601String().substring(0, 10),
+        if (fromDate != null)
+          'from_date': fromDate.toIso8601String().substring(0, 10),
+        if (toDate != null)
+          'to_date': toDate.toIso8601String().substring(0, 10),
       };
 
       final response = await _dio.get(_endpoint, queryParameters: queryParams);
@@ -54,15 +55,16 @@ class MaterialReceiptRepository {
   Future<String> getNextReceiptNumber() async {
     try {
       // Gọi API Backend (Backend sẽ chạy logic Python ở trên)
-      final response = await _dio.get('$_endpoint/next-number');
+      final response = await _dio.get('$_endpoint/next-number/');
       return response.data['receipt_number'] ?? '';
     } catch (e) {
       // Fallback nếu mất kết nối: Tạo mã tạm thời đúng format YYYY/MM-OFF...
       final now = DateTime.now();
       final year = now.year;
-      final month = now.month.toString().padLeft(2, '0'); // Đảm bảo 2 chữ số (01, 11)
+      final month =
+          now.month.toString().padLeft(2, '0'); // Đảm bảo 2 chữ số (01, 11)
       final milis = now.millisecondsSinceEpoch % 1000;
-      
+
       print("Error fetching next number: $e");
       return "$year/$month-OFF$milis"; // VD: 2025/11-OFF123
     }
@@ -98,7 +100,7 @@ class MaterialReceiptRepository {
   // Add Detail
   Future<void> addDetail(int receiptId, MaterialReceiptDetail detail) async {
     try {
-      await _dio.post('$_endpoint/$receiptId/details', data: detail.toJson());
+      await _dio.post('$_endpoint/$receiptId/details/', data: detail.toJson());
     } catch (e) {
       throw Exception("Failed to add detail: $e");
     }

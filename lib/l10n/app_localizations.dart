@@ -356,6 +356,60 @@ abstract class AppLocalizations {
   /// **'Note'**
   String get note;
 
+  /// No description provided for @notice.
+  ///
+  /// In en, this message translates to:
+  /// **'Notice'**
+  String get notice;
+
+  /// No description provided for @featureUnderDevelopment.
+  ///
+  /// In en, this message translates to:
+  /// **'This feature is under development.\nPlease come back later.'**
+  String get featureUnderDevelopment;
+
+  /// No description provided for @pageContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Page Content: {path}'**
+  String pageContent(String path);
+
+  /// No description provided for @erpSystemShort.
+  ///
+  /// In en, this message translates to:
+  /// **'ERP System'**
+  String get erpSystemShort;
+
+  /// No description provided for @oppermannHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'OPPERMANN'**
+  String get oppermannHeader;
+
+  /// No description provided for @searchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search...'**
+  String get searchPlaceholder;
+
+  /// No description provided for @productionOutput.
+  ///
+  /// In en, this message translates to:
+  /// **'Production Output'**
+  String get productionOutput;
+
+  /// No description provided for @justNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get justNow;
+
+  /// No description provided for @statusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get statusDone;
+
   /// No description provided for @departmentTitle.
   ///
   /// In en, this message translates to:
@@ -1165,6 +1219,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Maintenance'**
   String get maintenance;
+
+  /// No description provided for @spinning.
+  ///
+  /// In en, this message translates to:
+  /// **'Spinning'**
+  String get spinning;
+
+  /// No description provided for @yarnOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Yarn Out'**
+  String get yarnOut;
 
   /// No description provided for @unassignedArea.
   ///
@@ -3385,6 +3451,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown Material #{id}'**
   String unknownMaterial(int id);
+
+  /// No description provided for @materialPurchaseOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Material Purchase Orders'**
+  String get materialPurchaseOrders;
+
+  /// No description provided for @importExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import/Export'**
+  String get importExport;
+
+  /// No description provided for @stockOutHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Out'**
+  String get stockOutHeader;
+
+  /// No description provided for @materialExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Material Export'**
+  String get materialExport;
+
+  /// No description provided for @semiFinishedExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Semi-finished Export'**
+  String get semiFinishedExport;
+
+  /// No description provided for @finishedProductExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished Product Export'**
+  String get finishedProductExport;
+
+  /// No description provided for @inventoryStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory Stock'**
+  String get inventoryStock;
+
+  /// No description provided for @semiFinishedProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Semi-finished Products'**
+  String get semiFinishedProducts;
+
+  /// No description provided for @finishedProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished Products'**
+  String get finishedProducts;
+
+  /// No description provided for @materialBatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Material Batches'**
+  String get materialBatches;
+
+  /// No description provided for @weaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Weaving'**
+  String get weaving;
+
+  /// No description provided for @machineBasketInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Machine & Basket Info'**
+  String get machineBasketInfo;
+
+  /// No description provided for @weavingManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Weaving Management'**
+  String get weavingManagement;
+
+  /// No description provided for @dyeing.
+  ///
+  /// In en, this message translates to:
+  /// **'Dyeing'**
+  String get dyeing;
+
+  /// No description provided for @printing.
+  ///
+  /// In en, this message translates to:
+  /// **'Printing'**
+  String get printing;
+
+  /// No description provided for @safeFinishedProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Safe Finished Products'**
+  String get safeFinishedProducts;
+
+  /// No description provided for @packing.
+  ///
+  /// In en, this message translates to:
+  /// **'Packing'**
+  String get packing;
+
+  /// No description provided for @rolling.
+  ///
+  /// In en, this message translates to:
+  /// **'Rolling'**
+  String get rolling;
+
+  /// No description provided for @cutting.
+  ///
+  /// In en, this message translates to:
+  /// **'Cutting'**
+  String get cutting;
+
+  /// No description provided for @adminTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator'**
+  String get adminTitle;
+
+  /// No description provided for @activityLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity Log'**
+  String get activityLog;
+
+  /// No description provided for @quickAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Access'**
+  String get quickAccess;
+
+  /// No description provided for @rememberMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember login'**
+  String get rememberMe;
 }
 
 class _AppLocalizationsDelegate

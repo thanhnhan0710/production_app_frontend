@@ -6,7 +6,7 @@ class WarehouseRepository {
   final Dio _dio = ApiClient().dio;
 
   // Endpoint cơ sở dựa trên file python: /api/v1/warehouses
-  static const String _endpoint = '/api/v1/warehouses';
+  static const String _endpoint = '/api/v1/warehouses/';
 
   // Get all warehouses (có hỗ trợ phân trang nếu cần, ở đây mặc định lấy 100)
   Future<List<Warehouse>> getWarehouses() async {
@@ -15,7 +15,7 @@ class WarehouseRepository {
         'skip': 0,
         'limit': 100,
       });
-      
+
       if (response.data is List) {
         return (response.data as List)
             .map((e) => Warehouse.fromJson(e))
@@ -56,7 +56,7 @@ class WarehouseRepository {
       // Backend mong đợi: warehouse_name, location, description
       // Không gửi ID khi tạo mới
       final data = warehouse.toJson();
-      data.remove('warehouse_id'); 
+      data.remove('warehouse_id');
 
       await _dio.post(_endpoint, data: data);
     } catch (e) {
@@ -67,10 +67,7 @@ class WarehouseRepository {
   // Update
   Future<void> updateWarehouse(Warehouse warehouse) async {
     try {
-      await _dio.put(
-        '$_endpoint/${warehouse.id}', 
-        data: warehouse.toJson()
-      );
+      await _dio.put('$_endpoint/${warehouse.id}', data: warehouse.toJson());
     } catch (e) {
       throw Exception("Failed to update warehouse: $e");
     }

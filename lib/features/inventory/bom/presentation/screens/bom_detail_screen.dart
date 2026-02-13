@@ -39,21 +39,15 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
     context.read<ProductCubit>().loadProducts();
   }
 
-  // Helper: Create a full list including missing component types (virtual rows)
   List<BOMDetail> _generateFullDisplayList(List<BOMDetail> currentDetails, int bomId) {
     List<BOMDetail> fullList = [];
-
-    // Loop through all Enum values
     for (var type in BOMComponentType.values) {
-      // Find existing items for this type
       final existingItems = currentDetails.where((d) => d.componentType == type).toList();
-
       if (existingItems.isNotEmpty) {
         fullList.addAll(existingItems);
       } else {
-        // If missing, add a dummy/virtual row (ID = 0)
         fullList.add(BOMDetail(
-          detailId: 0, // 0 marks this as virtual
+          detailId: 0,
           bomId: bomId,
           materialId: 0,
           componentType: type,
@@ -90,9 +84,7 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
   }
 
   void _showAddEditDetailDialog(BuildContext context, BOMDetail? detail, BOMHeader header) async {
-    // If detailId == 0, treat as Add new, but pre-fill componentType
     final isNew = detail == null || detail.detailId == 0;
-    
     final BOMDetail? result = await showDialog(
       context: context,
       barrierDismissible: false,
@@ -147,6 +139,7 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
           onPressed: () => Navigator.pop(context, true),
         ),
       ),
+      // [UPDATED] Sử dụng SingleChildScrollView làm cha để cuộn toàn trang
       body: BlocConsumer<BOMCubit, BOMState>(
         listener: (context, state) {
           if (state is BOMError) {
@@ -175,69 +168,63 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
 
           if (bom == null) return const Center(child: Text("Loading data..."));
 
-          // [LOGIC] Generate full list for display
           final displayList = _generateFullDisplayList(bom.bomDetails, bom.bomId);
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildHeaderInfo(context, bom),
-              const Divider(height: 1, thickness: 1, color: Colors.grey),
-              
-              // CONTENT TABLE
-              Expanded(
-                child: SelectionArea( 
-                  child: Container(
-                    color: Colors.white,
-                    child: CustomScrollView(
-                      slivers: [
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  "Components (${displayList.length})",
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
-                                ),
-                                ElevatedButton.icon(
-                                  onPressed: () => _showAddEditDetailDialog(context, null, bom!),
-                                  icon: const Icon(Icons.add, size: 16),
-                                  label: const Text("Add Component"),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFE3F2FD),
-                                    foregroundColor: const Color(0xFF0055AA),
-                                    elevation: 0,
-                                  ),
-                                )
-                              ],
+          // [UPDATED] Bố cục cuộn toàn trang
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeaderInfo(context, bom),
+                const Divider(height: 1, thickness: 1, color: Colors.grey),
+                
+                Container(
+                  color: Colors.white,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Title & Add Button
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Components (${displayList.length})",
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
                             ),
-                          ),
-                        ),
-                        SliverFillRemaining(
-                          hasScrollBody: true,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              const Divider(height: 1),
-                              Expanded(
-                                child: isDesktop
-                                    ? _buildDesktopTable(displayList, bom)
-                                    : _buildMobileList(displayList, bom),
+                            ElevatedButton.icon(
+                              onPressed: () => _showAddEditDetailDialog(context, null, bom!),
+                              icon: const Icon(Icons.add, size: 16),
+                              label: const Text("Add Component"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE3F2FD),
+                                foregroundColor: const Color(0xFF0055AA),
+                                elevation: 0,
                               ),
-                              if (summary.isNotEmpty)
-                                _buildRollsSummaryTable(summary),
-                            ],
-                          ),
+                            )
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const Divider(height: 1),
+                      
+                      // [UPDATED] List/Table hiển thị full chiều cao
+                      isDesktop
+                          ? _buildDesktopTable(displayList, bom)
+                          : _buildMobileList(displayList, bom), 
+                      
+                      if (summary.isNotEmpty)
+                        _buildRollsSummaryTable(summary),
+                    ],
                   ),
                 ),
-              ),
-              _buildFooterSummary(bom),
-            ],
+                
+                _buildFooterSummary(bom),
+                // Padding dưới cùng để tránh bị nút home che
+                const SizedBox(height: 40),
+              ],
+            ),
           );
         },
       ),
@@ -361,98 +348,81 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
   }
 
   Widget _buildDesktopTable(List<BOMDetail> details, BOMHeader bom) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          scrollDirection: Axis.vertical,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minWidth: constraints.maxWidth),
-              child: DataTable(
-                headingRowColor: MaterialStateProperty.all(Colors.grey.shade50),
-                columnSpacing: 20, 
-                dataRowMinHeight: 45,
-                dataRowMaxHeight: 55,
-                columns: const [
-                  DataColumn(label: Text("Type", style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("Material / Yarn", style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("Threads", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text("Dtex", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text("Twist", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text("Crossweave", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text("Actual Len", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text("Actual (g/m)", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true), 
-                  DataColumn(label: Text("Weight (g/m)", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true), // Theoretical
-                  DataColumn(label: Text("% Ratio", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text("BOM (g/m)", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)), numeric: true),
-                  DataColumn(label: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold))),
-                ],
-                rows: details.map((d) {
-                  final typeColor = _getComponentColor(d.componentType);
-                  final isVirtual = d.detailId == 0; 
-                  final isEmpty = d.yarnTypeName.isEmpty && d.threads == 0;
+    // Desktop: Cho phép cuộn ngang bảng, nhưng chiều dọc bung hết theo nội dung
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        headingRowColor: MaterialStateProperty.all(Colors.grey.shade50),
+        columnSpacing: 20, 
+        dataRowMinHeight: 45,
+        dataRowMaxHeight: 55,
+        columns: const [
+          DataColumn(label: Text("Type", style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text("Material / Yarn", style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(label: Text("Threads", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+          DataColumn(label: Text("Dtex", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+          DataColumn(label: Text("Twist", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+          DataColumn(label: Text("Crossweave", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+          DataColumn(label: Text("Actual Len", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+          DataColumn(label: Text("Actual (g/m)", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true), 
+          DataColumn(label: Text("Weight (g/m)", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true), // Theoretical
+          DataColumn(label: Text("% Ratio", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
+          DataColumn(label: Text("BOM (g/m)", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)), numeric: true),
+          DataColumn(label: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold))),
+        ],
+        rows: details.map((d) {
+          final typeColor = _getComponentColor(d.componentType);
+          final isVirtual = d.detailId == 0; 
+          final isEmpty = d.yarnTypeName.isEmpty && d.threads == 0;
 
-                  // Text style for empty/virtual rows
-                  final textStyle = TextStyle(fontSize: 13, color: isVirtual ? Colors.grey.shade400 : Colors.black87);
-                  final numStyle = TextStyle(fontSize: 13, color: isVirtual ? Colors.grey.shade300 : Colors.black87);
+          final textStyle = TextStyle(fontSize: 13, color: isVirtual ? Colors.grey.shade400 : Colors.black87);
+          final numStyle = TextStyle(fontSize: 13, color: isVirtual ? Colors.grey.shade300 : Colors.black87);
 
-                  return DataRow(
-                    color: isVirtual ? MaterialStateProperty.all(Colors.white) : null,
-                    cells: [
-                    // Col 1: Type
-                    DataCell(Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: typeColor.withOpacity(0.3))),
-                      child: Text(d.componentType.value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: typeColor)),
-                    )),
-                    
-                    // Col 2: Name
-                    DataCell(Text(isEmpty ? "-" : d.yarnTypeName, style: textStyle.copyWith(fontWeight: FontWeight.w500))),
-                    
-                    // Cols 3-11: Values
-                    DataCell(Text(isEmpty ? "-" : "${d.threads}", style: numStyle)),
-                    DataCell(Text(isEmpty ? "-" : d.yarnDtex.toStringAsFixed(0), style: numStyle)),
-                    DataCell(Text(isEmpty ? "-" : d.twisted.toString(), style: numStyle)),
-                    DataCell(Text(isEmpty ? "-" : "${d.crossweaveRate}%", style: numStyle)),
-                    DataCell(Text(isEmpty ? "-" : d.actualLengthCm.toString(), style: numStyle)),
-                    DataCell(Text(isEmpty ? "-" : _precisionFormat.format(d.actualWeightCal), style: numStyle)),
-                    DataCell(Text(isEmpty ? "-" : _numberFormat.format(d.weightPerYarnGm), style: numStyle)),
-                    DataCell(Text(isEmpty ? "-" : _percentFormat.format(d.weightPercentage), style: numStyle)),
-                    DataCell(Text(isEmpty ? "-" : _precisionFormat.format(d.bomGm), style: numStyle.copyWith(fontWeight: FontWeight.bold, color: isVirtual ? Colors.grey.shade300 : Colors.blue))),
-                    
-                    // Col 12: Actions
-                    DataCell(Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Edit/Add Button
-                        IconButton(
-                          icon: Icon(isVirtual ? Icons.add_circle_outline : Icons.edit, size: 18, color: isVirtual ? Colors.green : Colors.orange),
-                          tooltip: isVirtual ? "Add" : "Edit",
-                          onPressed: () => _showAddEditDetailDialog(context, d, bom),
-                        ),
-                        // Delete Button (Only for real data)
-                        if (!isVirtual)
-                          IconButton(
-                            icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                            onPressed: () => _confirmDeleteDetail(context, d, bom.bomId),
-                          ),
-                      ],
-                    )),
-                  ]);
-                }).toList(),
-              ),
-            ),
-          ),
-        );
-      }
+          return DataRow(
+            color: isVirtual ? MaterialStateProperty.all(Colors.white) : null,
+            cells: [
+            DataCell(Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: typeColor.withOpacity(0.3))),
+              child: Text(d.componentType.value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: typeColor)),
+            )),
+            DataCell(Text(isEmpty ? "-" : d.yarnTypeName, style: textStyle.copyWith(fontWeight: FontWeight.w500))),
+            DataCell(Text(isEmpty ? "-" : "${d.threads}", style: numStyle)),
+            DataCell(Text(isEmpty ? "-" : d.yarnDtex.toStringAsFixed(0), style: numStyle)),
+            DataCell(Text(isEmpty ? "-" : d.twisted.toString(), style: numStyle)),
+            DataCell(Text(isEmpty ? "-" : "${d.crossweaveRate}%", style: numStyle)),
+            DataCell(Text(isEmpty ? "-" : d.actualLengthCm.toString(), style: numStyle)),
+            DataCell(Text(isEmpty ? "-" : _precisionFormat.format(d.actualWeightCal), style: numStyle)),
+            DataCell(Text(isEmpty ? "-" : _numberFormat.format(d.weightPerYarnGm), style: numStyle)),
+            DataCell(Text(isEmpty ? "-" : _percentFormat.format(d.weightPercentage), style: numStyle)),
+            DataCell(Text(isEmpty ? "-" : _precisionFormat.format(d.bomGm), style: numStyle.copyWith(fontWeight: FontWeight.bold, color: isVirtual ? Colors.grey.shade300 : Colors.blue))),
+            DataCell(Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(isVirtual ? Icons.add_circle_outline : Icons.edit, size: 18, color: isVirtual ? Colors.green : Colors.orange),
+                  tooltip: isVirtual ? "Add" : "Edit",
+                  onPressed: () => _showAddEditDetailDialog(context, d, bom),
+                ),
+                if (!isVirtual)
+                  IconButton(
+                    icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                    onPressed: () => _confirmDeleteDetail(context, d, bom.bomId),
+                  ),
+              ],
+            )),
+          ]);
+        }).toList(),
+      ),
     );
   }
 
   Widget _buildMobileList(List<BOMDetail> details, BOMHeader bom) {
+    // Mobile: ListView shrinkWrap=true và physics=NeverScrollableScrollPhysics
+    // để nó bung hết chiều cao và cuộn theo SingleChildScrollView của body
     return ListView.separated(
-      physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(12),
       itemCount: details.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -549,7 +519,7 @@ class _BOMDetailScreenState extends State<BOMDetailScreen> {
                       "vs Target: ${_numberFormat.format(bom.targetWeightGm)} (${_percentFormat.format(ratio)})",
                       style: TextStyle(
                         fontSize: 12, 
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.bold, 
                         color: totalBOM > bom.targetWeightGm ? Colors.red : Colors.green
                       ),
                     )
