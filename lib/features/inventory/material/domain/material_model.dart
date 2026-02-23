@@ -5,14 +5,14 @@ class MaterialModel {
   final String materialCode;
   final String? materialName; // [BỔ SUNG]
   final String? materialType;
-  final String? specDenier;
-  final int? specFilament;
-  final String? hsCode;
+  final String? color;
+  final int? dtex;
   final double minStockLevel;
-  
+
   // ID dùng để gửi lên API khi Create/Update
   final int uomBaseId;
   final int uomProductionId;
+  final double? kgPerBobbin;
 
   // Object dùng để hiển thị tên đơn vị (Nested object từ API)
   final ProductUnit? uomBase;
@@ -23,14 +23,14 @@ class MaterialModel {
     required this.materialCode,
     this.materialName, // [BỔ SUNG]
     this.materialType,
-    this.specDenier,
-    this.specFilament,
-    this.hsCode,
+    this.color,
+    this.dtex,
     this.minStockLevel = 0.0,
     required this.uomBaseId,
     required this.uomProductionId,
     this.uomBase,
     this.uomProduction,
+    this.kgPerBobbin,
   });
 
   MaterialModel copyWith({
@@ -38,12 +38,12 @@ class MaterialModel {
     String? materialCode,
     String? materialName, // [BỔ SUNG]
     String? materialType,
-    String? specDenier,
-    int? specFilament,
-    String? hsCode,
+    String? color,
+    int? dtex,
     double? minStockLevel,
     int? uomBaseId,
     int? uomProductionId,
+    double? kgPerBobbin,
     ProductUnit? uomBase,
     ProductUnit? uomProduction,
   }) {
@@ -52,36 +52,40 @@ class MaterialModel {
       materialCode: materialCode ?? this.materialCode,
       materialName: materialName ?? this.materialName, // [BỔ SUNG]
       materialType: materialType ?? this.materialType,
-      specDenier: specDenier ?? this.specDenier,
-      specFilament: specFilament ?? this.specFilament,
-      hsCode: hsCode ?? this.hsCode,
+      color: color ?? this.color,
+      dtex: dtex ?? this.dtex,
       minStockLevel: minStockLevel ?? this.minStockLevel,
       uomBaseId: uomBaseId ?? this.uomBaseId,
       uomProductionId: uomProductionId ?? this.uomProductionId,
       uomBase: uomBase ?? this.uomBase,
       uomProduction: uomProduction ?? this.uomProduction,
+      kgPerBobbin: kgPerBobbin ?? this.kgPerBobbin,
     );
   }
 
   factory MaterialModel.fromJson(Map<String, dynamic> json) {
     return MaterialModel(
-      id: json['id'] ?? 0,
-      materialCode: json['material_code'] ?? '',
-      materialName: json['material_name'], // [BỔ SUNG]
-      materialType: json['material_type'],
-      specDenier: json['spec_denier'],
-      specFilament: json['spec_filament'],
-      hsCode: json['hs_code'],
-      minStockLevel: (json['min_stock_level'] ?? 0).toDouble(),
-      
-      // Lấy ID từ field gốc hoặc từ nested object nếu có
-      uomBaseId: json['uom_base_id'] ?? (json['uom_base']?['unit_id'] ?? 0),
-      uomProductionId: json['uom_production_id'] ?? (json['uom_production']?['unit_id'] ?? 0),
-      
-      // Parse nested objects
-      uomBase: json['uom_base'] != null ? ProductUnit.fromJson(json['uom_base']) : null,
-      uomProduction: json['uom_production'] != null ? ProductUnit.fromJson(json['uom_production']) : null,
-    );
+        id: json['id'] ?? 0,
+        materialCode: json['material_code'] ?? '',
+        materialName: json['material_name'], // [BỔ SUNG]
+        materialType: json['material_type'],
+        color: json['color'],
+        dtex: json['dtex'],
+        minStockLevel: (json['min_stock_level'] ?? 0).toDouble(),
+
+        // Lấy ID từ field gốc hoặc từ nested object nếu có
+        uomBaseId: json['uom_base_id'] ?? (json['uom_base']?['unit_id'] ?? 0),
+        uomProductionId: json['uom_production_id'] ??
+            (json['uom_production']?['unit_id'] ?? 0),
+
+        // Parse nested objects
+        uomBase: json['uom_base'] != null
+            ? ProductUnit.fromJson(json['uom_base'])
+            : null,
+        uomProduction: json['uom_production'] != null
+            ? ProductUnit.fromJson(json['uom_production'])
+            : null,
+        kgPerBobbin: json['kg_per_bobbin']);
   }
 
   Map<String, dynamic> toJson() {
@@ -89,12 +93,12 @@ class MaterialModel {
       'material_code': materialCode,
       'material_name': materialName, // [BỔ SUNG]
       'material_type': materialType,
-      'spec_denier': specDenier,
-      'spec_filament': specFilament,
-      'hs_code': hsCode,
+      'color': color,
+      'dtex': dtex,
       'min_stock_level': minStockLevel,
       'uom_base_id': uomBaseId,
       'uom_production_id': uomProductionId,
+      'kg_per_bobbin': kgPerBobbin,
     };
   }
 }

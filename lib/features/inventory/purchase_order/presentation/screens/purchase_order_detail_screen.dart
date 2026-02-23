@@ -19,12 +19,13 @@ class PurchaseOrderDetailScreen extends StatefulWidget {
   const PurchaseOrderDetailScreen({super.key, required this.poId});
 
   @override
-  State<PurchaseOrderDetailScreen> createState() => _PurchaseOrderDetailScreenState();
+  State<PurchaseOrderDetailScreen> createState() =>
+      _PurchaseOrderDetailScreenState();
 }
 
 class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
   final _currencyFormat = NumberFormat.currency(locale: 'en_US', symbol: '');
-  final _vndFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫'); 
+  final _vndFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
   final _dateFormat = DateFormat('dd/MM/yyyy');
 
   @override
@@ -52,13 +53,12 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
           if (state is POLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           if (state is PODetailLoaded) {
             final po = state.po;
             return Column(
               children: [
                 _buildHeaderInfo(po, l10n),
-                
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,12 +70,15 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.list_alt, color: Color(0xFF003366), size: 20),
+                                const Icon(Icons.list_alt,
+                                    color: Color(0xFF003366), size: 20),
                                 const SizedBox(width: 8),
                                 Text(
-                                  "${l10n.orderItems} (${po.details.length})", 
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF003366))
-                                ),
+                                    "${l10n.orderItems} (${po.details.length})",
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF003366))),
                               ],
                             ),
                             // Hiển thị tổng tiền
@@ -84,12 +87,17 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                               children: [
                                 Text(
                                   "${l10n.totalAmount}: ${_currencyFormat.format(po.totalAmount)} ${po.currency}",
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green),
                                 ),
                                 if (po.currency != 'VND')
                                   Text(
                                     "≈ ${_vndFormat.format(po.totalAmount * po.exchangeRate)}",
-                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                        fontStyle: FontStyle.italic),
                                   ),
                               ],
                             )
@@ -97,16 +105,19 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                         ),
                       ),
                       Expanded(
-                        child: po.details.isEmpty 
-                          ? _buildEmptyState(l10n)
-                          : ListView.separated(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              itemCount: po.details.length,
-                              separatorBuilder: (_,__) => const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                return _buildDetailItem(po.details[index], po);
-                              },
-                            ),
+                        child: po.details.isEmpty
+                            ? _buildEmptyState(l10n)
+                            : ListView.separated(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                itemCount: po.details.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 12),
+                                itemBuilder: (context, index) {
+                                  return _buildDetailItem(
+                                      po.details[index], po);
+                                },
+                              ),
                       ),
                     ],
                   ),
@@ -116,7 +127,9 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
           }
 
           if (state is POError) {
-            return Center(child: Text(l10n.exportError(state.message), style: const TextStyle(color: Colors.red)));
+            return Center(
+                child: Text(l10n.exportError(state.message),
+                    style: const TextStyle(color: Colors.red)));
           }
 
           return const SizedBox();
@@ -129,7 +142,9 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
               onPressed: () => _showAddItemDialog(context, state.po, l10n),
               backgroundColor: const Color(0xFF0055AA),
               icon: const Icon(Icons.add, color: Colors.white),
-              label: Text(l10n.addMaterial, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              label: Text(l10n.addMaterial,
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
             );
           }
           return const SizedBox();
@@ -145,7 +160,10 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
         ],
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
       ),
@@ -159,7 +177,11 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(po.poNumber, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF003366))),
+                    Text(po.poNumber,
+                        style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF003366))),
                     const SizedBox(height: 4),
                     Row(
                       children: [
@@ -168,7 +190,10 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                         Flexible(
                           child: Text(
                             po.vendor?.name ?? "${l10n.vendor} #${po.vendorId}",
-                            style: const TextStyle(fontSize: 15, color: Colors.black87, fontWeight: FontWeight.w500),
+                            style: const TextStyle(
+                                fontSize: 15,
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -184,17 +209,24 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F9FF),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.blue.withOpacity(0.1))
-            ),
+                color: const Color(0xFFF5F9FF),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.blue.withOpacity(0.1))),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildInfoColumn(l10n.date, _dateFormat.format(po.orderDate), Icons.calendar_today),
-                _buildInfoColumn("ETA", po.expectedArrivalDate != null ? _dateFormat.format(po.expectedArrivalDate!) : "--/--", Icons.local_shipping),
-                _buildInfoColumn("Rate", po.exchangeRate.toString(), Icons.currency_exchange),
-                _buildInfoColumn(l10n.currency, po.currency, Icons.attach_money),
+                _buildInfoColumn(l10n.date, _dateFormat.format(po.orderDate),
+                    Icons.calendar_today),
+                _buildInfoColumn(
+                    "ETA",
+                    po.expectedArrivalDate != null
+                        ? _dateFormat.format(po.expectedArrivalDate!)
+                        : "--/--",
+                    Icons.local_shipping),
+                _buildInfoColumn("Rate", po.exchangeRate.toString(),
+                    Icons.currency_exchange),
+                _buildInfoColumn(
+                    l10n.currency, po.currency, Icons.attach_money),
               ],
             ),
           ),
@@ -208,9 +240,14 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
       children: [
         Icon(icon, size: 18, color: Colors.grey.shade500),
         const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+        Text(label,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
         const SizedBox(height: 2),
-        Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87)),
+        Text(value,
+            style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87)),
       ],
     );
   }
@@ -225,20 +262,26 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
       if (mat.materialCode.isNotEmpty) subInfos.add(mat.materialCode);
       if (mat.materialType != null) subInfos.add(mat.materialType!);
       String specs = "";
-      if (mat.specDenier != null) specs += mat.specDenier!;
-      if (mat.specFilament != null && mat.specFilament! > 0) specs += "/${mat.specFilament}F";
+      if (mat.color != null) specs += mat.color!;
+      if (mat.dtex != null && mat.dtex! > 0) specs += "/${mat.dtex}F";
       if (specs.isNotEmpty) subInfos.add(specs);
     }
 
     // Xác định label cho đơn giá (Per Roll hay Per Unit)
-    String priceUnitLabel = item.isPricingByRoll ? "/ Roll" : "/ ${item.uom?.name ?? 'Unit'}";
+    String priceUnitLabel =
+        item.isPricingByRoll ? "/ Roll" : "/ ${item.uom?.name ?? 'Unit'}";
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 4,
+              offset: const Offset(0, 2))
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -246,54 +289,70 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 48, height: 48,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: Colors.blue.shade50,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Center(child: Icon(Icons.layers, color: Color(0xFF0055AA), size: 24)),
+              child: const Center(
+                  child:
+                      Icon(Icons.layers, color: Color(0xFF0055AA), size: 24)),
             ),
             const SizedBox(width: 16),
-            
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     mat?.materialCode ?? "Unknown Item",
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87),
+                    style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87),
                   ),
                   const SizedBox(height: 6),
-                  
                   if (subInfos.isNotEmpty)
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
-                      children: subInfos.map((text) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Text(text, style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
-                      )).toList(),
+                      children: subInfos
+                          .map((text) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: Text(text,
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade700)),
+                              ))
+                          .toList(),
                     ),
                 ],
               ),
             ),
-            
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
                   "${_currencyFormat.format(item.lineTotal)} ${po.currency}",
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF003366)),
                 ),
                 if (po.currency != 'VND')
                   Text(
                     "≈ ${_vndFormat.format(convertedLineTotal)}",
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic),
                   ),
 
                 const SizedBox(height: 4),
@@ -303,16 +362,20 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                   children: [
                     Text(
                       "${_currencyFormat.format(item.quantity)} ${item.uom?.name ?? 'Unit'}",
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87),
                     ),
                     if (item.quantityRolls > 0)
                       Text(
                         " (${item.quantityRolls} rolls)",
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.grey.shade600),
                       ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 2),
                 // [UPDATED] Hiển thị đơn giá kèm đơn vị tính giá
                 Text(
@@ -334,13 +397,17 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.grey.shade100),
-            child: Icon(Icons.add_shopping_cart, size: 40, color: Colors.grey.shade400),
+            decoration: BoxDecoration(
+                shape: BoxShape.circle, color: Colors.grey.shade100),
+            child: Icon(Icons.add_shopping_cart,
+                size: 40, color: Colors.grey.shade400),
           ),
           const SizedBox(height: 16),
-          Text(l10n.noItemsPO, style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+          Text(l10n.noItemsPO,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
           const SizedBox(height: 8),
-          Text(l10n.addMaterialPrompt, style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
+          Text(l10n.addMaterialPrompt,
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
         ],
       ),
     );
@@ -349,40 +416,63 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
   Widget _buildStatusBadge(POStatus status) {
     Color bg, text;
     switch (status) {
-      case POStatus.Draft: bg = Colors.grey.shade200; text = Colors.grey.shade700; break;
-      case POStatus.Sent: bg = Colors.blue.shade100; text = Colors.blue.shade800; break;
-      case POStatus.Confirmed: bg = Colors.indigo.shade100; text = Colors.indigo.shade800; break;
-      case POStatus.Partial: bg = Colors.orange.shade100; text = Colors.orange.shade800; break;
-      case POStatus.Completed: bg = Colors.green.shade100; text = Colors.green.shade800; break;
-      case POStatus.Cancelled: bg = Colors.red.shade100; text = Colors.red.shade800; break;
+      case POStatus.Draft:
+        bg = Colors.grey.shade200;
+        text = Colors.grey.shade700;
+        break;
+      case POStatus.Sent:
+        bg = Colors.blue.shade100;
+        text = Colors.blue.shade800;
+        break;
+      case POStatus.Confirmed:
+        bg = Colors.indigo.shade100;
+        text = Colors.indigo.shade800;
+        break;
+      case POStatus.Partial:
+        bg = Colors.orange.shade100;
+        text = Colors.orange.shade800;
+        break;
+      case POStatus.Completed:
+        bg = Colors.green.shade100;
+        text = Colors.green.shade800;
+        break;
+      case POStatus.Cancelled:
+        bg = Colors.red.shade100;
+        text = Colors.red.shade800;
+        break;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-      child: Text(status.name.toUpperCase(), style: TextStyle(color: text, fontSize: 12, fontWeight: FontWeight.bold)),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      child: Text(status.name.toUpperCase(),
+          style: TextStyle(
+              color: text, fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
 
   // --- DIALOG THÊM CHI TIẾT (Đã cập nhật: Số cuộn + Tính giá theo Cuộn) ---
-  void _showAddItemDialog(BuildContext context, PurchaseOrderHeader po, AppLocalizations l10n) {
+  void _showAddItemDialog(
+      BuildContext context, PurchaseOrderHeader po, AppLocalizations l10n) {
     int? selectedMaterialId;
     int? selectedUomId;
     final qtyCtrl = TextEditingController(text: '');
     final priceCtrl = TextEditingController(text: '');
     final rollsCtrl = TextEditingController(text: '0'); // [NEW] Control số cuộn
-    
+
     // [NEW] Biến switch tính giá
-    bool isPricePerRoll = false; 
+    bool isPricePerRoll = false;
 
     MaterialModel? selectedMaterial;
 
     showDialog(
       context: context,
-      barrierDismissible: false, 
+      barrierDismissible: false,
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (context, setStateDialog) { // Đổi tên thành setStateDialog cho rõ
-            
+          builder: (context, setStateDialog) {
+            // Đổi tên thành setStateDialog cho rõ
+
             double qty = double.tryParse(qtyCtrl.text) ?? 0;
             double price = double.tryParse(priceCtrl.text) ?? 0;
             double rolls = double.tryParse(rollsCtrl.text) ?? 0;
@@ -392,14 +482,18 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
             double totalVND = total * po.exchangeRate;
 
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               titlePadding: const EdgeInsets.all(24),
               contentPadding: const EdgeInsets.symmetric(horizontal: 24),
               title: Row(
                 children: [
                   const Icon(Icons.library_add, color: Color(0xFF003366)),
                   const SizedBox(width: 12),
-                  Text(l10n.addItem, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF003366))),
+                  Text(l10n.addItem,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF003366))),
                 ],
               ),
               content: SizedBox(
@@ -413,34 +507,50 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                       if (po.currency != 'VND')
                         Container(
                           margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                              color: Colors.orange.shade50,
+                              borderRadius: BorderRadius.circular(8)),
                           child: Row(
                             children: [
-                              Icon(Icons.info_outline, size: 16, color: Colors.orange.shade800),
+                              Icon(Icons.info_outline,
+                                  size: 16, color: Colors.orange.shade800),
                               const SizedBox(width: 8),
-                              Text("Rate: 1 ${po.currency} = ${_currencyFormat.format(po.exchangeRate)} VND", style: TextStyle(fontSize: 12, color: Colors.orange.shade900)),
+                              Text(
+                                  "Rate: 1 ${po.currency} = ${_currencyFormat.format(po.exchangeRate)} VND",
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.orange.shade900)),
                             ],
                           ),
                         ),
 
                       // MATERIAL SELECTOR
-                      Text(l10n.materialInfo, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                      Text(l10n.materialInfo,
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey)),
                       const SizedBox(height: 8),
-                      
-                      BlocBuilder<mat_bloc.MaterialCubit, mat_bloc.MaterialState>(
+
+                      BlocBuilder<mat_bloc.MaterialCubit,
+                          mat_bloc.MaterialState>(
                         builder: (context, state) {
                           List<MaterialModel> materials = [];
-                          if (state is mat_bloc.MaterialLoaded) materials = state.materials;
+                          if (state is mat_bloc.MaterialLoaded) {
+                            materials = state.materials;
+                          }
 
                           return InkWell(
                             onTap: () async {
-                              final result = await _showMaterialSearch(context, materials, l10n);
+                              final result = await _showMaterialSearch(
+                                  context, materials, l10n);
                               if (result != null) {
                                 setStateDialog(() {
                                   selectedMaterial = result;
                                   selectedMaterialId = result.id;
-                                  selectedUomId = result.uomBaseId; 
+                                  selectedUomId = result.uomBaseId;
                                 });
                               }
                             },
@@ -449,39 +559,59 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: selectedMaterial != null ? const Color(0xFF003366) : Colors.grey.shade300),
+                                border: Border.all(
+                                    color: selectedMaterial != null
+                                        ? const Color(0xFF003366)
+                                        : Colors.grey.shade300),
                               ),
-                              child: selectedMaterial == null 
-                                ? Row(
-                                    children: [
-                                      Icon(Icons.search, color: Colors.grey.shade400),
-                                      const SizedBox(width: 8),
-                                      Text(l10n.tapToSearch, style: TextStyle(color: Colors.grey.shade500)),
-                                    ],
-                                  )
-                                : Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
-                                        child: const Icon(Icons.check_circle, color: Colors.blue, size: 20),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(selectedMaterial!.materialCode, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                            Text(
-                                              "${selectedMaterial!.materialType ?? 'Raw'} • ${selectedMaterial!.specDenier ?? '-'}", 
-                                              style: TextStyle(fontSize: 12, color: Colors.grey.shade600)
-                                            ),
-                                          ],
+                              child: selectedMaterial == null
+                                  ? Row(
+                                      children: [
+                                        Icon(Icons.search,
+                                            color: Colors.grey.shade400),
+                                        const SizedBox(width: 8),
+                                        Text(l10n.tapToSearch,
+                                            style: TextStyle(
+                                                color: Colors.grey.shade500)),
+                                      ],
+                                    )
+                                  : Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                              color: Colors.blue.shade50,
+                                              borderRadius:
+                                                  BorderRadius.circular(8)),
+                                          child: const Icon(Icons.check_circle,
+                                              color: Colors.blue, size: 20),
                                         ),
-                                      ),
-                                      const Icon(Icons.edit, size: 18, color: Colors.grey),
-                                    ],
-                                  ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                  selectedMaterial!
+                                                      .materialCode,
+                                                  style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 14)),
+                                              Text(
+                                                  "${selectedMaterial!.materialType ?? 'Raw'} • ${selectedMaterial!.dtex ?? '-'}",
+                                                  style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors
+                                                          .grey.shade600)),
+                                            ],
+                                          ),
+                                        ),
+                                        const Icon(Icons.edit,
+                                            size: 18, color: Colors.grey),
+                                      ],
+                                    ),
                             ),
                           );
                         },
@@ -489,9 +619,13 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                       const SizedBox(height: 24),
 
                       // DETAILS INPUT
-                      Text(l10n.transactionDetails, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                      Text(l10n.transactionDetails,
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey)),
                       const SizedBox(height: 8),
-                      
+
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -506,10 +640,12 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                                   decoration: InputDecoration(
                                     labelText: l10n.quantity,
                                     hintText: "0.0",
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                    border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8)),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 14),
                                   ),
-                                  onChanged: (_) => setStateDialog((){}), 
+                                  onChanged: (_) => setStateDialog(() {}),
                                 ),
                                 const SizedBox(height: 12),
                                 // [NEW] Số cuộn
@@ -519,25 +655,37 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                                   decoration: InputDecoration(
                                     labelText: "Số cuộn (Rolls)",
                                     hintText: "0",
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                    border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8)),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 14),
                                   ),
-                                  onChanged: (_) => setStateDialog((){}),
+                                  onChanged: (_) => setStateDialog(() {}),
                                 ),
                                 const SizedBox(height: 12),
                                 BlocBuilder<UnitCubit, UnitState>(
                                   builder: (context, state) {
                                     List<ProductUnit> units = [];
-                                    if (state is UnitLoaded) units = state.units;
+                                    if (state is UnitLoaded) {
+                                      units = state.units;
+                                    }
                                     return DropdownButtonFormField<int>(
                                       value: selectedUomId,
                                       decoration: InputDecoration(
                                         labelText: l10n.unit,
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                        border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8)),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: 12, vertical: 14),
                                       ),
-                                      items: units.map((u) => DropdownMenuItem(value: u.id, child: Text(u.name))).toList(),
-                                      onChanged: (val) => setStateDialog(() => selectedUomId = val),
+                                      items: units
+                                          .map((u) => DropdownMenuItem(
+                                              value: u.id, child: Text(u.name)))
+                                          .toList(),
+                                      onChanged: (val) => setStateDialog(
+                                          () => selectedUomId = val),
                                     );
                                   },
                                 ),
@@ -545,7 +693,6 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                             ),
                           ),
                           const SizedBox(width: 16),
-                          
                           Expanded(
                             flex: 2,
                             child: Column(
@@ -556,19 +703,26 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                                   decoration: InputDecoration(
                                     labelText: l10n.unitPrice,
                                     hintText: "0.0",
-                                    prefixText: po.currency != 'VND' ? "\$ " : "₫ ",
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                    prefixText:
+                                        po.currency != 'VND' ? "\$ " : "₫ ",
+                                    border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8)),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 14),
                                   ),
-                                  onChanged: (_) => setStateDialog((){}),
+                                  onChanged: (_) => setStateDialog(() {}),
                                 ),
                                 const SizedBox(height: 8),
                                 // [NEW] Switch tính giá theo cuộn
                                 SwitchListTile(
                                   contentPadding: EdgeInsets.zero,
-                                  title: Text("Tính theo Cuộn?", style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                                  title: Text("Tính theo Cuộn?",
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade700)),
                                   value: isPricePerRoll,
-                                  onChanged: (val) => setStateDialog(() => isPricePerRoll = val),
+                                  onChanged: (val) => setStateDialog(
+                                      () => isPricePerRoll = val),
                                   activeColor: const Color(0xFF003366),
                                 ),
                               ],
@@ -576,9 +730,9 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // SUMMARY
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -592,10 +746,16 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text("${l10n.estimatedTotal}:", style: const TextStyle(color: Color(0xFF003366), fontWeight: FontWeight.w600)),
+                                Text("${l10n.estimatedTotal}:",
+                                    style: const TextStyle(
+                                        color: Color(0xFF003366),
+                                        fontWeight: FontWeight.w600)),
                                 Text(
                                   "${_currencyFormat.format(total)} ${po.currency}",
-                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
+                                  style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF003366)),
                                 ),
                               ],
                             ),
@@ -606,7 +766,11 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                                 children: [
                                   Text(
                                     "≈ ${_vndFormat.format(totalVND)}",
-                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey.shade600,
+                                        fontStyle: FontStyle.italic),
                                   ),
                                 ],
                               ),
@@ -619,7 +783,9 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                 ),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(l10n.cancel)),
                 ElevatedButton.icon(
                   onPressed: () {
                     if (selectedMaterialId != null) {
@@ -632,20 +798,26 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                         lineTotal: total, // Tổng tiền đã tính đúng logic
                         uomId: selectedUomId,
                         material: selectedMaterial,
-                        isPricingByRoll: isPricePerRoll, // [NEW] Lưu cờ tính giá
+                        isPricingByRoll:
+                            isPricePerRoll, // [NEW] Lưu cờ tính giá
                       );
-                      context.read<PurchaseOrderCubit>().addDetailItem(widget.poId, detail);
+                      context
+                          .read<PurchaseOrderCubit>()
+                          .addDetailItem(widget.poId, detail);
                       Navigator.pop(ctx);
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${l10n.required}: Material"), backgroundColor: Colors.red));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text("${l10n.required}: Material"),
+                          backgroundColor: Colors.red));
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF003366), 
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
-                  ),
+                      backgroundColor: const Color(0xFF003366),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8))),
                   icon: const Icon(Icons.check, size: 18),
                   label: Text(l10n.confirmAdd),
                 )
@@ -657,7 +829,8 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
     );
   }
 
-  Future<MaterialModel?> _showMaterialSearch(BuildContext context, List<MaterialModel> list, AppLocalizations l10n) async {
+  Future<MaterialModel?> _showMaterialSearch(BuildContext context,
+      List<MaterialModel> list, AppLocalizations l10n) async {
     return showDialog<MaterialModel>(
       context: context,
       builder: (ctx) {
@@ -665,30 +838,36 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               title: Text(l10n.searchMaterial),
               content: SizedBox(
-                width: 500, height: 400,
+                width: 500,
+                height: 400,
                 child: Column(
                   children: [
                     TextField(
                       autofocus: true,
                       decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.search), 
-                        hintText: l10n.searchMaterialPlaceholder,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.all(12)
-                      ),
+                          prefixIcon: const Icon(Icons.search),
+                          hintText: l10n.searchMaterialPlaceholder,
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          contentPadding: const EdgeInsets.all(12)),
                       onChanged: (val) {
                         setState(() {
                           if (val.isEmpty) {
                             filtered = List.from(list);
                           } else {
                             final k = val.toLowerCase();
-                            filtered = list.where((m) => 
-                              m.materialCode.toLowerCase().contains(k) ||
-                              (m.materialType?.toLowerCase().contains(k) ?? false)
-                            ).toList();
+                            filtered = list
+                                .where((m) =>
+                                    m.materialCode.toLowerCase().contains(k) ||
+                                    (m.materialType
+                                            ?.toLowerCase()
+                                            .contains(k) ??
+                                        false))
+                                .toList();
                           }
                         });
                       },
@@ -697,14 +876,20 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                     Expanded(
                       child: ListView.separated(
                         itemCount: filtered.length,
-                        separatorBuilder: (_,__) => Divider(height: 1, color: Colors.grey.shade200),
+                        separatorBuilder: (_, __) =>
+                            Divider(height: 1, color: Colors.grey.shade200),
                         itemBuilder: (context, index) {
                           final m = filtered[index];
                           return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            title: Text(m.materialCode, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                            subtitle: Text("${m.materialCode} • ${m.materialType ?? 'Raw'}"),
-                            trailing: const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            title: Text(m.materialCode,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 14)),
+                            subtitle: Text(
+                                "${m.materialCode} • ${m.materialType ?? 'Raw'}"),
+                            trailing: const Icon(Icons.chevron_right,
+                                size: 16, color: Colors.grey),
                             onTap: () => Navigator.pop(ctx, m),
                           );
                         },
@@ -714,7 +899,9 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                 ),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.close))
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(l10n.close))
               ],
             );
           },

@@ -90,6 +90,27 @@ class MachineRepository {
     }
   }
 
+  // --- [MỚI] IMPORT EXCEL ---
+  Future<Map<String, dynamic>> importExcel(PlatformFile file) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          file.bytes!,
+          filename: file.name,
+        ),
+      });
+
+      final response =
+          await _dio.post('/api/v1/machines/import', data: formData);
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint("❌ IMPORT ERROR: ${e.response?.data}");
+      throw Exception(e.response?.data['detail'] ?? e.message);
+    } catch (e) {
+      throw Exception("Failed to import machines: $e");
+    }
+  }
+
   // --- [FIXED] UPDATE STATUS & LOG (Gửi trực tiếp File ảnh qua FormData) ---
   // Backend FastAPI nhận: status (Form), reason (Form), image (File)
   Future<void> updateMachineStatus(int id, String status,

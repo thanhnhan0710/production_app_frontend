@@ -14,13 +14,9 @@ import '../../../material/presentation/bloc/material_cubit.dart' as mat_bloc;
 
 class MaterialDetailDialog extends StatefulWidget {
   final BOMDetail? detail;
-  final int bomId; 
+  final int bomId;
 
-  const MaterialDetailDialog({
-    super.key, 
-    this.detail, 
-    required this.bomId
-  });
+  const MaterialDetailDialog({super.key, this.detail, required this.bomId});
 
   @override
   State<MaterialDetailDialog> createState() => _MaterialDetailDialogState();
@@ -39,7 +35,7 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
 
   BOMComponentType _selectedType = BOMComponentType.ground;
   int? _selectedMaterialId;
-  
+
   // [NEW] Biến lưu Dtex để đồng bộ logic với màn hình Create
   double _currentDtex = 0.0;
 
@@ -58,7 +54,7 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
       _crossweaveCtrl.text = d.crossweaveRate.toString();
       _actualLenCtrl.text = d.actualLengthCm.toString();
       _noteCtrl.text = d.note;
-      
+
       // Load Dtex hiện tại
       _currentDtex = d.yarnDtex;
     }
@@ -70,9 +66,13 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
     InputDecoration inputDeco(String label, {IconData? icon}) {
       return InputDecoration(
         labelText: label,
-        prefixIcon: icon != null ? Icon(icon, size: 18, color: Colors.grey) : null,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        prefixIcon:
+            icon != null ? Icon(icon, size: 18, color: Colors.grey) : null,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300)),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         isDense: true,
       );
     }
@@ -91,11 +91,14 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 DropdownButtonFormField<BOMComponentType>(
                   value: _selectedType,
                   decoration: inputDeco("Type"),
-                  items: BOMComponentType.values.map((e) => DropdownMenuItem(
-                    value: e, 
-                    // [STYLE] Đồng bộ style chữ đậm
-                    child: Text(e.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold))
-                  )).toList(),
+                  items: BOMComponentType.values
+                      .map((e) => DropdownMenuItem(
+                          value: e,
+                          // [STYLE] Đồng bộ style chữ đậm
+                          child: Text(e.name.toUpperCase(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold))))
+                      .toList(),
                   onChanged: (val) => setState(() => _selectedType = val!),
                 ),
                 const SizedBox(height: 12),
@@ -107,26 +110,36 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                     if (state is mat_bloc.MaterialLoaded) {
                       materials = state.materials;
                     }
-                    
+
                     return DropdownSearch<MaterialModel>(
                       items: (filter, props) {
-                         if (filter.isEmpty) return materials;
-                         return materials.where((m) => m.materialCode.toLowerCase().contains(filter.toLowerCase())).toList();
+                        if (filter.isEmpty) return materials;
+                        return materials
+                            .where((m) => m.materialCode
+                                .toLowerCase()
+                                .contains(filter.toLowerCase()))
+                            .toList();
                       },
                       itemAsString: (m) => m.materialCode,
-                      selectedItem: materials.where((m) => m.id == _selectedMaterialId).firstOrNull,
+                      selectedItem: materials
+                          .where((m) => m.id == _selectedMaterialId)
+                          .firstOrNull,
                       compareFn: (i, s) => i.id == s.id,
-                      
+
                       // [STYLE] Decorator giống màn hình Create
                       decoratorProps: DropDownDecoratorProps(
                         decoration: inputDeco("Material", icon: Icons.search),
                       ),
-                      
+
                       popupProps: PopupProps.menu(
                         showSearchBox: true,
-                        itemBuilder: (ctx, item, isDisabled, isSelected) => ListTile(
-                          title: Text(item.materialCode, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text("${item.materialType ?? '-'} | ${item.specDenier ?? ''}"),
+                        itemBuilder: (ctx, item, isDisabled, isSelected) =>
+                            ListTile(
+                          title: Text(item.materialCode,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text(
+                              "${item.materialType ?? '-'} | ${item.dtex ?? ''}"),
                           selected: isSelected,
                         ),
                       ),
@@ -134,13 +147,15 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                         if (m != null) {
                           setState(() {
                             _selectedMaterialId = m.id;
-                            
+
                             // Auto-fill tên sợi nếu chưa nhập
-                            _yarnTypeCtrl.text = "${m.materialCode} ${m.specDenier ?? ''}";
-                            
+                            _yarnTypeCtrl.text =
+                                "${m.materialCode} ${m.dtex ?? ''}";
+
                             // [LOGIC] Tự động cập nhật Dtex từ Material
-                            if (m.specDenier != null) {
-                              _currentDtex = double.tryParse(m.specDenier.toString()) ?? 0.0;
+                            if (m.dtex != null) {
+                              _currentDtex =
+                                  double.tryParse(m.dtex.toString()) ?? 0.0;
                             } else {
                               _currentDtex = 0.0;
                             }
@@ -197,17 +212,20 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _crossweaveCtrl,
-                        decoration: inputDeco("Crossweave (%)"), // Sửa label cho rõ nghĩa giống màn create
+                        decoration: inputDeco(
+                            "Crossweave (%)"), // Sửa label cho rõ nghĩa giống màn create
                         keyboardType: TextInputType.number,
                       ),
                     ),
                   ],
                 ),
-                
+
                 // [Optional] Hiển thị Dtex để kiểm tra
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
-                  child: Text("Current Dtex: ${_currentDtex.toStringAsFixed(0)}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                  child: Text(
+                      "Current Dtex: ${_currentDtex.toStringAsFixed(0)}",
+                      style: const TextStyle(color: Colors.grey, fontSize: 12)),
                 ),
 
                 const SizedBox(height: 8),
@@ -232,7 +250,7 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
             if (_formKey.currentState!.validate()) {
               final newDetail = BOMDetail(
                 detailId: widget.detail?.detailId ?? 0,
-                bomId: widget.bomId, 
+                bomId: widget.bomId,
                 materialId: _selectedMaterialId ?? 1,
                 componentType: _selectedType,
                 threads: int.tryParse(_threadsCtrl.text) ?? 0,
@@ -241,14 +259,14 @@ class _MaterialDetailDialogState extends State<MaterialDetailDialog> {
                 crossweaveRate: double.tryParse(_crossweaveCtrl.text) ?? 0.0,
                 actualLengthCm: double.tryParse(_actualLenCtrl.text) ?? 0.0,
                 note: _noteCtrl.text,
-                
+
                 // [FIX] Sử dụng biến _currentDtex để lưu chính xác độ mảnh sợi
-                yarnDtex: _currentDtex, 
-                
+                yarnDtex: _currentDtex,
+
                 // Các trường tính toán để 0 hoặc giữ nguyên từ bản ghi cũ, Backend sẽ tính lại
-                weightPerYarnGm: widget.detail?.weightPerYarnGm ?? 0, 
-                actualWeightCal: widget.detail?.actualWeightCal ?? 0, 
-                weightPercentage: widget.detail?.weightPercentage ?? 0, 
+                weightPerYarnGm: widget.detail?.weightPerYarnGm ?? 0,
+                actualWeightCal: widget.detail?.actualWeightCal ?? 0,
+                weightPercentage: widget.detail?.weightPercentage ?? 0,
                 bomGm: widget.detail?.bomGm ?? 0,
               );
               Navigator.pop(context, newDetail);

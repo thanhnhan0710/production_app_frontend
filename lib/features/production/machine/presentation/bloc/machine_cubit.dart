@@ -1,14 +1,19 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../data/machine_repository.dart';
 import '../../domain/machine_model.dart';
 
 abstract class MachineState {}
+
 class MachineInitial extends MachineState {}
+
 class MachineLoading extends MachineState {}
+
 class MachineLoaded extends MachineState {
   final List<Machine> machines;
   MachineLoaded(this.machines);
 }
+
 class MachineError extends MachineState {
   final String message;
   MachineError(this.message);
@@ -43,7 +48,8 @@ class MachineCubit extends Cubit<MachineState> {
     }
   }
 
-  Future<void> saveMachine({required Machine machine, required bool isEdit}) async {
+  Future<void> saveMachine(
+      {required Machine machine, required bool isEdit}) async {
     try {
       // [DEBUG] In dữ liệu gửi đi để kiểm tra xem Status/Area có đúng định dạng không
       print("📤 Sending Data: ${machine.toJson()}");
@@ -57,7 +63,7 @@ class MachineCubit extends Cubit<MachineState> {
     } catch (e) {
       // Log lỗi ra console
       print("❌ Save Failed: $e");
-      
+
       // Emit lỗi để hiện lên SnackBar (bỏ chữ "Exception:" cho đẹp)
       emit(MachineError(e.toString().replaceAll("Exception: ", "")));
     }
@@ -69,6 +75,22 @@ class MachineCubit extends Cubit<MachineState> {
       loadMachines();
     } catch (e) {
       emit(MachineError("Failed to delete data: $e"));
+    }
+  }
+
+  // --- [MỚI] IMPORT EXCEL ---
+  Future<void> importExcel(PlatformFile file) async {
+    emit(MachineLoading());
+    try {
+      final result = await _repo.importExcel(file);
+      await loadMachines();
+
+      if (result['errors'] != null && (result['errors'] as List).isNotEmpty) {
+        emit(MachineError(
+            "Đã import ${result['success_count']} dòng. Các lỗi:\n${(result['errors'] as List).join('\n')}"));
+      }
+    } catch (e) {
+      emit(MachineError(e.toString().replaceAll("Exception: ", "")));
     }
   }
 }

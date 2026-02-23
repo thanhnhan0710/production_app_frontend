@@ -28,11 +28,12 @@ class CreateBOMScreen extends StatefulWidget {
 
 class _CreateBOMScreenState extends State<CreateBOMScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Formatters
   final _numberFormat = NumberFormat("#,##0.000");
   final _percentFormat = NumberFormat("#,##0.0'%'");
-  final _precisionFormat = NumberFormat("#,##0.#####"); // Hiển thị tối đa 5 số thập phân
+  final _precisionFormat =
+      NumberFormat("#,##0.#####"); // Hiển thị tối đa 5 số thập phân
 
   // --- Header Controllers ---
   final _yearCtrl = TextEditingController(text: DateTime.now().year.toString());
@@ -72,7 +73,7 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
     _isActive = bom.isActive;
 
     _tempDetails = List.from(bom.bomDetails);
-    _recalculateDetails(); 
+    _recalculateDetails();
   }
 
   // --- LOGIC TÍNH TOÁN (TOP-DOWN) ---
@@ -80,7 +81,7 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
     double scrapRate = double.tryParse(_scrapRateCtrl.text) ?? 0.0;
     double shrinkageRate = double.tryParse(_shrinkageRateCtrl.text) ?? 0.0;
     double targetWeight = double.tryParse(_targetWeightCtrl.text) ?? 0.0;
-    
+
     // Vòng 1: Tính Actual Weight và Theoretical Weight cho từng item, đồng thời tính Tổng Actual
     List<BOMDetail> tempCalcList = [];
     double totalActual = 0.0;
@@ -88,66 +89,73 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
     for (var item in _tempDetails) {
       // 1. Tính Actual Weight (g/m)
       // Formula: (Actual Len / 100) * (Dtex / 11000) * Threads
-      double actual = (item.actualLengthCm / 100) * (item.yarnDtex / 11000) * item.threads;
-      
+      double actual =
+          (item.actualLengthCm / 100) * (item.yarnDtex / 11000) * item.threads;
+
       // Chia 2 nếu là Filling
-      if (item.componentType == BOMComponentType.filling || item.componentType == BOMComponentType.secondFilling) {
+      if (item.componentType == BOMComponentType.filling ||
+          item.componentType == BOMComponentType.secondFilling) {
         actual = actual / 2;
       }
 
       // 2. Tính Theoretical Weight (g/m) - Để hiển thị tham khảo
       // Formula: ((threads * dtex * twisted * (1 + crossweave/100)) / 10000) * (1 + scrap) * (1 + shrinkage)
-      double theoretical = ((item.threads * item.yarnDtex * item.twisted * (1 + (item.crossweaveRate/100))) / 10000) * (1 + (scrapRate/100)) * (1 + (shrinkageRate/100));
+      double theoretical = ((item.threads *
+                  item.yarnDtex *
+                  item.twisted *
+                  (1 + (item.crossweaveRate / 100))) /
+              10000) *
+          (1 + (scrapRate / 100)) *
+          (1 + (shrinkageRate / 100));
 
       totalActual += actual;
 
       // Tạo object tạm với giá trị actual/theo mới tính
       tempCalcList.add(BOMDetail(
-         detailId: item.detailId,
-         bomId: item.bomId,
-         materialId: item.materialId,
-         componentType: item.componentType,
-         threads: item.threads,
-         yarnDtex: item.yarnDtex,
-         yarnTypeName: item.yarnTypeName,
-         twisted: item.twisted,
-         crossweaveRate: item.crossweaveRate,
-         actualLengthCm: item.actualLengthCm,
-         actualWeightCal: actual, 
-         weightPerYarnGm: theoretical, // Lưu giá trị lý thuyết
-         weightPercentage: 0, // Tính ở vòng 2
-         bomGm: 0, // Tính ở vòng 2
-         note: item.note
-      ));
+          detailId: item.detailId,
+          bomId: item.bomId,
+          materialId: item.materialId,
+          componentType: item.componentType,
+          threads: item.threads,
+          yarnDtex: item.yarnDtex,
+          yarnTypeName: item.yarnTypeName,
+          twisted: item.twisted,
+          crossweaveRate: item.crossweaveRate,
+          actualLengthCm: item.actualLengthCm,
+          actualWeightCal: actual,
+          weightPerYarnGm: theoretical, // Lưu giá trị lý thuyết
+          weightPercentage: 0, // Tính ở vòng 2
+          bomGm: 0, // Tính ở vòng 2
+          note: item.note));
     }
 
     // Vòng 2: Tính % Tỷ trọng và BOM g/m dựa trên Target Weight
     List<BOMDetail> finalList = [];
     for (var item in tempCalcList) {
-        // Tính % (Actual / Total Actual)
-        double percentage = totalActual > 0 ? (item.actualWeightCal / totalActual) * 100 : 0.0;
+      // Tính % (Actual / Total Actual)
+      double percentage =
+          totalActual > 0 ? (item.actualWeightCal / totalActual) * 100 : 0.0;
 
-        // Tính BOM g/m (Công thức mới theo yêu cầu)
-        // bom_gm = percentage / 100 * target * (1 + scrap/100)
-        double bomGm = (percentage / 100) * targetWeight * (1 + scrapRate / 100);
+      // Tính BOM g/m (Công thức mới theo yêu cầu)
+      // bom_gm = percentage / 100 * target * (1 + scrap/100)
+      double bomGm = (percentage / 100) * targetWeight * (1 + scrapRate / 100);
 
-        finalList.add(BOMDetail(
-            detailId: item.detailId,
-            bomId: item.bomId,
-            materialId: item.materialId,
-            componentType: item.componentType,
-            threads: item.threads,
-            yarnDtex: item.yarnDtex,
-            yarnTypeName: item.yarnTypeName,
-            twisted: item.twisted,
-            crossweaveRate: item.crossweaveRate,
-            actualLengthCm: item.actualLengthCm,
-            actualWeightCal: item.actualWeightCal,
-            weightPerYarnGm: item.weightPerYarnGm,
-            weightPercentage: percentage, // Cập nhật %
-            bomGm: bomGm, // Cập nhật BOM g/m
-            note: item.note
-        ));
+      finalList.add(BOMDetail(
+          detailId: item.detailId,
+          bomId: item.bomId,
+          materialId: item.materialId,
+          componentType: item.componentType,
+          threads: item.threads,
+          yarnDtex: item.yarnDtex,
+          yarnTypeName: item.yarnTypeName,
+          twisted: item.twisted,
+          crossweaveRate: item.crossweaveRate,
+          actualLengthCm: item.actualLengthCm,
+          actualWeightCal: item.actualWeightCal,
+          weightPerYarnGm: item.weightPerYarnGm,
+          weightPercentage: percentage, // Cập nhật %
+          bomGm: bomGm, // Cập nhật BOM g/m
+          note: item.note));
     }
 
     setState(() {
@@ -157,16 +165,26 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
 
   Color _getComponentColor(BOMComponentType type) {
     switch (type) {
-      case BOMComponentType.ground: return Colors.blue.shade700;
-      case BOMComponentType.grdMarker: return Colors.blue.shade300;
-      case BOMComponentType.filling: return Colors.orange.shade800;
-      case BOMComponentType.secondFilling: return Colors.orange.shade400;
-      case BOMComponentType.edge: return Colors.green.shade600;
-      case BOMComponentType.binder: return Colors.purple.shade600;
-      case BOMComponentType.stuffer: return Colors.grey.shade700;
-      case BOMComponentType.stufferMaker: return Colors.blueGrey.shade400;
-      case BOMComponentType.lock: return Colors.lightGreen.shade400;
-      case BOMComponentType.catchCord: return Colors.teal;
+      case BOMComponentType.ground:
+        return Colors.blue.shade700;
+      case BOMComponentType.grdMarker:
+        return Colors.blue.shade300;
+      case BOMComponentType.filling:
+        return Colors.orange.shade800;
+      case BOMComponentType.secondFilling:
+        return Colors.orange.shade400;
+      case BOMComponentType.edge:
+        return Colors.green.shade600;
+      case BOMComponentType.binder:
+        return Colors.purple.shade600;
+      case BOMComponentType.stuffer:
+        return Colors.grey.shade700;
+      case BOMComponentType.stufferMaker:
+        return Colors.blueGrey.shade400;
+      case BOMComponentType.lock:
+        return Colors.lightGreen.shade400;
+      case BOMComponentType.catchCord:
+        return Colors.teal;
     }
   }
 
@@ -185,7 +203,9 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
           TextButton.icon(
             onPressed: () => _submitBOM(context, l10n),
             icon: const Icon(Icons.save, color: Colors.white),
-            label: Text(l10n.save, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            label: Text(l10n.save,
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 8),
         ],
@@ -208,16 +228,21 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               "Components (${_tempDetails.length})",
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF003366)),
                             ),
                             ElevatedButton.icon(
-                              onPressed: () => _showAddComponentDialog(context, null, l10n),
+                              onPressed: () =>
+                                  _showAddComponentDialog(context, null, l10n),
                               icon: const Icon(Icons.add, size: 16),
                               label: const Text("Add Component"),
                               style: ElevatedButton.styleFrom(
@@ -232,8 +257,12 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
                       const Divider(height: 1),
                       Expanded(
                         child: _tempDetails.isEmpty
-                            ? Center(child: Text(l10n.noItemsPO, style: const TextStyle(color: Colors.grey)))
-                            : (isDesktop ? _buildDesktopTable(l10n) : _buildMobileList(l10n)),
+                            ? Center(
+                                child: Text(l10n.noItemsPO,
+                                    style: const TextStyle(color: Colors.grey)))
+                            : (isDesktop
+                                ? _buildDesktopTable(l10n)
+                                : _buildMobileList(l10n)),
                       ),
                     ],
                   ),
@@ -254,7 +283,7 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
   Widget _buildHeaderForm(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.all(0), 
+      margin: const EdgeInsets.all(0),
       color: Colors.white,
       child: Column(
         children: [
@@ -271,24 +300,35 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
                     return DropdownSearch<Product>(
                       items: (filter, props) {
                         if (filter.isEmpty) return products;
-                        return products.where((p) => p.itemCode.toLowerCase().contains(filter.toLowerCase())).toList();
+                        return products
+                            .where((p) => p.itemCode
+                                .toLowerCase()
+                                .contains(filter.toLowerCase()))
+                            .toList();
                       },
                       itemAsString: (Product p) => p.itemCode,
-                      selectedItem: products.any((p) => p.id == _selectedProductId)
-                          ? products.firstWhere((p) => p.id == _selectedProductId)
-                          : null,
+                      selectedItem:
+                          products.any((p) => p.id == _selectedProductId)
+                              ? products
+                                  .firstWhere((p) => p.id == _selectedProductId)
+                              : null,
                       compareFn: (i, s) => i.id == s.id,
                       decoratorProps: DropDownDecoratorProps(
-                        decoration: _inputDeco(l10n.product, icon: Icons.inventory_2),
+                        decoration:
+                            _inputDeco(l10n.product, icon: Icons.inventory_2),
                       ),
                       popupProps: PopupProps.menu(
                         showSearchBox: true,
-                        itemBuilder: (ctx, item, isDisabled, isSelected) => ListTile(
-                          title: Text(item.itemCode, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        itemBuilder: (ctx, item, isDisabled, isSelected) =>
+                            ListTile(
+                          title: Text(item.itemCode,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
                           selected: isSelected,
                         ),
                       ),
-                      onChanged: (p) => setState(() => _selectedProductId = p?.id),
+                      onChanged: (p) =>
+                          setState(() => _selectedProductId = p?.id),
                       validator: (p) => p == null ? l10n.required : null,
                     );
                   },
@@ -299,7 +339,8 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
                 flex: 2,
                 child: TextFormField(
                   controller: _yearCtrl,
-                  decoration: _inputDeco("Applicable Year", icon: Icons.calendar_today),
+                  decoration:
+                      _inputDeco("Applicable Year", icon: Icons.calendar_today),
                   keyboardType: TextInputType.number,
                   validator: (v) => v!.isEmpty ? l10n.required : null,
                 ),
@@ -307,7 +348,6 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
             ],
           ),
           const SizedBox(height: 12),
-
           Row(
             children: [
               Expanded(
@@ -321,34 +361,39 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(child: TextFormField(controller: _widthCtrl, decoration: _inputDeco("Width (mm)"), keyboardType: TextInputType.number)),
+              Expanded(
+                  child: TextFormField(
+                      controller: _widthCtrl,
+                      decoration: _inputDeco("Width (mm)"),
+                      keyboardType: TextInputType.number)),
               const SizedBox(width: 12),
-              Expanded(child: TextFormField(controller: _picksCtrl, decoration: _inputDeco("Picks"), keyboardType: TextInputType.number)),
+              Expanded(
+                  child: TextFormField(
+                      controller: _picksCtrl,
+                      decoration: _inputDeco("Picks"),
+                      keyboardType: TextInputType.number)),
             ],
           ),
           const SizedBox(height: 12),
-
           Row(
             children: [
               Expanded(
-                child: TextFormField(
-                  controller: _scrapRateCtrl, 
-                  decoration: _inputDeco("Scrap Rate (%)"), 
-                  keyboardType: TextInputType.number,
-                  // Khi đổi Scrap Rate -> Tính lại
-                  onChanged: (_) => _recalculateDetails(),
-                )
-              ),
+                  child: TextFormField(
+                controller: _scrapRateCtrl,
+                decoration: _inputDeco("Scrap Rate (%)"),
+                keyboardType: TextInputType.number,
+                // Khi đổi Scrap Rate -> Tính lại
+                onChanged: (_) => _recalculateDetails(),
+              )),
               const SizedBox(width: 12),
               Expanded(
-                child: TextFormField(
-                  controller: _shrinkageRateCtrl, 
-                  decoration: _inputDeco("Shrinkage Rate (%)"), 
-                  keyboardType: TextInputType.number,
-                  // Khi đổi Shrinkage -> Tính lại
-                  onChanged: (_) => _recalculateDetails(),
-                )
-              ),
+                  child: TextFormField(
+                controller: _shrinkageRateCtrl,
+                decoration: _inputDeco("Shrinkage Rate (%)"),
+                keyboardType: TextInputType.number,
+                // Khi đổi Shrinkage -> Tính lại
+                onChanged: (_) => _recalculateDetails(),
+              )),
             ],
           )
         ],
@@ -360,87 +405,133 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
     final sortedDetails = List<BOMDetail>.from(_tempDetails)
       ..sort((a, b) => a.componentType.index.compareTo(b.componentType.index));
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          scrollDirection: Axis.vertical,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minWidth: constraints.maxWidth),
-              child: DataTable(
-                headingRowColor: MaterialStateProperty.all(Colors.grey.shade50),
-                columnSpacing: 24,
-                dataRowMinHeight: 50,
-                dataRowMaxHeight: 60,
-                columns: const [
-                  DataColumn(label: Text("Type", style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("Material / Yarn", style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("Threads", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text("Dtex", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text("Twist", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  // [MỚI] Crossweave
-                  DataColumn(label: Text("Crossweave", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text("Actual Len", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text("Actual (g/m)", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  // [MỚI] Weight (Theo) & % Ratio
-                  DataColumn(label: Text("Weight (g/m)", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  DataColumn(label: Text("% Ratio", style: TextStyle(fontWeight: FontWeight.bold)), numeric: true),
-                  
-                  DataColumn(label: Text("BOM (g/m)", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)), numeric: true),
-                  DataColumn(label: Text("Actions", style: TextStyle(fontWeight: FontWeight.bold))),
-                ],
-                rows: sortedDetails.map((d) {
-                  final typeColor = _getComponentColor(d.componentType);
-                  final realIndex = _tempDetails.indexOf(d);
+    return LayoutBuilder(builder: (context, constraints) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.vertical,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minWidth: constraints.maxWidth),
+            child: DataTable(
+              headingRowColor: MaterialStateProperty.all(Colors.grey.shade50),
+              columnSpacing: 24,
+              dataRowMinHeight: 50,
+              dataRowMaxHeight: 60,
+              columns: const [
+                DataColumn(
+                    label: Text("Type",
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+                DataColumn(
+                    label: Text("Material / Yarn",
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+                DataColumn(
+                    label: Text("Threads",
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    numeric: true),
+                DataColumn(
+                    label: Text("Dtex",
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    numeric: true),
+                DataColumn(
+                    label: Text("Twist",
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    numeric: true),
+                // [MỚI] Crossweave
+                DataColumn(
+                    label: Text("Crossweave",
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    numeric: true),
+                DataColumn(
+                    label: Text("Actual Len",
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    numeric: true),
+                DataColumn(
+                    label: Text("Actual (g/m)",
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    numeric: true),
+                // [MỚI] Weight (Theo) & % Ratio
+                DataColumn(
+                    label: Text("Weight (g/m)",
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    numeric: true),
+                DataColumn(
+                    label: Text("% Ratio",
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    numeric: true),
 
-                  return DataRow(cells: [
-                    DataCell(Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: typeColor.withOpacity(0.3))),
-                      child: Text(d.componentType.value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: typeColor)),
-                    )),
-                    DataCell(Text(d.yarnTypeName, style: const TextStyle(fontWeight: FontWeight.w500))),
-                    DataCell(Text("${d.threads}")),
-                    DataCell(Text(d.yarnDtex.toStringAsFixed(0))),
-                    DataCell(Text(d.twisted.toString())),
-                    // [MỚI]
-                    DataCell(Text("${d.crossweaveRate}%")),
-                    DataCell(Text(d.actualLengthCm.toString())),
-                    // [YÊU CẦU] Max 5 số thập phân
-                    DataCell(Text(_precisionFormat.format(d.actualWeightCal))), 
-                    // [MỚI]
-                    DataCell(Text(_numberFormat.format(d.weightPerYarnGm))),
-                    DataCell(Text(_percentFormat.format(d.weightPercentage))),
-                    
-                    // [THAY ĐỔI] Hiển thị BOM full decimal
-                    DataCell(Text(_precisionFormat.format(d.bomGm), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))),
-                    DataCell(Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, size: 18, color: Colors.orange),
-                          onPressed: () => _showAddComponentDialog(context, realIndex, l10n),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                          onPressed: () {
-                            setState(() {
-                              _tempDetails.removeAt(realIndex);
-                              _recalculateDetails();
-                            });
-                          },
-                        ),
-                      ],
-                    )),
-                  ]);
-                }).toList(),
-              ),
+                DataColumn(
+                    label: Text("BOM (g/m)",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.blue)),
+                    numeric: true),
+                DataColumn(
+                    label: Text("Actions",
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+              ],
+              rows: sortedDetails.map((d) {
+                final typeColor = _getComponentColor(d.componentType);
+                final realIndex = _tempDetails.indexOf(d);
+
+                return DataRow(cells: [
+                  DataCell(Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                        color: typeColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: typeColor.withOpacity(0.3))),
+                    child: Text(d.componentType.value,
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: typeColor)),
+                  )),
+                  DataCell(Text(d.yarnTypeName,
+                      style: const TextStyle(fontWeight: FontWeight.w500))),
+                  DataCell(Text("${d.threads}")),
+                  DataCell(Text(d.yarnDtex.toStringAsFixed(0))),
+                  DataCell(Text(d.twisted.toString())),
+                  // [MỚI]
+                  DataCell(Text("${d.crossweaveRate}%")),
+                  DataCell(Text(d.actualLengthCm.toString())),
+                  // [YÊU CẦU] Max 5 số thập phân
+                  DataCell(Text(_precisionFormat.format(d.actualWeightCal))),
+                  // [MỚI]
+                  DataCell(Text(_numberFormat.format(d.weightPerYarnGm))),
+                  DataCell(Text(_percentFormat.format(d.weightPercentage))),
+
+                  // [THAY ĐỔI] Hiển thị BOM full decimal
+                  DataCell(Text(_precisionFormat.format(d.bomGm),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.blue))),
+                  DataCell(Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit,
+                            size: 18, color: Colors.orange),
+                        onPressed: () =>
+                            _showAddComponentDialog(context, realIndex, l10n),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete,
+                            size: 18, color: Colors.red),
+                        onPressed: () {
+                          setState(() {
+                            _tempDetails.removeAt(realIndex);
+                            _recalculateDetails();
+                          });
+                        },
+                      ),
+                    ],
+                  )),
+                ]);
+              }).toList(),
             ),
           ),
-        );
-      }
-    );
+        ),
+      );
+    });
   }
 
   Widget _buildMobileList(AppLocalizations l10n) {
@@ -458,17 +549,30 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
 
         return Card(
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.grey.shade200)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: Colors.grey.shade200)),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(child: Text(d.yarnTypeName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14))),
+                Expanded(
+                    child: Text(d.yarnTypeName,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14))),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(color: typeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                  child: Text(d.componentType.value, style: TextStyle(fontSize: 10, color: typeColor, fontWeight: FontWeight.bold)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                      color: typeColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4)),
+                  child: Text(d.componentType.value,
+                      style: TextStyle(
+                          fontSize: 10,
+                          color: typeColor,
+                          fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -476,17 +580,20 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 6),
-                Text("${d.threads} ends | ${d.yarnDtex.toInt()} dtex | CW: ${d.crossweaveRate}%", style: TextStyle(color: Colors.grey.shade700)),
+                Text(
+                    "${d.threads} ends | ${d.yarnDtex.toInt()} dtex | CW: ${d.crossweaveRate}%",
+                    style: TextStyle(color: Colors.grey.shade700)),
                 const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Act: ${_precisionFormat.format(d.actualWeightCal)} g/m"),
+                    Text(
+                        "Act: ${_precisionFormat.format(d.actualWeightCal)} g/m"),
                     Expanded(
-                      child: Text("BOM: ${d.bomGm} g/m", 
-                        textAlign: TextAlign.right,
-                        style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)
-                      ),
+                      child: Text("BOM: ${d.bomGm} g/m",
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                              color: Colors.blue, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 )
@@ -494,7 +601,8 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
             ),
             trailing: PopupMenuButton(
               onSelected: (val) {
-                if (val == 'edit') _showAddComponentDialog(context, realIndex, l10n);
+                if (val == 'edit')
+                  _showAddComponentDialog(context, realIndex, l10n);
                 if (val == 'delete') {
                   setState(() {
                     _tempDetails.removeAt(realIndex);
@@ -504,7 +612,9 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
               },
               itemBuilder: (ctx) => [
                 const PopupMenuItem(value: 'edit', child: Text("Edit")),
-                const PopupMenuItem(value: 'delete', child: Text("Delete", style: TextStyle(color: Colors.red))),
+                const PopupMenuItem(
+                    value: 'delete',
+                    child: Text("Delete", style: TextStyle(color: Colors.red))),
               ],
             ),
           ),
@@ -515,27 +625,33 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
 
   Widget _buildFooterSummary() {
     double totalBOM = _tempDetails.fold(0.0, (sum, item) => sum + item.bomGm);
-    double totalActual = _tempDetails.fold(0.0, (sum, item) => sum + item.actualWeightCal);
+    double totalActual =
+        _tempDetails.fold(0.0, (sum, item) => sum + item.actualWeightCal);
     // [YÊU CẦU] Thêm tổng trọng lượng lý thuyết
-    double totalWeight = _tempDetails.fold(0.0, (sum, item) => sum + item.weightPerYarnGm);
-    
+    double totalWeight =
+        _tempDetails.fold(0.0, (sum, item) => sum + item.weightPerYarnGm);
+
     double target = double.tryParse(_targetWeightCtrl.text) ?? 0.0;
     double ratio = target > 0 ? (totalBOM / target) : 0;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.black12))
-      ),
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Colors.black12))),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Total Actual:", style: TextStyle(color: Colors.grey, fontSize: 12)),
-              Text("${_numberFormat.format(totalActual)} g/m", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+              const Text("Total Actual:",
+                  style: TextStyle(color: Colors.grey, fontSize: 12)),
+              Text("${_numberFormat.format(totalActual)} g/m",
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87)),
             ],
           ),
 
@@ -543,27 +659,35 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Total Weight:", style: TextStyle(color: Colors.grey, fontSize: 12)),
-              Text("${_numberFormat.format(totalWeight)} g/m", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+              const Text("Total Weight:",
+                  style: TextStyle(color: Colors.grey, fontSize: 12)),
+              Text("${_numberFormat.format(totalWeight)} g/m",
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87)),
             ],
           ),
-          
+
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text("Calculated BOM (Sum):", style: TextStyle(color: Colors.grey, fontSize: 12)),
+              const Text("Calculated BOM (Sum):",
+                  style: TextStyle(color: Colors.grey, fontSize: 12)),
               Text(
                 "${_numberFormat.format(totalBOM)} g/m",
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF003366)),
+                style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF003366)),
               ),
               if (target > 0)
                 Text(
                   "vs Target: ${_numberFormat.format(target)} (${_percentFormat.format(ratio)})",
                   style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: totalBOM > target ? Colors.red : Colors.green
-                  ),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: totalBOM > target ? Colors.red : Colors.green),
                 )
             ],
           )
@@ -572,26 +696,32 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
     );
   }
 
-  void _showAddComponentDialog(BuildContext context, int? index, AppLocalizations l10n) {
+  void _showAddComponentDialog(
+      BuildContext context, int? index, AppLocalizations l10n) {
     final isEdit = index != null;
     final existingItem = isEdit ? _tempDetails[index] : null;
 
     int? selectedMatId = existingItem?.materialId;
-    BOMComponentType selectedType = existingItem?.componentType ?? BOMComponentType.ground;
+    BOMComponentType selectedType =
+        existingItem?.componentType ?? BOMComponentType.ground;
     double currentDtex = existingItem?.yarnDtex ?? 0.0;
 
-    final yarnNameCtrl = TextEditingController(text: existingItem?.yarnTypeName ?? '');
-    final threadsCtrl = TextEditingController(text: existingItem?.threads.toString() ?? '0');
-    final twistCtrl = TextEditingController(text: existingItem?.twisted.toString() ?? '1.0');
-    final lenCtrl = TextEditingController(text: existingItem?.actualLengthCm.toString() ?? '0.0');
-    final crossCtrl = TextEditingController(text: existingItem?.crossweaveRate.toString() ?? '0.0');
+    final yarnNameCtrl =
+        TextEditingController(text: existingItem?.yarnTypeName ?? '');
+    final threadsCtrl =
+        TextEditingController(text: existingItem?.threads.toString() ?? '0');
+    final twistCtrl =
+        TextEditingController(text: existingItem?.twisted.toString() ?? '1.0');
+    final lenCtrl = TextEditingController(
+        text: existingItem?.actualLengthCm.toString() ?? '0.0');
+    final crossCtrl = TextEditingController(
+        text: existingItem?.crossweaveRate.toString() ?? '0.0');
 
     showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) {
+          return StatefulBuilder(builder: (context, setStateDialog) {
             return AlertDialog(
               title: Text(isEdit ? "Edit Component" : "Add Component"),
               content: SizedBox(
@@ -603,31 +733,58 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
                       DropdownButtonFormField<BOMComponentType>(
                         value: selectedType,
                         decoration: _inputDeco("Type"),
-                        items: BOMComponentType.values.map((e) => DropdownMenuItem(value: e, child: Text(e.value.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)))).toList(),
-                        onChanged: (v) => setStateDialog(() => selectedType = v!),
+                        items: BOMComponentType.values
+                            .map((e) => DropdownMenuItem(
+                                value: e,
+                                child: Text(e.value.toUpperCase(),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold))))
+                            .toList(),
+                        onChanged: (v) =>
+                            setStateDialog(() => selectedType = v!),
                       ),
                       const SizedBox(height: 12),
-                      BlocBuilder<mat_bloc.MaterialCubit, mat_bloc.MaterialState>(
+                      BlocBuilder<mat_bloc.MaterialCubit,
+                          mat_bloc.MaterialState>(
                         builder: (context, state) {
                           List<MaterialModel> materials = [];
-                          if (state is mat_bloc.MaterialLoaded) materials = state.materials;
+                          if (state is mat_bloc.MaterialLoaded)
+                            materials = state.materials;
                           return DropdownSearch<MaterialModel>(
                             items: (filter, props) {
-                               if (filter.isEmpty) return materials;
-                               return materials.where((m) => m.materialCode.toLowerCase().contains(filter.toLowerCase())).toList();
+                              if (filter.isEmpty) return materials;
+                              return materials
+                                  .where((m) => m.materialCode
+                                      .toLowerCase()
+                                      .contains(filter.toLowerCase()))
+                                  .toList();
                             },
                             itemAsString: (m) => m.materialCode,
-                            selectedItem: materials.where((m) => m.id == selectedMatId).firstOrNull,
+                            selectedItem: materials
+                                .where((m) => m.id == selectedMatId)
+                                .firstOrNull,
                             compareFn: (i, s) => i.id == s.id,
-                            decoratorProps: DropDownDecoratorProps(decoration: _inputDeco("Material", icon: Icons.search)),
-                            popupProps: PopupProps.menu(showSearchBox: true, itemBuilder: (ctx, item, isDisabled, isSelected) => ListTile(title: Text(item.materialCode), subtitle: Text(item.specDenier ?? ''), selected: isSelected)),
+                            decoratorProps: DropDownDecoratorProps(
+                                decoration:
+                                    _inputDeco("Material", icon: Icons.search)),
+                            popupProps: PopupProps.menu(
+                                showSearchBox: true,
+                                itemBuilder:
+                                    (ctx, item, isDisabled, isSelected) =>
+                                        ListTile(
+                                            title: Text(item.materialCode),
+                                            subtitle: Text('${item.dtex}'),
+                                            selected: isSelected)),
                             onChanged: (m) {
                               if (m != null) {
                                 setStateDialog(() {
                                   selectedMatId = m.id;
-                                  yarnNameCtrl.text = "${m.materialName} ${m.specDenier ?? ''}";
-                                  if (m.specDenier != null) {
-                                    currentDtex = double.tryParse(m.specDenier.toString()) ?? 0.0;
+                                  yarnNameCtrl.text =
+                                      "${m.materialName} ${m.dtex ?? ''}";
+                                  if (m.dtex != null) {
+                                    currentDtex =
+                                        double.tryParse(m.dtex.toString()) ??
+                                            0.0;
                                   } else {
                                     currentDtex = 0.0;
                                   }
@@ -638,34 +795,57 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
                         },
                       ),
                       const SizedBox(height: 12),
-                      TextFormField(controller: yarnNameCtrl, decoration: _inputDeco("Yarn Name / Code")),
+                      TextFormField(
+                          controller: yarnNameCtrl,
+                          decoration: _inputDeco("Yarn Name / Code")),
                       const SizedBox(height: 12),
                       Row(children: [
-                        Expanded(child: TextFormField(controller: threadsCtrl, decoration: _inputDeco("Threads"), keyboardType: TextInputType.number)),
+                        Expanded(
+                            child: TextFormField(
+                                controller: threadsCtrl,
+                                decoration: _inputDeco("Threads"),
+                                keyboardType: TextInputType.number)),
                         const SizedBox(width: 12),
-                        Expanded(child: TextFormField(controller: twistCtrl, decoration: _inputDeco("Twist"), keyboardType: TextInputType.number)),
+                        Expanded(
+                            child: TextFormField(
+                                controller: twistCtrl,
+                                decoration: _inputDeco("Twist"),
+                                keyboardType: TextInputType.number)),
                       ]),
                       const SizedBox(height: 12),
                       Row(children: [
-                        Expanded(child: TextFormField(controller: lenCtrl, decoration: _inputDeco("Actual (cm)"), keyboardType: TextInputType.number)),
+                        Expanded(
+                            child: TextFormField(
+                                controller: lenCtrl,
+                                decoration: _inputDeco("Actual (cm)"),
+                                keyboardType: TextInputType.number)),
                         const SizedBox(width: 12),
-                        Expanded(child: TextFormField(controller: crossCtrl, decoration: _inputDeco("Crossweave (%)"), keyboardType: TextInputType.number)),
+                        Expanded(
+                            child: TextFormField(
+                                controller: crossCtrl,
+                                decoration: _inputDeco("Crossweave (%)"),
+                                keyboardType: TextInputType.number)),
                       ]),
                       Padding(
                         padding: const EdgeInsets.only(top: 8.0),
-                        child: Text("Current Dtex: ${currentDtex.toStringAsFixed(0)}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                        child: Text(
+                            "Current Dtex: ${currentDtex.toStringAsFixed(0)}",
+                            style: const TextStyle(
+                                color: Colors.grey, fontSize: 12)),
                       )
                     ],
                   ),
                 ),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(l10n.cancel)),
                 ElevatedButton(
                   onPressed: () {
                     if (yarnNameCtrl.text.isNotEmpty) {
                       final newItem = BOMDetail(
-                        detailId: existingItem?.detailId ?? 0, 
+                        detailId: existingItem?.detailId ?? 0,
                         bomId: widget.existingBOM?.bomId ?? 0,
                         materialId: selectedMatId ?? 1,
                         componentType: selectedType,
@@ -674,10 +854,10 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
                         twisted: double.tryParse(twistCtrl.text) ?? 1.0,
                         actualLengthCm: double.tryParse(lenCtrl.text) ?? 0.0,
                         crossweaveRate: double.tryParse(crossCtrl.text) ?? 0.0,
-                        yarnDtex: currentDtex, 
-                        weightPerYarnGm: existingItem?.weightPerYarnGm ?? 0, 
-                        actualWeightCal: 0, 
-                        weightPercentage: 0, 
+                        yarnDtex: currentDtex,
+                        weightPerYarnGm: existingItem?.weightPerYarnGm ?? 0,
+                        actualWeightCal: 0,
+                        weightPercentage: 0,
                         bomGm: 0,
                         note: "",
                       );
@@ -697,10 +877,8 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
                 )
               ],
             );
-          }
-        );
-      }
-    );
+          });
+        });
   }
 
   void _submitBOM(BuildContext context, AppLocalizations l10n) {
@@ -717,21 +895,27 @@ class _CreateBOMScreenState extends State<CreateBOMScreen> {
         totalShrinkageRate: double.tryParse(_shrinkageRateCtrl.text) ?? 0.0,
         version: int.tryParse(_versionCtrl.text) ?? 1,
         isActive: _isActive,
-        bomDetails: _tempDetails, 
+        bomDetails: _tempDetails,
       );
 
-      context.read<BOMCubit>().saveBOMHeader(bom: newBOM, isEdit: widget.existingBOM != null);
+      context
+          .read<BOMCubit>()
+          .saveBOMHeader(bom: newBOM, isEdit: widget.existingBOM != null);
       Navigator.pop(context);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.productRequired), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(l10n.productRequired), backgroundColor: Colors.red));
     }
   }
 
   InputDecoration _inputDeco(String label, {IconData? icon}) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: icon != null ? Icon(icon, size: 18, color: Colors.grey) : null,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+      prefixIcon:
+          icon != null ? Icon(icon, size: 18, color: Colors.grey) : null,
+      border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       isDense: true,
     );

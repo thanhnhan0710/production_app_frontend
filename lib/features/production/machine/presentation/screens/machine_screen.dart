@@ -1,15 +1,13 @@
-import 'dart:async'; // [MỚI] Import Timer
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:file_picker/file_picker.dart'; // [MỚI] Thêm file_picker
 import 'package:production_app_frontend/l10n/app_localizations.dart';
 import 'package:production_app_frontend/core/widgets/responsive_layout.dart';
+import 'package:production_app_frontend/core/network/websocket_service.dart';
 
 import '../../domain/machine_model.dart';
 import '../bloc/machine_cubit.dart';
-
-// Import Supplier Feature
-import 'package:production_app_frontend/features/inventory/supplier/domain/supplier_model.dart';
-import 'package:production_app_frontend/features/inventory/supplier/presentation/bloc/supplier_cubit.dart';
 
 class MachineScreen extends StatefulWidget {
   const MachineScreen({super.key});
@@ -20,15 +18,12 @@ class MachineScreen extends StatefulWidget {
 
 class _MachineScreenState extends State<MachineScreen> {
   final _searchController = TextEditingController();
-
-  // [MỚI] Timer cho tìm kiếm
   Timer? _debounce;
 
   final Color _primaryColor = const Color(0xFF003366);
   final Color _accentColor = const Color(0xFFC2185B);
   final Color _bgLight = const Color(0xFFF5F7FA);
 
-  // Danh sách trạng thái
   final List<String> _statusOptions = [
     'Running',
     'Stopped',
@@ -43,18 +38,27 @@ class _MachineScreenState extends State<MachineScreen> {
   void initState() {
     super.initState();
     context.read<MachineCubit>().loadMachines();
-    context.read<SupplierCubit>().loadSuppliers();
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
   }
 
   @override
   void dispose() {
-    // [MỚI] Hủy timer
     _debounce?.cancel();
     _searchController.dispose();
+    WebSocketService().removeListener(_onWebSocketMessage);
     super.dispose();
   }
 
-  // [MỚI] Hàm xử lý tìm kiếm
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_MACHINES") {
+      debugPrint("WebSocket: Cập nhật lại danh sách máy móc.");
+      if (mounted) {
+        context.read<MachineCubit>().loadMachines();
+      }
+    }
+  }
+
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
@@ -116,7 +120,33 @@ class _MachineScreenState extends State<MachineScreen> {
                           ],
                         ),
                         const Spacer(),
-                        if (isDesktop)
+                        if (isDesktop) ...[
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              final result =
+                                  await FilePicker.platform.pickFiles(
+                                type: FileType.custom,
+                                allowedExtensions: ['xls', 'xlsx'],
+                                withData: true,
+                              );
+                              if (result != null && result.files.isNotEmpty) {
+                                context
+                                    .read<MachineCubit>()
+                                    .importExcel(result.files.first);
+                              }
+                            },
+                            icon: const Icon(Icons.upload_file, size: 18),
+                            label: const Text('IMPORT EXCEL'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _primaryColor,
+                              side: BorderSide(color: _primaryColor),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
                           ElevatedButton.icon(
                             onPressed: () =>
                                 _showEditDialog(context, null, l10n),
@@ -132,6 +162,7 @@ class _MachineScreenState extends State<MachineScreen> {
                                   borderRadius: BorderRadius.circular(8)),
                             ),
                           ),
+                        ]
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -156,7 +187,7 @@ class _MachineScreenState extends State<MachineScreen> {
                             child: TextField(
                               controller: _searchController,
                               textInputAction: TextInputAction.search,
-                              onChanged: _onSearchChanged, // [MỚI]
+                              onChanged: _onSearchChanged,
                               decoration: InputDecoration(
                                 hintText: l10n.searchMachine,
                                 hintStyle: TextStyle(
@@ -166,7 +197,6 @@ class _MachineScreenState extends State<MachineScreen> {
                                 border: InputBorder.none,
                                 contentPadding:
                                     const EdgeInsets.symmetric(vertical: 14),
-                                // [MỚI] Nút Clear
                                 suffixIcon: _searchController.text.isNotEmpty
                                     ? IconButton(
                                         icon: const Icon(Icons.clear,
@@ -190,16 +220,6 @@ class _MachineScreenState extends State<MachineScreen> {
                               },
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey.shade300)),
-                          child: const Icon(Icons.filter_list,
-                              color: Colors.grey, size: 20),
                         ),
                       ],
                     ),
@@ -293,8 +313,10 @@ class _MachineScreenState extends State<MachineScreen> {
                           label: Text(l10n.area.toUpperCase(),
                               style: _headerStyle)),
                       DataColumn(
-                          label: Text(l10n.purpose.toUpperCase(),
-                              style: _headerStyle)),
+                          label: Text("SỐ SERI", style: _headerStyle)), // [MỚI]
+                      DataColumn(
+                          label: Text("TỐC ĐỘ (V/P)",
+                              style: _headerStyle)), // [MỚI]
                       DataColumn(
                           label: Text(l10n.totalLines.toUpperCase(),
                               style: _headerStyle)),
@@ -323,8 +345,13 @@ class _MachineScreenState extends State<MachineScreen> {
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold)),
                           )),
-                          DataCell(Text(item.purpose,
-                              overflow: TextOverflow.ellipsis)),
+                          DataCell(Text(item.serialNumber ?? '-',
+                              style: TextStyle(
+                                  color: Colors.grey.shade700))), // [MỚI]
+                          DataCell(Text(
+                              item.speed != null ? "${item.speed}" : '-',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold))), // [MỚI]
                           DataCell(Text("${item.totalLines}",
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold))),
@@ -407,10 +434,15 @@ class _MachineScreenState extends State<MachineScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Text(item.purpose,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                // [MỚI] Hiển thị Seri và Speed trên mobile
+                Text(
+                    "Seri: ${item.serialNumber ?? '-'} | Tốc độ: ${item.speed ?? '-'} v/p",
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                const SizedBox(height: 4),
+                Text("Dòng: ${item.totalLines}",
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 const SizedBox(height: 8),
                 _buildStatusBadge(item.status, l10n, isChip: true),
               ],
@@ -443,17 +475,19 @@ class _MachineScreenState extends State<MachineScreen> {
     );
   }
 
-  // --- [FIXED] DIALOG VỚI LOGIC RESPONSIVE ---
+  // --- DIALOG VỚI LOGIC RESPONSIVE ---
   void _showEditDialog(
       BuildContext context, Machine? item, AppLocalizations l10n) {
     final nameCtrl = TextEditingController(text: item?.name ?? '');
     final purposeCtrl = TextEditingController(text: item?.purpose ?? '');
     final linesCtrl =
         TextEditingController(text: item?.totalLines.toString() ?? '0');
+    // [MỚI] Controllers cho 2 trường mới
+    final serialCtrl = TextEditingController(text: item?.serialNumber ?? '');
+    final speedCtrl =
+        TextEditingController(text: item?.speed?.toString() ?? '');
 
-    // 1. Xử lý Status (Chuẩn hóa)
     String initialStatus = item?.status ?? 'Stopped';
-    // Logic chuẩn hóa status chữ hoa chữ thường
     if (!_statusOptions.contains(initialStatus)) {
       var match = _statusOptions.firstWhere(
           (e) => e.toUpperCase() == initialStatus.toUpperCase(),
@@ -462,7 +496,6 @@ class _MachineScreenState extends State<MachineScreen> {
     }
     String selectedStatus = initialStatus;
 
-    // 2. Xử lý Area
     String? selectedArea = item?.area;
     if (selectedArea != null && !_areaSuggestions.contains(selectedArea)) {
       selectedArea = null;
@@ -476,7 +509,6 @@ class _MachineScreenState extends State<MachineScreen> {
       builder: (ctx) {
         return StatefulBuilder(builder: (context, setStateDialog) {
           return AlertDialog(
-            // [FIX OVERFLOW 1] Tăng padding ngoài để dialog rộng hơn trên mobile
             insetPadding:
                 const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             shape:
@@ -486,8 +518,6 @@ class _MachineScreenState extends State<MachineScreen> {
             title: Text(item == null ? l10n.addMachine : l10n.editMachine,
                 style: TextStyle(
                     color: _primaryColor, fontWeight: FontWeight.bold)),
-
-            // [FIX OVERFLOW 2] Dùng SizedBox width max và ConstrainedBox
             content: SizedBox(
               width: double.maxFinite,
               child: ConstrainedBox(
@@ -511,8 +541,7 @@ class _MachineScreenState extends State<MachineScreen> {
                               child: DropdownButtonFormField<String>(
                                 value: selectedArea,
                                 decoration: _inputDeco("Area (Khu vực)"),
-                                isExpanded:
-                                    true, // [FIX OVERFLOW 3] Chống vỡ layout dropdown
+                                isExpanded: true,
                                 items: _areaSuggestions
                                     .map((area) => DropdownMenuItem(
                                           value: area,
@@ -529,7 +558,24 @@ class _MachineScreenState extends State<MachineScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10), // Giảm khoảng cách
+                        const SizedBox(height: 10),
+                        // [MỚI] Row chứa Số Seri và Tốc Độ
+                        Row(
+                          children: [
+                            Expanded(
+                                child: TextFormField(
+                                    controller: serialCtrl,
+                                    decoration: _inputDeco("Số seri"))),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: TextFormField(
+                                    controller: speedCtrl,
+                                    decoration:
+                                        _inputDeco("Tốc độ (vòng/phút)"),
+                                    keyboardType: TextInputType.number)),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
                         TextFormField(
                             controller: purposeCtrl,
                             decoration: _inputDeco(l10n.purpose)),
@@ -545,7 +591,7 @@ class _MachineScreenState extends State<MachineScreen> {
                               child: DropdownButtonFormField<String>(
                             value: selectedStatus,
                             decoration: _inputDeco(l10n.status),
-                            isExpanded: true, // [FIX OVERFLOW 4]
+                            isExpanded: true,
                             items: _statusOptions
                                 .map((s) =>
                                     DropdownMenuItem(value: s, child: Text(s)))
@@ -579,6 +625,10 @@ class _MachineScreenState extends State<MachineScreen> {
                       totalLines: int.tryParse(linesCtrl.text) ?? 0,
                       status: selectedStatus,
                       area: selectedArea,
+                      serialNumber: serialCtrl.text.isNotEmpty
+                          ? serialCtrl.text
+                          : null, // [MỚI]
+                      speed: int.tryParse(speedCtrl.text), // [MỚI]
                     );
                     context
                         .read<MachineCubit>()

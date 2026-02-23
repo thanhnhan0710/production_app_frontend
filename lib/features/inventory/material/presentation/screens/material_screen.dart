@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:production_app_frontend/core/network/websocket_service.dart';
@@ -34,7 +35,8 @@ class _MaterialScreenState extends State<MaterialScreen> {
     'Viscose',
     'Cotton',
     'Spandex',
-    'Chemical'
+    'Chemical',
+    'Nylon'
   ];
 
   @override
@@ -88,7 +90,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
           List<MaterialModel> displayedMaterials = [];
 
           if (state is mat_bloc.MaterialLoaded) {
-            // [CẬP NHẬT] Tạo bản sao danh sách và sắp xếp ID giảm dần (mới nhất lên trước)
+            // Tạo bản sao danh sách và sắp xếp ID giảm dần (mới nhất lên trước)
             displayedMaterials = List<MaterialModel>.from(state.materials);
             displayedMaterials.sort((a, b) => b.id.compareTo(a.id));
           }
@@ -100,12 +102,10 @@ class _MaterialScreenState extends State<MaterialScreen> {
               final code = item.materialCode.toLowerCase();
               final name = (item.materialName ?? '').toLowerCase();
               final type = (item.materialType ?? '').toLowerCase();
-              final hs = (item.hsCode ?? '').toLowerCase();
 
               return code.contains(query) ||
                   name.contains(query) ||
-                  type.contains(query) ||
-                  hs.contains(query);
+                  type.contains(query);
             }).toList();
           }
 
@@ -148,7 +148,54 @@ class _MaterialScreenState extends State<MaterialScreen> {
                           ],
                         ),
                         const Spacer(),
-                        if (isDesktop)
+                        if (isDesktop) ...[
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              context
+                                  .read<mat_bloc.MaterialCubit>()
+                                  .exportExcel();
+                            },
+                            icon: const Icon(Icons.download, size: 18),
+                            label: const Text('EXPORT EXCEL'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.green.shade700,
+                              side: BorderSide(color: Colors.green.shade700),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              final result =
+                                  await FilePicker.platform.pickFiles(
+                                type: FileType.custom,
+                                allowedExtensions: ['xls', 'xlsx'],
+                                withData:
+                                    true, // Quan trọng: lấy bytes để tương thích Web/Desktop
+                              );
+
+                              if (result != null && result.files.isNotEmpty) {
+                                // Truyền nguyên object PlatformFile vào theo đúng thiết lập hiện tại của Cubit
+                                context
+                                    .read<mat_bloc.MaterialCubit>()
+                                    .importExcel(result.files.first);
+                              }
+                            },
+                            icon: const Icon(Icons.upload_file, size: 18),
+                            label: const Text('IMPORT EXCEL'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _primaryColor,
+                              side: BorderSide(color: _primaryColor),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
                           ElevatedButton.icon(
                             onPressed: () =>
                                 _showEditDialog(context, null, l10n),
@@ -164,6 +211,7 @@ class _MaterialScreenState extends State<MaterialScreen> {
                                   borderRadius: BorderRadius.circular(8)),
                             ),
                           ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -285,7 +333,8 @@ class _MaterialScreenState extends State<MaterialScreen> {
   // ===========================================================================
   Widget _buildDesktopList(BuildContext context, List<MaterialModel> materials,
       AppLocalizations l10n) {
-    final flexFactors = [3, 2, 2, 1, 1, 2, 1];
+    // [CẬP NHẬT] Đã điều chỉnh flexFactors để thêm 1 không gian cho cột Màu sắc
+    final flexFactors = [3, 2, 1, 1, 1, 2, 1];
 
     return Column(
       children: [
@@ -297,8 +346,9 @@ class _MaterialScreenState extends State<MaterialScreen> {
               _buildFlexHeader("${l10n.materialCode} / ${l10n.materialName}",
                   flexFactors[0]),
               _buildFlexHeader(l10n.materialType, flexFactors[1]),
-              _buildFlexHeader(l10n.specs, flexFactors[2]),
-              _buildFlexHeader(l10n.hsCode, flexFactors[3]),
+              _buildFlexHeader("Dtex", flexFactors[2]), // Tách riêng Dtex
+              _buildFlexHeader(
+                  "Màu sắc", flexFactors[3]), // [THÊM MỚI] Cột Màu sắc
               _buildFlexHeader(l10n.minStock, flexFactors[4]),
               _buildFlexHeader(l10n.uomBP, flexFactors[5]),
               _buildFlexHeader(l10n.actions, flexFactors[6],
@@ -349,26 +399,23 @@ class _MaterialScreenState extends State<MaterialScreen> {
                           alignment: Alignment.centerLeft,
                           child: _buildTypeBadge(item.materialType)),
                     ),
+                    // [SỬA] Cột Dtex
                     Expanded(
                       flex: flexFactors[2],
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(item.specDenier ?? '-',
-                              style: const TextStyle(fontSize: 13)),
-                          if (item.specFilament != null &&
-                              item.specFilament! > 0)
-                            Text("${item.specFilament}F",
-                                style: TextStyle(
-                                    fontSize: 11, color: Colors.grey.shade600)),
-                        ],
-                      ),
+                      child: Text(item.dtex != null ? "${item.dtex}" : "-",
+                          style: const TextStyle(fontSize: 13)),
                     ),
+                    // [THÊM MỚI] Cột Màu Sắc
                     Expanded(
                       flex: flexFactors[3],
-                      child: Text(item.hsCode ?? '-',
-                          style: const TextStyle(fontSize: 13)),
+                      child: Text(
+                          item.color != null && item.color!.isNotEmpty
+                              ? item.color!
+                              : "-",
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade800)),
                     ),
                     Expanded(
                       flex: flexFactors[4],
@@ -541,8 +588,9 @@ class _MaterialScreenState extends State<MaterialScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // [SỬA] Giao diện Mobile làm rõ nhãn Dtex và Màu sắc
                     Text(
-                        "${item.specDenier ?? '-'} / ${item.specFilament ?? '-'}F",
+                        "Dtex: ${item.dtex ?? '-'} | Màu: ${item.color ?? '-'}",
                         style: TextStyle(
                             fontSize: 13, color: Colors.grey.shade700)),
                     Row(
@@ -678,12 +726,13 @@ class _MaterialScreenState extends State<MaterialScreen> {
       BuildContext context, MaterialModel? item, AppLocalizations l10n) {
     final codeCtrl = TextEditingController(text: item?.materialCode ?? '');
     final nameCtrl = TextEditingController(text: item?.materialName ?? '');
-    final denierCtrl = TextEditingController(text: item?.specDenier ?? '');
-    final filamentCtrl =
-        TextEditingController(text: item?.specFilament?.toString() ?? '');
-    final hsCtrl = TextEditingController(text: item?.hsCode ?? '');
+    final dtexCtrl = TextEditingController(text: item?.dtex?.toString() ?? '');
+    final colorCtrl =
+        TextEditingController(text: item?.color?.toString() ?? '');
     final minStockCtrl =
         TextEditingController(text: item?.minStockLevel.toString() ?? '0');
+    final kgPerBbCtrl =
+        TextEditingController(text: item?.kgPerBobbin?.toString() ?? '0');
 
     String? selectedType = item?.materialType;
     int? selectedUomBase = item?.uomBaseId;
@@ -740,28 +789,29 @@ class _MaterialScreenState extends State<MaterialScreen> {
                               setStateDialog(() => selectedType = val),
                         ),
                         const SizedBox(height: 10),
-                        TextFormField(
-                            controller: hsCtrl,
-                            decoration: _inputDeco(l10n.hsCode)),
-                        const SizedBox(height: 10),
                         Row(
                           children: [
                             Expanded(
                                 child: TextFormField(
-                                    controller: denierCtrl,
-                                    decoration: _inputDeco(l10n.denierHint))),
+                                    controller: dtexCtrl,
+                                    decoration: _inputDeco("Dtex"),
+                                    keyboardType: TextInputType.number)),
                             const SizedBox(width: 12),
                             Expanded(
                                 child: TextFormField(
-                                    controller: filamentCtrl,
-                                    decoration: _inputDeco(l10n.filament),
-                                    keyboardType: TextInputType.number)),
+                                    controller: colorCtrl,
+                                    decoration: _inputDeco("Màu sắc (Color)"))),
                           ],
                         ),
                         const SizedBox(height: 10),
                         TextFormField(
                             controller: minStockCtrl,
                             decoration: _inputDeco(l10n.minStock),
+                            keyboardType: TextInputType.number),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                            controller: kgPerBbCtrl,
+                            decoration: _inputDeco("Kg/Bb"),
                             keyboardType: TextInputType.number),
                         const SizedBox(height: 10),
                         BlocBuilder<UnitCubit, UnitState>(
@@ -829,13 +879,13 @@ class _MaterialScreenState extends State<MaterialScreen> {
                         materialCode: codeCtrl.text,
                         materialName: nameCtrl.text,
                         materialType: selectedType,
-                        specDenier: denierCtrl.text,
-                        specFilament: int.tryParse(filamentCtrl.text),
-                        hsCode: hsCtrl.text,
+                        dtex: int.tryParse(dtexCtrl.text),
+                        color: colorCtrl.text,
                         minStockLevel:
                             double.tryParse(minStockCtrl.text) ?? 0.0,
                         uomBaseId: selectedUomBase!,
                         uomProductionId: selectedUomProd!,
+                        kgPerBobbin: double.tryParse(kgPerBbCtrl.text),
                       );
 
                       context.read<mat_bloc.MaterialCubit>().saveMaterial(

@@ -3,8 +3,11 @@ class Machine {
   final String name;
   final int totalLines;
   final String purpose;
-  final String status; // 'Running', 'Stopped', 'Maintenance', 'Spinning'
-  final String? area;  
+  final String status;
+  final String? area;
+  // [BỔ SUNG] 2 trường mới
+  final String? serialNumber;
+  final int? speed;
 
   Machine({
     required this.id,
@@ -13,9 +16,10 @@ class Machine {
     required this.purpose,
     required this.status,
     this.area,
+    this.serialNumber,
+    this.speed,
   });
 
-  // [BỔ SUNG QUAN TRỌNG] Hàm copyWith để cập nhật trạng thái
   Machine copyWith({
     int? id,
     String? name,
@@ -23,6 +27,8 @@ class Machine {
     String? purpose,
     String? status,
     String? area,
+    String? serialNumber,
+    int? speed,
   }) {
     return Machine(
       id: id ?? this.id,
@@ -31,6 +37,8 @@ class Machine {
       purpose: purpose ?? this.purpose,
       status: status ?? this.status,
       area: area ?? this.area,
+      serialNumber: serialNumber ?? this.serialNumber,
+      speed: speed ?? this.speed,
     );
   }
 
@@ -40,8 +48,10 @@ class Machine {
       name: json['machine_name'] ?? '',
       totalLines: json['total_lines'] ?? 0,
       purpose: json['purpose'] ?? '',
-      status: json['status'] ?? 'Stopped', 
-      area: json['area'], 
+      status: json['status'] ?? 'Stopped',
+      area: json['area'],
+      serialNumber: json['serial_number'],
+      speed: json['speed'],
     );
   }
 
@@ -52,6 +62,8 @@ class Machine {
       'purpose': purpose,
       'status': status.toUpperCase(),
       'area': (area == null || area!.trim().isEmpty) ? null : area,
+      'serial_number': serialNumber,
+      'speed': speed,
     };
   }
 }
