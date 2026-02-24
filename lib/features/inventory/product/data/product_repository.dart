@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:http_parser/http_parser.dart';
 import '../../../../core/network/api_client.dart';
 import '../domain/product_model.dart';
@@ -72,10 +74,52 @@ class ProductRepository {
       });
 
       // Gọi endpoint dành riêng cho Product mà chúng ta đã tạo ở Backend
-      final response = await _dio.post('/api/v1/upload/product', data: formData);
+      final response =
+          await _dio.post('/api/v1/upload/product', data: formData);
       return response.data['url'] ?? '';
     } catch (e) {
       throw Exception("Failed to upload image: $e");
+    }
+  }
+
+  Future<Map<String, dynamic>> importExcel(PlatformFile file) async {
+    try {
+      if (file.bytes == null) {
+        throw Exception(
+            "File data is empty. Please ensure you are picking a file with data.");
+      }
+
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          file.bytes!,
+          filename: file.name,
+        ),
+      });
+
+      final response =
+          await _dio.post('/api/v1/products/import', data: formData);
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint("❌ IMPORT ERROR: ${e.response?.data}");
+      throw Exception(e.response?.data['detail'] ?? e.message);
+    } catch (e) {
+      throw Exception("Failed to import products: $e");
+    }
+  }
+
+  Future<Uint8List> exportExcel() async {
+    try {
+      final response = await _dio.get(
+        '/api/v1/products/export',
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      return Uint8List.fromList(response.data);
+    } on DioException catch (e) {
+      debugPrint("❌ EXPORT ERROR: ${e.response?.data}");
+      throw Exception(e.message);
+    } catch (e) {
+      throw Exception("Failed to export products: $e");
     }
   }
 }

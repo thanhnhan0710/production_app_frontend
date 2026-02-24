@@ -9,7 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/widgets/responsive_layout.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../../core/constants/api_endpoints.dart';
-import '../../../department/domain/department_model.dart';
+import '../../../../../core/network/websocket_service.dart'; // [THÊM] WebSocket
 import '../../../department/presentation/bloc/department_cubit.dart';
 import '../../domain/employee_model.dart';
 import '../bloc/employee_cubit.dart';
@@ -23,8 +23,6 @@ class EmployeeScreen extends StatefulWidget {
 
 class _EmployeeScreenState extends State<EmployeeScreen> {
   final _searchController = TextEditingController();
-
-  // Timer cho tìm kiếm
   Timer? _debounce;
 
   final Color _primaryColor = const Color(0xFF003366);
@@ -34,19 +32,38 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
   @override
   void initState() {
     super.initState();
-    // Load data khi vào màn hình
+    // 1. Load data ban đầu
     context.read<EmployeeCubit>().loadEmployees();
     context.read<DepartmentCubit>().loadDepartments();
+
+    // 2. Kết nối và lắng nghe WebSocket
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
     _searchController.dispose();
+
+    // 3. Hủy lắng nghe WebSocket khi thoát màn hình
+    WebSocketService().removeListener(_onWebSocketMessage);
     super.dispose();
   }
 
-  // Hàm xử lý tìm kiếm khi gõ phím
+  // --- WEBSOCKET HANDLER ---
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_EMPLOYEES") {
+      debugPrint("WebSocket: Làm mới danh sách Nhân viên.");
+      if (mounted) context.read<EmployeeCubit>().loadEmployees();
+    }
+    if (message == "REFRESH_DEPARTMENTS") {
+      debugPrint("WebSocket: Làm mới danh sách Bộ phận.");
+      if (mounted) context.read<DepartmentCubit>().loadDepartments();
+    }
+  }
+
+  // --- SEARCH HANDLER ---
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
@@ -143,7 +160,52 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        if (isDesktop)
+                        if (isDesktop) ...[
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              context.read<EmployeeCubit>().exportExcel();
+                            },
+                            icon: const Icon(Icons.download, size: 18),
+                            label: const Text('EXPORT EXCEL'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.green.shade700,
+                              side: BorderSide(color: Colors.green.shade700),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // NÚT IMPORT EXCEL
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              final result =
+                                  await FilePicker.platform.pickFiles(
+                                type: FileType.custom,
+                                allowedExtensions: ['xls', 'xlsx'],
+                                withData: true,
+                              );
+
+                              if (result != null && result.files.isNotEmpty) {
+                                context
+                                    .read<EmployeeCubit>()
+                                    .importExcel(result.files.first);
+                              }
+                            },
+                            icon: const Icon(Icons.upload_file, size: 18),
+                            label: const Text('IMPORT EXCEL'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _primaryColor,
+                              side: BorderSide(color: _primaryColor),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // NÚT ADD EMPLOYEE
                           ElevatedButton.icon(
                             onPressed: () =>
                                 _showEditDialog(context, null, l10n),
@@ -159,6 +221,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                                   borderRadius: BorderRadius.circular(8)),
                             ),
                           ),
+                        ]
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -562,7 +625,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     );
   }
 
-  // --- DIALOG THÊM / SỬA (FIXED) ---
+  // --- DIALOG THÊM / SỬA ---
   void _showEditDialog(
       BuildContext context, Employee? emp, AppLocalizations l10n) {
     final fullNameCtrl = TextEditingController(text: emp?.fullName ?? '');
@@ -575,7 +638,6 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     PlatformFile? pickedFile;
     Uint8List? pickedBytes;
 
-    // Capture Cubits từ context CHA
     final employeeCubit = context.read<EmployeeCubit>();
     final departmentCubit = context.read<DepartmentCubit>();
 
@@ -677,8 +739,6 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                           decoration: _inputDeco(l10n.fullName),
                           validator: (v) => v!.isEmpty ? "Required" : null),
                       const SizedBox(height: 16),
-
-                      // [FIX] Tách Email và Phone ra 2 dòng + Bắt buộc nhập Email
                       TextFormField(
                         controller: emailCtrl,
                         decoration: _inputDeco("${l10n.email} *"),
@@ -686,7 +746,6 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                           if (v == null || v.trim().isEmpty) {
                             return "Email is required";
                           }
-                          // Regex check email cơ bản
                           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                               .hasMatch(v)) {
                             return "Invalid email address";
@@ -695,14 +754,11 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-
                       TextFormField(
                         controller: phoneCtrl,
                         decoration: _inputDeco(l10n.phone),
-                        keyboardType:
-                            TextInputType.phone, // Bàn phím số cho điện thoại
+                        keyboardType: TextInputType.phone,
                       ),
-
                       const SizedBox(height: 16),
                       DropdownButtonFormField<int>(
                         value: selectedDeptId,
@@ -758,11 +814,6 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                         imageFile: pickedFile,
                         isEdit: emp != null);
                     Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(emp == null
-                            ? l10n.successAdded
-                            : l10n.successUpdated),
-                        backgroundColor: Colors.green));
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -831,7 +882,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
   }
 }
 
-// Badge Phòng ban (Giữ nguyên)
+// Badge Phòng ban
 class _DepartmentBadge extends StatelessWidget {
   final int deptId;
   final bool isChip;

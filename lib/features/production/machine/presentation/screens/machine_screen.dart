@@ -122,6 +122,22 @@ class _MachineScreenState extends State<MachineScreen> {
                         const Spacer(),
                         if (isDesktop) ...[
                           OutlinedButton.icon(
+                            onPressed: () {
+                              // [ĐÃ SỬA LỖI]: Gọi MachineCubit thay vì MaterialCubit
+                              context.read<MachineCubit>().exportExcel();
+                            },
+                            icon: const Icon(Icons.download, size: 18),
+                            label: const Text('EXPORT EXCEL'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.green.shade700,
+                              side: BorderSide(color: Colors.green.shade700),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                          OutlinedButton.icon(
                             onPressed: () async {
                               final result =
                                   await FilePicker.platform.pickFiles(

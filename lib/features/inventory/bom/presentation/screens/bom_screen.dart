@@ -1,11 +1,13 @@
-// D:\AppHeThong\production_app_frontend\lib\features\inventory\bom\presentation\screens\bom_screen.dart
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:file_picker/file_picker.dart'; // [MỚI]
 import 'package:intl/intl.dart';
 import 'package:production_app_frontend/core/widgets/responsive_layout.dart';
 import 'package:production_app_frontend/l10n/app_localizations.dart';
+
+// [MỚI] Import WebSocket
+import 'package:production_app_frontend/core/network/websocket_service.dart';
 
 // Domain & Bloc
 import '../../domain/bom_model.dart';
@@ -38,26 +40,38 @@ class _BOMScreenState extends State<BOMScreen> {
   void initState() {
     super.initState();
     _loadData();
-    // Load danh sách sản phẩm để map ID -> Name hiển thị
     context.read<ProductCubit>().loadProducts();
+
+    // [MỚI] Đăng ký WebSocket
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
     _searchController.dispose();
+
+    // [MỚI] Hủy WebSocket
+    WebSocketService().removeListener(_onWebSocketMessage);
     super.dispose();
   }
 
+  // [MỚI] Xử lý Event WebSocket
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_BOMS") {
+      debugPrint("WebSocket: Làm mới danh sách BOM.");
+      if (mounted) _loadData();
+    }
+  }
+
   void _loadData() {
-    // Load mặc định
     context.read<BOMCubit>().loadBOMHeaders();
   }
 
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      // Gọi hàm search thông minh trong Cubit (Tự detect Năm hoặc Mã SP)
       context.read<BOMCubit>().searchBOMs(query);
     });
   }
@@ -84,6 +98,65 @@ class _BOMScreenState extends State<BOMScreen> {
     ).then((_) => _loadData());
   }
 
+  // [MỚI] Xử lý chọn năm và Import file Excel
+  void _onImportExcelPressed() async {
+    // 1. Hiện popup hỏi "Năm áp dụng"
+    final int currentYear = DateTime.now().year;
+    final yearController = TextEditingController(text: currentYear.toString());
+
+    final int? selectedYear = await showDialog<int>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+              title: const Text("Import BOM Excel"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                      "Vui lòng nhập Năm áp dụng cho toàn bộ dữ liệu trong file:"),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: yearController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: "Năm áp dụng",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.calendar_today),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text("Cancel")),
+                ElevatedButton(
+                  onPressed: () {
+                    final val = int.tryParse(yearController.text);
+                    if (val != null && val > 2000) {
+                      Navigator.pop(ctx, val);
+                    }
+                  },
+                  child: const Text("Next"),
+                )
+              ],
+            ));
+
+    if (selectedYear == null || !mounted) return;
+
+    // 2. Mở hộp thoại chọn file
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['xls', 'xlsx'],
+      withData: true,
+    );
+
+    if (result != null && result.files.isNotEmpty && mounted) {
+      // 3. Gửi lên Cubit
+      context.read<BOMCubit>().importExcel(result.files.first, selectedYear);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDesktop = ResponsiveLayout.isDesktop(context);
@@ -100,6 +173,13 @@ class _BOMScreenState extends State<BOMScreen> {
                     content: Text(state.message), backgroundColor: Colors.red),
               );
             }
+            if (state is BOMOperationSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.green),
+              );
+            }
           },
           builder: (context, state) {
             List<BOMHeader> boms = [];
@@ -109,14 +189,12 @@ class _BOMScreenState extends State<BOMScreen> {
               isLoading = true;
             } else if (state is BOMListLoaded) {
               boms = state.boms;
-              // Nếu có filter từ màn hình cha (Product Detail)
               if (widget.filterProductId != null) {
                 boms = boms
                     .where((b) => b.productId == widget.filterProductId)
                     .toList();
               }
             } else if (state is BOMDetailViewLoaded) {
-              // Fallback state nếu quay lại từ detail mà chưa refresh kịp
               return Center(
                   child: CircularProgressIndicator(color: _primaryColor));
             }
@@ -131,10 +209,8 @@ class _BOMScreenState extends State<BOMScreen> {
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   child: Column(
                     children: [
-                      // [FIXED] Row Header
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment
-                            .center, // Căn giữa theo chiều dọc
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Container(
                             padding: const EdgeInsets.all(10),
@@ -146,8 +222,6 @@ class _BOMScreenState extends State<BOMScreen> {
                                 color: Colors.indigo.shade800, size: 24),
                           ),
                           const SizedBox(width: 16),
-
-                          // [FIXED] Dùng Expanded để text không bị đẩy
                           Expanded(
                             child: Text(
                               loc.bomTitle,
@@ -155,15 +229,45 @@ class _BOMScreenState extends State<BOMScreen> {
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.grey.shade800,
-                                height:
-                                    1.2, // Điều chỉnh chiều cao dòng để không bị cắt
+                                height: 1.2,
                               ),
                             ),
                           ),
-
                           const SizedBox(width: 16),
-
-                          if (isDesktop)
+                          if (isDesktop) ...[
+                            // [MỚI] NÚT EXPORT EXCEL
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                context.read<BOMCubit>().exportExcel();
+                              },
+                              icon: const Icon(Icons.download, size: 18),
+                              label: const Text('EXPORT EXCEL'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.green.shade700,
+                                side: BorderSide(color: Colors.green.shade700),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // [MỚI] NÚT IMPORT EXCEL
+                            OutlinedButton.icon(
+                              onPressed: _onImportExcelPressed,
+                              icon: const Icon(Icons.upload_file, size: 18),
+                              label: const Text('IMPORT EXCEL'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: _primaryColor,
+                                side: BorderSide(color: _primaryColor),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // NÚT CREATE
                             ElevatedButton.icon(
                               onPressed: () =>
                                   _navigateToCreateOrEdit(bom: null),
@@ -178,6 +282,7 @@ class _BOMScreenState extends State<BOMScreen> {
                                     borderRadius: BorderRadius.circular(8)),
                               ),
                             ),
+                          ],
                         ],
                       ),
                       const SizedBox(height: 24),
@@ -195,8 +300,7 @@ class _BOMScreenState extends State<BOMScreen> {
                               child: TextField(
                                 controller: _searchController,
                                 textInputAction: TextInputAction.search,
-                                onChanged:
-                                    _onSearchChanged, // [MỚI] Gắn hàm tìm kiếm
+                                onChanged: _onSearchChanged,
                                 decoration: InputDecoration(
                                   hintText:
                                       "Search Year (e.g. 2026) or Product Code...",
@@ -205,16 +309,14 @@ class _BOMScreenState extends State<BOMScreen> {
                                   border: InputBorder.none,
                                   contentPadding:
                                       const EdgeInsets.symmetric(vertical: 14),
-                                  // [MỚI] Nút Clear Text
                                   suffixIcon: _searchController.text.isNotEmpty
                                       ? IconButton(
                                           icon:
                                               const Icon(Icons.clear, size: 18),
                                           onPressed: () {
                                             _searchController.clear();
-                                            _onSearchChanged(
-                                                ''); // Load lại list
-                                            setState(() {}); // Update UI
+                                            _onSearchChanged('');
+                                            setState(() {});
                                           },
                                         )
                                       : null,
@@ -301,12 +403,10 @@ class _BOMScreenState extends State<BOMScreen> {
                     dataRowMinHeight: 60,
                     dataRowMaxHeight: 60,
                     columns: [
-                      // [THAY ĐỔI] Hiển thị Năm và Tên
                       DataColumn(label: Text("YEAR", style: _headerStyle)),
                       DataColumn(label: Text("PRODUCT", style: _headerStyle)),
                       DataColumn(
-                          label: Text("DESCRIPTION",
-                              style: _headerStyle)), // Thay cho Code/Name cũ
+                          label: Text("DESCRIPTION", style: _headerStyle)),
                       DataColumn(
                           label: Text("TARGET (g/m)", style: _headerStyle)),
                       DataColumn(
@@ -326,13 +426,10 @@ class _BOMScreenState extends State<BOMScreen> {
                       return DataRow(
                         onSelectChanged: (_) => _navigateToDetailView(bom),
                         cells: [
-                          // Cột Năm
                           DataCell(Text("${bom.applicableYear}",
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.blue))),
-
-                          // Cột Sản phẩm
                           DataCell(
                             BlocBuilder<ProductCubit, ProductState>(
                               builder: (context, pState) {
@@ -350,11 +447,8 @@ class _BOMScreenState extends State<BOMScreen> {
                               },
                             ),
                           ),
-
-                          // Cột Description (Display Name từ Backend)
                           DataCell(Text(bom.displayName ?? "-",
                               style: const TextStyle(color: Colors.black87))),
-
                           DataCell(Text(bom.targetWeightGm.toStringAsFixed(2))),
                           DataCell(
                               Text(bom.widthBehindLoom?.toString() ?? "-")),
@@ -461,7 +555,6 @@ class _BOMScreenState extends State<BOMScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Hiển thị Năm
                       Text("Year: ${bom.applicableYear}",
                           style: const TextStyle(
                               fontSize: 16,

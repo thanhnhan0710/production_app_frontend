@@ -2,15 +2,20 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/employee_repository.dart';
 import '../../domain/employee_model.dart';
+import 'package:file_saver/file_saver.dart';
 
 // States
 abstract class EmployeeState {}
+
 class EmployeeInitial extends EmployeeState {}
+
 class EmployeeLoading extends EmployeeState {}
+
 class EmployeeLoaded extends EmployeeState {
   final List<Employee> employees;
   EmployeeLoaded(this.employees);
 }
+
 class EmployeeError extends EmployeeState {
   final String message;
   EmployeeError(this.message);
@@ -88,12 +93,12 @@ class EmployeeCubit extends Cubit<EmployeeState> {
       } else {
         await _repo.createEmployee(finalEmployee);
       }
-      
-      // Sau khi lưu xong, ta reload lại danh sách. 
+
+      // Sau khi lưu xong, ta reload lại danh sách.
       // Lưu ý: Nếu đang ở màn hình chi tiết bộ phận, logic này sẽ load lại ALL employees.
       // Để hoàn hảo, ta nên check ngữ cảnh hoặc load lại đúng hàm cần thiết.
       // Ở đây tạm thời load all để đơn giản.
-      loadEmployees(); 
+      loadEmployees();
     } catch (e) {
       emit(EmployeeError("Failed to save employee: $e"));
     }
@@ -105,6 +110,39 @@ class EmployeeCubit extends Cubit<EmployeeState> {
       loadEmployees();
     } catch (e) {
       emit(EmployeeError(e.toString()));
+    }
+  }
+
+  Future<void> importExcel(PlatformFile file) async {
+    emit(EmployeeLoading());
+    try {
+      final result = await _repo.importExcel(file);
+      await loadEmployees();
+
+      // Nếu có lỗi từng dòng từ server trả về, hiển thị lên
+      if (result['errors'] != null && (result['errors'] as List).isNotEmpty) {
+        emit(EmployeeError(
+            "Đã import ${result['success_count']} dòng. Các lỗi:\n${(result['errors'] as List).join('\n')}"));
+      } else {
+        // Thông báo thành công ngầm, UI sẽ tự reload nhờ WebSocket hoặc gọi hàm loadEmployees()
+      }
+    } catch (e) {
+      emit(EmployeeError(e.toString().replaceAll("Exception: ", "")));
+    }
+  }
+
+  Future<void> exportExcel() async {
+    try {
+      final bytes = await _repo.exportExcel();
+
+      await FileSaver.instance.saveFile(
+        name: 'EMPLOYEES${DateTime.now().millisecondsSinceEpoch}.xlsx',
+        bytes: bytes,
+        mimeType: MimeType.microsoftExcel,
+      );
+    } catch (e) {
+      emit(EmployeeError(
+          "Lỗi xuất file: ${e.toString().replaceAll("Exception: ", "")}"));
     }
   }
 }

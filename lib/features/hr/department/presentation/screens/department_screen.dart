@@ -1,9 +1,10 @@
-import 'dart:async'; // [MỚI] Import Timer
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../core/widgets/responsive_layout.dart';
 import '../../../../../l10n/app_localizations.dart';
+import '../../../../../core/network/websocket_service.dart'; // [THÊM] WebSocket
 import '../../domain/department_model.dart';
 import '../bloc/department_cubit.dart';
 
@@ -16,8 +17,6 @@ class DepartmentScreen extends StatefulWidget {
 
 class _DepartmentScreenState extends State<DepartmentScreen> {
   final _searchController = TextEditingController();
-
-  // [MỚI] Timer cho tìm kiếm
   Timer? _debounce;
 
   final Color _primaryColor = const Color(0xFF003366);
@@ -26,18 +25,35 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
   @override
   void initState() {
     super.initState();
+    // 1. Load data ban đầu
     context.read<DepartmentCubit>().loadDepartments();
+
+    // 2. Kết nối và lắng nghe WebSocket
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
   }
 
   @override
   void dispose() {
-    // [MỚI] Hủy timer và controller
     _debounce?.cancel();
     _searchController.dispose();
+
+    // 3. Hủy lắng nghe
+    WebSocketService().removeListener(_onWebSocketMessage);
     super.dispose();
   }
 
-  // [MỚI] Hàm xử lý tìm kiếm khi gõ phím
+  // --- WEBSOCKET HANDLER ---
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_DEPARTMENTS") {
+      debugPrint("WebSocket: Cập nhật lại danh sách Bộ phận.");
+      if (mounted) {
+        context.read<DepartmentCubit>().loadDepartments();
+      }
+    }
+  }
+
+  // --- SEARCH HANDLER ---
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
@@ -65,7 +81,6 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
           }
 
           return Column(
-            // [QUAN TRỌNG] Stretch để nội dung bung hết chiều ngang
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // --- HEADER SECTION ---
@@ -182,24 +197,21 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                             child: TextField(
                               controller: _searchController,
                               textInputAction: TextInputAction.search,
-                              onChanged:
-                                  _onSearchChanged, // [MỚI] Gắn hàm onChange
+                              onChanged: _onSearchChanged,
                               decoration: InputDecoration(
                                 hintText: l10n.searchDept,
                                 hintStyle: TextStyle(
                                     color: Colors.grey.shade400, fontSize: 14),
                                 prefixIcon: Icon(Icons.search,
                                     color: Colors.grey.shade400),
-                                // [MỚI] Nút Clear text
                                 suffixIcon: _searchController.text.isNotEmpty
                                     ? IconButton(
                                         icon: const Icon(Icons.clear,
                                             color: Colors.grey, size: 18),
                                         onPressed: () {
                                           _searchController.clear();
-                                          _onSearchChanged(''); // Load lại list
-                                          setState(
-                                              () {}); // Update UI để ẩn nút clear
+                                          _onSearchChanged('');
+                                          setState(() {});
                                         },
                                       )
                                     : null,
@@ -263,7 +275,7 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
     );
   }
 
-  // --- DESKTOP TABLE VIEW (FULL WIDTH + NO ID) ---
+  // --- DESKTOP TABLE VIEW ---
   Widget _buildDesktopTable(BuildContext context, List<Department> departments,
       AppLocalizations l10n) {
     return SingleChildScrollView(
@@ -437,8 +449,7 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
           child: Material(
             color: Colors.transparent,
             child: Padding(
-              padding:
-                  const EdgeInsets.all(16), // Giảm padding một chút để gọn hơn
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
                   Row(
@@ -483,12 +494,9 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 12),
                   const Divider(height: 1, color: Color(0xFFEEEEEE)),
                   const SizedBox(height: 12),
-
-                  // [MỚI] 3 Nút hành động nằm ngang bên dưới
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
@@ -522,7 +530,6 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
     );
   }
 
-  // Widget helper cho nút bấm trên mobile
   Widget _buildMobileActionButton(
       {required IconData icon,
       required String label,

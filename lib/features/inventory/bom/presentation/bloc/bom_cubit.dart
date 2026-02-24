@@ -1,5 +1,8 @@
+import 'package:file_picker/file_picker.dart';
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/bom_repository.dart';
+
 import '../../domain/bom_model.dart';
 
 // --- STATES ---
@@ -64,10 +67,8 @@ class BOMCubit extends Cubit<BOMState> {
     emit(BOMLoading());
     try {
       // Chạy song song 2 request để tối ưu tốc độ
-      final results = await Future.wait([
-        _repo.getBOMById(id),
-        _repo.getBOMSummary(id)
-      ]);
+      final results =
+          await Future.wait([_repo.getBOMById(id), _repo.getBOMSummary(id)]);
 
       final bom = results[0] as BOMHeader;
       final summary = results[1] as List<BOMMaterialSummary>;
@@ -79,7 +80,8 @@ class BOMCubit extends Cubit<BOMState> {
   }
 
   // Save Header
-  Future<void> saveBOMHeader({required BOMHeader bom, required bool isEdit}) async {
+  Future<void> saveBOMHeader(
+      {required BOMHeader bom, required bool isEdit}) async {
     emit(BOMLoading());
     try {
       if (isEdit) {
@@ -87,8 +89,9 @@ class BOMCubit extends Cubit<BOMState> {
       } else {
         await _repo.createBOM(bom);
       }
-      emit(BOMOperationSuccess(isEdit ? "Cập nhật thành công" : "Tạo BOM thành công"));
-      loadBOMHeaders(); 
+      emit(BOMOperationSuccess(
+          isEdit ? "Cập nhật thành công" : "Tạo BOM thành công"));
+      loadBOMHeaders();
     } catch (e) {
       final msg = e.toString().replaceAll("Exception: ", "");
       emit(BOMError(msg));
@@ -101,14 +104,15 @@ class BOMCubit extends Cubit<BOMState> {
     if (currentState is BOMDetailViewLoaded) {
       final currentBOM = currentState.bom;
       // Giữ lại summary cũ tạm thời để UI không bị giật
-      final currentSummary = currentState.summary; 
+      final currentSummary = currentState.summary;
       emit(BOMLoading());
 
       try {
         List<BOMDetail> updatedDetails = List.from(currentBOM.bomDetails);
 
         if (isEdit) {
-          final index = updatedDetails.indexWhere((d) => d.detailId == detail.detailId);
+          final index =
+              updatedDetails.indexWhere((d) => d.detailId == detail.detailId);
           if (index != -1) updatedDetails[index] = detail;
         } else {
           updatedDetails.add(detail);
@@ -130,12 +134,12 @@ class BOMCubit extends Cubit<BOMState> {
         );
 
         await _repo.updateBOM(newBOMHeader);
-        await loadBOMDetailView(currentBOM.bomId); // Reload để cập nhật tính toán & summary
-        
+        await loadBOMDetailView(
+            currentBOM.bomId); // Reload để cập nhật tính toán & summary
       } catch (e) {
         final msg = e.toString().replaceAll("Exception: ", "");
         emit(BOMError("Lỗi lưu chi tiết: $msg"));
-        emit(BOMDetailViewLoaded(currentBOM, summary: currentSummary)); 
+        emit(BOMDetailViewLoaded(currentBOM, summary: currentSummary));
       }
     }
   }
@@ -169,21 +173,60 @@ class BOMCubit extends Cubit<BOMState> {
 
         await _repo.updateBOM(newBOMHeader);
         await loadBOMDetailView(bomId);
-
       } catch (e) {
         emit(BOMError("Lỗi xóa chi tiết: $e"));
         emit(BOMDetailViewLoaded(currentBOM, summary: currentSummary));
       }
     }
   }
-  
+
   // Delete Header
   Future<void> deleteBOMHeader(int id) async {
-     try {
-       await _repo.deleteBOM(id);
-       loadBOMHeaders();
-     } catch (e) {
-       emit(BOMError(e.toString()));
-     }
+    try {
+      await _repo.deleteBOM(id);
+      loadBOMHeaders();
+    } catch (e) {
+      emit(BOMError(e.toString()));
+    }
+  }
+
+  // [MỚI] Import file
+  Future<void> importExcel(PlatformFile file, int applicableYear) async {
+    emit(BOMLoading());
+    try {
+      final result = await _repo.importBOMExcel(file, applicableYear);
+
+      // Load lại list ngay sau khi xong
+      await loadBOMHeaders();
+
+      // Nếu API trả về list những dòng không import được
+      if (result['errors'] != null && (result['errors'] as List).isNotEmpty) {
+        final errList = (result['errors'] as List).join('\n');
+        emit(BOMError(
+            "Đã import ${result['success_count']} BOM. Bỏ qua các lỗi sau:\n$errList"));
+      } else {
+        emit(BOMOperationSuccess("Nhập file Excel BOM thành công!"));
+      }
+    } catch (e) {
+      emit(BOMError(e.toString().replaceAll("Exception: ", "")));
+      loadBOMHeaders(); // Dù lỗi cũng refresh lại lỡ có record nào thành công
+    }
+  }
+
+  Future<void> exportExcel() async {
+    try {
+      final bytes = await _repo.exportExcel();
+
+      await FileSaver.instance.saveFile(
+        name: 'BOM YARN${DateTime.now().millisecondsSinceEpoch}.xlsx',
+        bytes: bytes,
+        mimeType: MimeType.microsoftExcel,
+      );
+      // Optional: Có thể emit thông báo thành công nếu muốn
+      emit(BOMOperationSuccess("Xuất file BOM thành công!"));
+    } catch (e) {
+      emit(BOMError(
+          "Lỗi xuất file: ${e.toString().replaceAll("Exception: ", "")}"));
+    }
   }
 }

@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:http_parser/http_parser.dart';
+import 'dart:typed_data';
 import '../../../../core/network/api_client.dart';
 import '../domain/employee_model.dart';
 
@@ -104,6 +106,47 @@ class EmployeeRepository {
       return response.data['url'] ?? '';
     } catch (e) {
       throw Exception("Failed to upload avatar: $e");
+    }
+  }
+
+  Future<Map<String, dynamic>> importExcel(PlatformFile file) async {
+    try {
+      if (file.bytes == null) {
+        throw Exception(
+            "File data is empty. Please ensure you are picking a file with data.");
+      }
+
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          file.bytes!,
+          filename: file.name,
+        ),
+      });
+
+      final response =
+          await _dio.post('/api/v1/employees/import', data: formData);
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint("❌ IMPORT ERROR: ${e.response?.data}");
+      throw Exception(e.response?.data['detail'] ?? e.message);
+    } catch (e) {
+      throw Exception("Failed to import employees: $e");
+    }
+  }
+
+  Future<Uint8List> exportExcel() async {
+    try {
+      final response = await _dio.get(
+        '/api/v1/employees/export',
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      return Uint8List.fromList(response.data);
+    } on DioException catch (e) {
+      debugPrint("❌ EXPORT ERROR: ${e.response?.data}");
+      throw Exception(e.message);
+    } catch (e) {
+      throw Exception("Failed to export employees: $e");
     }
   }
 }

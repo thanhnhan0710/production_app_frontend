@@ -1,15 +1,20 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/product_repository.dart';
+import 'package:file_saver/file_saver.dart';
 import '../../domain/product_model.dart';
 
 abstract class ProductState {}
+
 class ProductInitial extends ProductState {}
+
 class ProductLoading extends ProductState {}
+
 class ProductLoaded extends ProductState {
   final List<Product> products;
   ProductLoaded(this.products);
 }
+
 class ProductError extends ProductState {
   final String message;
   ProductError(this.message);
@@ -44,11 +49,10 @@ class ProductCubit extends Cubit<ProductState> {
     }
   }
 
-  Future<void> saveProduct({
-    required Product product, 
-    PlatformFile? imageFile, 
-    required bool isEdit
-  }) async {
+  Future<void> saveProduct(
+      {required Product product,
+      PlatformFile? imageFile,
+      required bool isEdit}) async {
     try {
       String finalImageUrl = product.imageUrl;
 
@@ -81,6 +85,38 @@ class ProductCubit extends Cubit<ProductState> {
       loadProducts();
     } catch (e) {
       emit(ProductError("Error deleting: $e"));
+    }
+  }
+
+  Future<void> importExcel(PlatformFile file) async {
+    emit(ProductLoading());
+    try {
+      final result = await _repo.importExcel(file);
+      await loadProducts();
+
+      // Nếu có lỗi (ví dụ trùng lặp), gom lại và hiện thông báo
+      if (result['errors'] != null && (result['errors'] as List).isNotEmpty) {
+        emit(ProductError(
+            "Đã import ${result['success_count']} dòng. Các lỗi:\n${(result['errors'] as List).join('\n')}"));
+      }
+    } catch (e) {
+      emit(ProductError(e.toString().replaceAll("Exception: ", "")));
+    }
+  }
+
+  // --- [MỚI] EXPORT EXCEL ---
+  Future<void> exportExcel() async {
+    try {
+      final bytes = await _repo.exportExcel();
+
+      await FileSaver.instance.saveFile(
+        name: 'Loom State${DateTime.now().millisecondsSinceEpoch}.xlsx',
+        bytes: bytes,
+        mimeType: MimeType.microsoftExcel,
+      );
+    } catch (e) {
+      emit(ProductError(
+          "Lỗi xuất file: ${e.toString().replaceAll("Exception: ", "")}"));
     }
   }
 }

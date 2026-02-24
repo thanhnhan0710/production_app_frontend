@@ -1,4 +1,7 @@
 import 'package:dio/dio.dart';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
+import 'package:http_parser/http_parser.dart';
 import '../../../../core/network/api_client.dart';
 import '../domain/bom_model.dart';
 
@@ -9,13 +12,17 @@ class BOMRepository {
   Future<List<BOMHeader>> getBOMs({String? productCode, int? year}) async {
     try {
       final Map<String, dynamic> queryParams = {};
-      if (productCode != null && productCode.isNotEmpty) queryParams['product_code'] = productCode;
+      if (productCode != null && productCode.isNotEmpty) {
+        queryParams['product_code'] = productCode;
+      }
       if (year != null) queryParams['year'] = year;
 
       final response = await _dio.get(_endpoint, queryParameters: queryParams);
 
       if (response.data is List) {
-        return (response.data as List).map((e) => BOMHeader.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => BOMHeader.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -36,7 +43,9 @@ class BOMRepository {
       }
       final response = await _dio.get(_endpoint, queryParameters: queryParams);
       if (response.data is List) {
-        return (response.data as List).map((e) => BOMHeader.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => BOMHeader.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -58,7 +67,9 @@ class BOMRepository {
     try {
       final response = await _dio.get('$_endpoint$bomId/summary');
       if (response.data is List) {
-        return (response.data as List).map((e) => BOMMaterialSummary.fromJson(e)).toList();
+        return (response.data as List)
+            .map((e) => BOMMaterialSummary.fromJson(e))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -83,7 +94,7 @@ class BOMRepository {
     try {
       await _dio.put('$_endpoint${bom.bomId}', data: bom.toJson());
     } catch (e) {
-       if (e is DioException && e.response?.statusCode == 400) {
+      if (e is DioException && e.response?.statusCode == 400) {
         throw Exception(e.response?.data['detail'] ?? "Lỗi cập nhật BOM");
       }
       throw Exception("Failed to update BOM: $e");
@@ -95,6 +106,50 @@ class BOMRepository {
       await _dio.delete('$_endpoint$id');
     } catch (e) {
       throw Exception("Failed to delete BOM: $e");
+    }
+  }
+
+  // [MỚI] Hàm upload file import Excel
+  Future<Map<String, dynamic>> importBOMExcel(
+      PlatformFile file, int applicableYear) async {
+    try {
+      if (file.bytes == null) {
+        throw Exception("File is empty.");
+      }
+
+      final formData = FormData.fromMap({
+        'applicable_year':
+            applicableYear, // Gửi năm áp dụng theo kiểu Form data
+        'file': MultipartFile.fromBytes(file.bytes!,
+            filename: file.name,
+            contentType: MediaType('application', 'vnd.ms-excel')),
+      });
+
+      final response = await _dio.post('${_endpoint}import', data: formData);
+      return response.data;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        throw Exception(e.response?.data['detail'] ??
+            "File không đúng định dạng hoặc lỗi logic.");
+      }
+      throw Exception("Failed to import BOM: ${e.message}");
+    } catch (e) {
+      throw Exception("Error processing file: $e");
+    }
+  }
+
+  Future<Uint8List> exportExcel() async {
+    try {
+      final response = await _dio.get(
+        '${_endpoint}export',
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      return Uint8List.fromList(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.message);
+    } catch (e) {
+      throw Exception("Failed to export BOMs: $e");
     }
   }
 }

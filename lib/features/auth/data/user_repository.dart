@@ -6,23 +6,24 @@ class UserRepository {
   final Dio _dio = ApiClient().dio;
 
   // 1. Lấy danh sách Users
-  Future<List<User>> getUsers({int skip = 0, int limit = 100, String? search}) async {
+  Future<List<User>> getUsers(
+      {int skip = 0, int limit = 100, String? search}) async {
     try {
       final response = await _dio.get(
-        '/api/v1/users', // Lưu ý: Đảm bảo có dấu gạch chéo cuối nếu backend yêu cầu, hoặc không
+        '/api/v1/users/', // Lưu ý: Đảm bảo có dấu gạch chéo cuối nếu backend yêu cầu, hoặc không
         queryParameters: {
           'skip': skip,
           'limit': limit,
           // [FIX 1]: Backend của bạn dùng 'keyword', không phải 'q'
-          if (search != null && search.isNotEmpty) 'keyword': search, 
+          if (search != null && search.isNotEmpty) 'keyword': search,
         },
       );
-      
+
       if (response.statusCode == 200) {
         // [FIX 2 - QUAN TRỌNG]: Backend trả về { "data": [...], "total": ... }
         // Nên bạn phải chọc vào key ['data'] mới lấy được List.
-        final List<dynamic> data = response.data['data']; 
-        
+        final List<dynamic> data = response.data['data'];
+
         return data.map((json) => User.fromJson(json)).toList();
       }
       return [];
@@ -38,7 +39,7 @@ class UserRepository {
   Future<User> createUser(User user, String password) async {
     try {
       final response = await _dio.post(
-        '/api/v1/users',
+        '/api/v1/users/',
         data: user.toJson(password: password),
       );
       return User.fromJson(response.data);

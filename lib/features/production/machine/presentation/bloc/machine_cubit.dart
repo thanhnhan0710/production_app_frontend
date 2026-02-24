@@ -1,3 +1,5 @@
+import 'package:file_saver/file_saver.dart';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../data/machine_repository.dart';
@@ -91,6 +93,21 @@ class MachineCubit extends Cubit<MachineState> {
       }
     } catch (e) {
       emit(MachineError(e.toString().replaceAll("Exception: ", "")));
+    }
+  }
+
+  Future<void> exportExcel() async {
+    try {
+      final bytes = await _repo.exportExcel();
+
+      await FileSaver.instance.saveFile(
+        name: 'WEAVING MACHINE${DateTime.now().millisecondsSinceEpoch}.xlsx',
+        bytes: bytes,
+        mimeType: MimeType.microsoftExcel,
+      );
+    } catch (e) {
+      emit(MachineError(
+          "Lỗi xuất file: ${e.toString().replaceAll("Exception: ", "")}"));
     }
   }
 }

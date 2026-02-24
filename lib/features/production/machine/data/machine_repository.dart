@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/widgets.dart';
@@ -78,7 +79,7 @@ class MachineRepository {
   // --- GET MACHINE HISTORY ---
   Future<List<MachineLog>> getMachineHistory(int machineId) async {
     try {
-      final response = await _dio.get('/api/v1/machines/$machineId/history/');
+      final response = await _dio.get('/api/v1/machines/$machineId/history');
       if (response.data is List) {
         return (response.data as List)
             .map((e) => MachineLog.fromJson(e))
@@ -101,7 +102,7 @@ class MachineRepository {
       });
 
       final response =
-          await _dio.post('/api/v1/machines/import', data: formData);
+          await _dio.post('/api/v1/machines/import/', data: formData);
       return response.data;
     } on DioException catch (e) {
       debugPrint("❌ IMPORT ERROR: ${e.response?.data}");
@@ -162,6 +163,23 @@ class MachineRepository {
       return response.data['url'] ?? '';
     } catch (e) {
       throw Exception("Failed to upload log image: $e");
+    }
+  }
+
+  // --- [MỚI] EXPORT EXCEL ---
+  Future<Uint8List> exportExcel() async {
+    try {
+      final response = await _dio.get(
+        '/api/v1/machines/export/',
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      return Uint8List.fromList(response.data);
+    } on DioException catch (e) {
+      debugPrint("❌ EXPORT ERROR: ${e.response?.data}");
+      throw Exception(e.message);
+    } catch (e) {
+      throw Exception("Failed to export machines: $e");
     }
   }
 }

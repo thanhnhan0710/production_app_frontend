@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/purchase_order_repository.dart';
 import '../../domain/purchase_order_model.dart';
@@ -6,6 +7,7 @@ import '../../domain/purchase_order_model.dart';
 abstract class PurchaseOrderState {}
 
 class POInitial extends PurchaseOrderState {}
+
 class POLoading extends PurchaseOrderState {}
 
 // State cho danh sách
@@ -90,8 +92,8 @@ class PurchaseOrderCubit extends Cubit<PurchaseOrderState> {
       } else {
         await _repo.createPurchaseOrder(po);
       }
-      
-      loadPurchaseOrders(); 
+
+      loadPurchaseOrders();
     } catch (e) {
       print("❌ Save PO Failed: $e");
       emit(POError(e.toString().replaceAll("Exception: ", "")));
@@ -119,6 +121,37 @@ class PurchaseOrderCubit extends Cubit<PurchaseOrderState> {
       emit(POError(e.toString().replaceAll("Exception: ", "")));
       // Load lại danh sách để khôi phục trạng thái UI (tránh bị treo ở màn hình lỗi)
       loadPurchaseOrders();
+    }
+  }
+
+  // --- [MỚI] HÀM IMPORT EXCEL ---
+  Future<void> importExcel(PlatformFile file) async {
+    emit(POLoading());
+    try {
+      final result = await _repo.importExcel(file);
+
+      // Load lại danh sách PO ngay sau khi import
+      await loadPurchaseOrders();
+
+      // Phân tích kết quả trả về từ Backend
+      final int successPO = result['success_po'] ?? 0;
+      final int successDecl = result['success_decl'] ?? 0;
+      final List errors = result['errors'] ?? [];
+
+      String msg =
+          "Đã import thành công:\n- $successPO Đơn hàng (PO)\n- $successDecl Tờ khai hải quan.";
+
+      if (errors.isNotEmpty) {
+        msg += "\n\n⚠️ Bỏ qua các dòng lỗi sau:\n${errors.join('\n')}";
+        // Bắn ra POError để UI hiển thị dialog/snackbar màu đỏ hoặc cam chú ý
+        emit(POError(msg));
+      } else {
+        // Hoàn hảo 100%
+        emit(POSuccess(msg));
+      }
+    } catch (e) {
+      emit(POError(e.toString().replaceAll("Exception: ", "")));
+      loadPurchaseOrders(); // Phục hồi lại list
     }
   }
 }

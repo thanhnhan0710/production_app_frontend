@@ -141,7 +141,52 @@ class _ProductScreenState extends State<ProductScreen> {
                             ],
                           ),
                           const Spacer(),
-                          if (isDesktop)
+                          if (isDesktop) ...[
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                context.read<ProductCubit>().exportExcel();
+                              },
+                              icon: const Icon(Icons.download, size: 18),
+                              label: const Text('EXPORT EXCEL'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.green.shade700,
+                                side: BorderSide(color: Colors.green.shade700),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // --- [MỚI] NÚT IMPORT EXCEL ---
+                            OutlinedButton.icon(
+                              onPressed: () async {
+                                final result =
+                                    await FilePicker.platform.pickFiles(
+                                  type: FileType.custom,
+                                  allowedExtensions: ['xls', 'xlsx'],
+                                  withData: true,
+                                );
+
+                                if (result != null && result.files.isNotEmpty) {
+                                  context
+                                      .read<ProductCubit>()
+                                      .importExcel(result.files.first);
+                                }
+                              },
+                              icon: const Icon(Icons.upload_file, size: 18),
+                              label: const Text('IMPORT EXCEL'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: _primaryColor,
+                                side: BorderSide(color: _primaryColor),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // --- NÚT ADD PRODUCT CŨ ---
                             ElevatedButton.icon(
                               onPressed: () =>
                                   _showEditDialog(context, null, l10n),
@@ -157,6 +202,7 @@ class _ProductScreenState extends State<ProductScreen> {
                                     borderRadius: BorderRadius.circular(8)),
                               ),
                             ),
+                          ]
                         ],
                       ),
                       const SizedBox(height: 24),

@@ -52,11 +52,16 @@ class MachineOperationScreen extends StatefulWidget {
   State<MachineOperationScreen> createState() => _MachineOperationScreenState();
 }
 
-class _MachineOperationScreenState extends State<MachineOperationScreen> {
+class _MachineOperationScreenState extends State<MachineOperationScreen>
+    with TickerProviderStateMixin {
   final Color _primaryColor = const Color(0xFF003366);
   final TextEditingController _machineSearchCtrl = TextEditingController();
   String _searchKeyword = "";
   Timer? _debounce;
+
+  TabController? _tabController;
+  String? _selectedArea;
+  List<String> _currentAreas = [];
 
   @override
   void initState() {
@@ -79,6 +84,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
   void dispose() {
     _debounce?.cancel();
     _machineSearchCtrl.dispose();
+    _tabController?.dispose();
     WebSocketService().removeListener(_onWebSocketMessage);
     super.dispose();
   }
@@ -196,103 +202,134 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
                   }
                   final sortedAreas = groupedMachines.keys.toList()..sort();
 
-                  return DefaultTabController(
-                    length: sortedAreas.length,
-                    child: Column(
-                      children: [
-                        // --- COMPACT TAB BAR ---
-                        Container(
-                          color: Colors.white,
-                          height: 36,
-                          child: TabBar(
-                            isScrollable: true,
-                            tabAlignment: TabAlignment.start,
-                            labelColor: _primaryColor,
-                            unselectedLabelColor: Colors.grey,
-                            indicatorColor: _primaryColor,
-                            indicatorWeight: 2,
-                            labelPadding:
-                                const EdgeInsets.symmetric(horizontal: 16),
-                            labelStyle: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 13),
-                            tabs: sortedAreas
-                                .map((area) => Tab(text: area.toUpperCase()))
-                                .toList(),
-                          ),
+                  // ==========================================
+                  // [MỚI] LOGIC QUẢN LÝ TAB GIỮ NGUYÊN VỊ TRÍ
+                  // ==========================================
+                  bool areasChanged =
+                      _currentAreas.join(',') != sortedAreas.join(',');
+
+                  if (_tabController == null || areasChanged) {
+                    int initIndex = 0;
+                    if (_selectedArea != null &&
+                        sortedAreas.contains(_selectedArea)) {
+                      initIndex = sortedAreas.indexOf(_selectedArea!);
+                    } else if (sortedAreas.isNotEmpty) {
+                      _selectedArea = sortedAreas[0];
+                    }
+
+                    _tabController?.dispose();
+                    _tabController = TabController(
+                      length: sortedAreas.length,
+                      vsync: this,
+                      initialIndex: initIndex,
+                    );
+                    _currentAreas = sortedAreas;
+
+                    _tabController!.addListener(() {
+                      if (!_tabController!.indexIsChanging) {
+                        _selectedArea = _currentAreas[_tabController!.index];
+                      }
+                    });
+                  }
+                  // ==========================================
+
+                  return Column(
+                    children: [
+                      // --- COMPACT TAB BAR ---
+                      Container(
+                        color: Colors.white,
+                        height: 36,
+                        child: TabBar(
+                          controller:
+                              _tabController, // Gán controller tự quản lý
+                          isScrollable: true,
+                          tabAlignment: TabAlignment.start,
+                          labelColor: _primaryColor,
+                          unselectedLabelColor: Colors.grey,
+                          indicatorColor: _primaryColor,
+                          indicatorWeight: 2,
+                          labelPadding:
+                              const EdgeInsets.symmetric(horizontal: 16),
+                          labelStyle: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 13),
+                          tabs: sortedAreas
+                              .map((area) => Tab(text: area.toUpperCase()))
+                              .toList(),
                         ),
+                      ),
 
-                        // --- CONTENT (VERTICAL GRID TỰ ĐỘNG CHIA CỘT) ---
-                        Expanded(
-                          child: TabBarView(
-                            children: sortedAreas.map((area) {
-                              final machinesInArea = groupedMachines[area]!;
+                      // --- CONTENT (VERTICAL GRID TỰ ĐỘNG CHIA CỘT) ---
+                      Expanded(
+                        child: TabBarView(
+                          controller:
+                              _tabController, // Gán controller tự quản lý
+                          children: sortedAreas.map((area) {
+                            final machinesInArea = groupedMachines[area]!;
 
-                              return LayoutBuilder(
-                                  builder: (context, constraints) {
-                                int crossAxisCount;
+                            return LayoutBuilder(
+                                builder: (context, constraints) {
+                              int crossAxisCount;
 
-                                if (constraints.maxWidth < 600) {
-                                  crossAxisCount = 3;
-                                } else {
-                                  crossAxisCount =
-                                      (constraints.maxWidth / 140).floor();
-                                  if (crossAxisCount < 3) crossAxisCount = 3;
-                                }
+                              if (constraints.maxWidth < 600) {
+                                crossAxisCount = 3;
+                              } else {
+                                crossAxisCount =
+                                    (constraints.maxWidth / 140).floor();
+                                if (crossAxisCount < 3) crossAxisCount = 3;
+                              }
 
-                                return SingleChildScrollView(
-                                  padding: const EdgeInsets.all(4),
-                                  child: StaggeredGrid.count(
-                                    crossAxisCount: crossAxisCount,
-                                    mainAxisSpacing: 4,
-                                    crossAxisSpacing: 4,
-                                    children: machinesInArea.map((machine) {
-                                      int crossAxisCellCount = 1;
-                                      int totalLines = 2;
-                                      try {
-                                        totalLines = machine.totalLines > 0
-                                            ? machine.totalLines
-                                            : 2;
-                                      } catch (_) {}
+                              return SingleChildScrollView(
+                                padding: const EdgeInsets.all(4),
+                                child: StaggeredGrid.count(
+                                  crossAxisCount: crossAxisCount,
+                                  mainAxisSpacing: 4,
+                                  crossAxisSpacing: 4,
+                                  children: machinesInArea.map((machine) {
+                                    int crossAxisCellCount = 1;
+                                    int totalLines = 2;
+                                    try {
+                                      totalLines = machine.totalLines > 0
+                                          ? machine.totalLines
+                                          : 2;
+                                    } catch (_) {}
 
-                                      if (totalLines > 2 &&
-                                          crossAxisCount >= 2) {
-                                        crossAxisCellCount = 2;
-                                      }
+                                    if (totalLines > 2 && crossAxisCount >= 2) {
+                                      crossAxisCellCount = 2;
+                                    }
 
-                                      return StaggeredGridTile.fit(
-                                        crossAxisCellCount: crossAxisCellCount,
-                                        child: _MachineCard(
-                                          machine: machine,
-                                          state: state,
-                                          l10n: l10n,
-                                          onStatusChanged: (newStatus) =>
-                                              _showStatusDialog(context,
-                                                  machine, newStatus, l10n),
-                                          onHistory: () => showDialog(
-                                              context: context,
-                                              builder: (ctx) =>
-                                                  MachineHistoryDialog(
-                                                      machine: machine)),
-                                          onLineTap: (lineCode, ticket) {
-                                            _handleLineTap(
-                                                context,
-                                                machine,
-                                                lineCode,
-                                                ticket,
-                                                state.readyBaskets,
-                                                l10n);
-                                          },
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                );
-                              });
-                            }).toList(),
-                          ),
+                                    return StaggeredGridTile.fit(
+                                      crossAxisCellCount: crossAxisCellCount,
+                                      child: _MachineCard(
+                                        machine: machine,
+                                        state: state,
+                                        l10n: l10n,
+                                        onStatusChanged: (newStatus) =>
+                                            _showStatusDialog(context, machine,
+                                                newStatus, l10n),
+                                        onHistory: () => showDialog(
+                                            context: context,
+                                            builder: (ctx) =>
+                                                MachineHistoryDialog(
+                                                    machine: machine)),
+                                        onLineTap: (lineCode, ticket) {
+                                          _handleLineTap(
+                                              context,
+                                              machine,
+                                              lineCode,
+                                              ticket,
+                                              state.readyBaskets,
+                                              l10n);
+                                        },
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              );
+                            });
+                          }).toList(),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   );
                 }
                 return const SizedBox();
@@ -305,7 +342,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
   }
 
   // =============================================================================
-  // LOGIC NGHIỆP VỤ (GIỮ NGUYÊN)
+  // LOGIC NGHIỆP VỤ
   // =============================================================================
 
   void _handleLineTap(BuildContext context, Machine machine, String lineCode,
@@ -1116,6 +1153,8 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
         return Colors.red;
       case 'SPINNING':
         return Colors.purple;
+      case 'YARNOUT':
+        return Colors.green;
       default:
         return Colors.blueGrey;
     }
@@ -1131,6 +1170,8 @@ class _MachineOperationScreenState extends State<MachineOperationScreen> {
         return l10n.statusMaintenance;
       case 'SPINNING':
         return l10n.statusSpinning;
+      case 'YARNOUT':
+        return 'Hết sợi (Yarnout)';
       default:
         return status;
     }
@@ -1259,6 +1300,8 @@ class _MachineCard extends StatelessWidget {
                             Icons.stop, Colors.red),
                         _buildMenuItem('MAINTENANCE', l10n.statusMaintenance,
                             Icons.build, Colors.orange),
+                        _buildMenuItem('YARNOUT', 'Hết sợi (Yarnout)',
+                            Icons.timeline, Colors.green),
                         const PopupMenuDivider(),
                         _buildMenuItem('HISTORY', l10n.viewHistory,
                             Icons.history, Colors.black87),

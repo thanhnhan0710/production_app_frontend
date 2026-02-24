@@ -173,6 +173,51 @@ class _WeavingScreenState extends State<WeavingScreen> {
     );
   }
 
+  Widget _buildGroundYarnInfo(WeavingTicket ticket) {
+    // Tìm sợi có componentType là GROUND
+    final groundYarn = ticket.yarns
+        .where((y) => y.componentType.toUpperCase() == 'GROUND')
+        .firstOrNull;
+
+    if (groundYarn == null) {
+      return Row(
+        children: [
+          Icon(Icons.layers_clear, size: 14, color: Colors.orange.shade400),
+          const SizedBox(width: 4),
+          Text("Chưa gắn sợi nền",
+              style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.orange.shade700,
+                  fontStyle: FontStyle.italic)),
+        ],
+      );
+    }
+
+    final internalCode =
+        groundYarn.internalBatchCode ?? "ID:${groundYarn.batchId}";
+    final supplierName = groundYarn.supplierShortName;
+    final displayCode = (supplierName != null && supplierName.isNotEmpty)
+        ? "$internalCode ($supplierName)"
+        : internalCode;
+
+    return Row(
+      children: [
+        Icon(Icons.layers, size: 14, color: Colors.brown.shade600),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            "Nền: $displayCode",
+            style: TextStyle(
+                fontSize: 12,
+                color: Colors.brown.shade800,
+                fontWeight: FontWeight.bold),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -421,12 +466,23 @@ class _WeavingScreenState extends State<WeavingScreen> {
         ),
         title: Text(ticket.code,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-        subtitle: Row(
+
+        // [CẬP NHẬT Ở ĐÂY]: Đổi Row thành Column để thêm dòng Sợi Nền
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _MachineInfo(id: ticket.machineId, line: ticket.machineLine),
-            const SizedBox(width: 8),
-            Text("• ${ticket.basketCode ?? '-'}",
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                _MachineInfo(id: ticket.machineId, line: ticket.machineLine),
+                const SizedBox(width: 8),
+                Text("• ${ticket.basketCode ?? '-'}",
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+              ],
+            ),
+            const SizedBox(height: 6),
+            _buildGroundYarnInfo(ticket), // Gắn hiển thị sợi nền vào Desktop
           ],
         ),
         trailing: isRunning
@@ -492,6 +548,13 @@ class _WeavingScreenState extends State<WeavingScreen> {
               ),
               const SizedBox(height: 8),
               _ProductInfo(id: ticket.productId),
+
+              // [CẬP NHẬT Ở ĐÂY]: Thêm dòng hiển thị lô sợi nền vào Mobile Card
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 6.0),
+                child: Divider(height: 1, thickness: 0.5),
+              ),
+              _buildGroundYarnInfo(ticket),
             ],
           ),
         ),

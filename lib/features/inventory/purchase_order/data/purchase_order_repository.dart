@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
+import 'package:file_picker/file_picker.dart'; // [MỚI] Import file_picker
+import 'package:http_parser/http_parser.dart';
 import '../../../../core/network/api_client.dart';
 import '../domain/purchase_order_model.dart';
 
@@ -26,11 +28,15 @@ class PurchaseOrderRepository {
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
       if (vendorId != null) queryParams['vendor_id'] = vendorId;
       if (status != null) queryParams['status'] = status.name;
-      if (fromDate != null) queryParams['from_date'] = fromDate.toIso8601String().split('T').first;
-      if (toDate != null) queryParams['to_date'] = toDate.toIso8601String().split('T').first;
+      if (fromDate != null) {
+        queryParams['from_date'] = fromDate.toIso8601String().split('T').first;
+      }
+      if (toDate != null) {
+        queryParams['to_date'] = toDate.toIso8601String().split('T').first;
+      }
 
       final response = await _dio.get(_endpoint, queryParameters: queryParams);
-      
+
       if (response.data is List) {
         return (response.data as List)
             .map((e) => PurchaseOrderHeader.fromJson(e))
@@ -70,29 +76,31 @@ class PurchaseOrderRepository {
     } catch (e) {
       print("Error fetching next PO number: $e");
       // Fallback offline format
-      return "PO-OFFLINE-${DateTime.now().millisecondsSinceEpoch % 100}"; 
+      return "PO-OFFLINE-${DateTime.now().millisecondsSinceEpoch % 100}";
     }
   }
 
   // --- CREATE ---
-  Future<PurchaseOrderHeader> createPurchaseOrder(PurchaseOrderHeader po) async {
+  Future<PurchaseOrderHeader> createPurchaseOrder(
+      PurchaseOrderHeader po) async {
     try {
       final response = await _dio.post(_endpoint, data: po.toJson());
       return PurchaseOrderHeader.fromJson(response.data);
     } on DioException catch (e) {
-       debugPrint("❌ CREATE PO ERROR: ${e.response?.data}");
-       throw Exception(e.response?.data['detail'] ?? "Failed to create PO");
+      debugPrint("❌ CREATE PO ERROR: ${e.response?.data}");
+      throw Exception(e.response?.data['detail'] ?? "Failed to create PO");
     } catch (e) {
       throw Exception("Error creating PO: $e");
     }
   }
 
   // --- UPDATE ---
-  Future<PurchaseOrderHeader> updatePurchaseOrder(int poId, PurchaseOrderHeader po) async {
+  Future<PurchaseOrderHeader> updatePurchaseOrder(
+      int poId, PurchaseOrderHeader po) async {
     try {
       // Chỉ gửi các trường header cần update, không gửi details ở đây nếu BE tách biệt
       final data = po.toJson();
-      data.remove('details'); 
+      data.remove('details');
 
       final response = await _dio.put('$_endpoint/$poId', data: data);
       return PurchaseOrderHeader.fromJson(response.data);
@@ -102,12 +110,11 @@ class PurchaseOrderRepository {
   }
 
   // --- ADD ITEM (DETAIL) ---
-  Future<PurchaseOrderHeader> addDetailItem(int poId, PurchaseOrderDetail detail) async {
+  Future<PurchaseOrderHeader> addDetailItem(
+      int poId, PurchaseOrderDetail detail) async {
     try {
-      final response = await _dio.post(
-        '$_endpoint/$poId/items', 
-        data: detail.toJson()
-      );
+      final response =
+          await _dio.post('$_endpoint/$poId/items', data: detail.toJson());
       return PurchaseOrderHeader.fromJson(response.data);
     } catch (e) {
       throw Exception("Failed to add item: $e");
@@ -122,6 +129,30 @@ class PurchaseOrderRepository {
       throw Exception(e.response?.data['detail'] ?? "Failed to delete PO: $e");
     } catch (e) {
       throw Exception("Failed to delete PO: $e");
+    }
+  }
+
+  Future<Map<String, dynamic>> importExcel(PlatformFile file) async {
+    try {
+      if (file.bytes == null) {
+        throw Exception("Dữ liệu file trống.");
+      }
+
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(file.bytes!,
+            filename: file.name,
+            contentType: MediaType('application', 'vnd.ms-excel')),
+      });
+
+      // Gọi API import
+      final response = await _dio.post('${_endpoint}import', data: formData);
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint("❌ IMPORT PO ERROR: ${e.response?.data}");
+      throw Exception(
+          e.response?.data['detail'] ?? "Lỗi không xác định từ Server.");
+    } catch (e) {
+      throw Exception("Lỗi khi gửi file: $e");
     }
   }
 }
