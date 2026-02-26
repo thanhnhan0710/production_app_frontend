@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:production_app_frontend/l10n/app_localizations.dart';
 import 'package:production_app_frontend/core/widgets/responsive_layout.dart';
+import 'package:production_app_frontend/core/network/websocket_service.dart'; // [MỚI] Import WebSocket
 
 import '../../domain/work_schedule_model.dart';
 import '../bloc/work_schedule_cubit.dart';
@@ -44,6 +45,10 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
     context.read<WorkScheduleCubit>().loadSchedules();
     context.read<EmployeeCubit>().loadEmployees();
     context.read<ShiftCubit>().loadShifts();
+
+    // [MỚI] Đăng ký lắng nghe WebSocket
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
   }
 
   @override
@@ -51,7 +56,18 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
     _debounce?.cancel();
     _searchController.dispose();
     _tabController.dispose();
+
+    // [MỚI] Hủy đăng ký lắng nghe
+    WebSocketService().removeListener(_onWebSocketMessage);
     super.dispose();
+  }
+
+  // [MỚI] Xử lý tín hiệu WebSocket
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_WORK_SCHEDULES") {
+      debugPrint("WebSocket: Làm mới Lịch làm việc.");
+      if (mounted) context.read<WorkScheduleCubit>().loadSchedules();
+    }
   }
 
   // --- LOGIC NGÀY THÁNG ---
@@ -569,7 +585,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
   }
 
   // ===========================================================================
-  // [CẬP NHẬT] XẾP LỊCH NHANH - MẶC ĐỊNH BỎ CHỦ NHẬT
+  // XẾP LỊCH NHANH - MẶC ĐỊNH BỎ CHỦ NHẬT
   // ===========================================================================
   void _showQuickScheduleDialog(BuildContext context, AppLocalizations l10n) {
     DateTime startDate = _startOfWeek(_currentDate);
@@ -577,7 +593,7 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
     int? selectedEmpId;
     int? selectedShiftId;
 
-    // [QUAN TRỌNG] Chỉ chọn từ T2 (1) đến T7 (6). Bỏ CN (7).
+    // Chỉ chọn từ T2 (1) đến T7 (6). Bỏ CN (7).
     List<int> selectedWeekdays = [1, 2, 3, 4, 5, 6];
 
     final formKey = GlobalKey<FormState>();
@@ -671,7 +687,6 @@ class _WorkScheduleScreenState extends State<WorkScheduleScreen>
                           decoration: _inputDeco(l10n.shift),
                           isExpanded: true,
                           items: list.map((s) {
-                            // [FIX] Null check string
                             final sTime = s.startTime ?? "";
                             final eTime = s.endTime ?? "";
                             String start = (sTime.length >= 5)
@@ -1037,7 +1052,6 @@ class _ShiftBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     String displayText = shiftName ?? "Shift $shiftId";
 
-    // [FIX NULL LENGTH]
     final sTime = startTime ?? "";
     final eTime = endTime ?? "";
     String start = (sTime.length >= 5) ? sTime.substring(0, 5) : sTime;

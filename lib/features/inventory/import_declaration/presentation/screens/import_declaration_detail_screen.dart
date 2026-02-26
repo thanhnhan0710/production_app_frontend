@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 
 // --- IMPORTS ---
 import '../../../../../l10n/app_localizations.dart';
+// [NEW] Import WebSocket Service
+import '../../../../../core/network/websocket_service.dart';
 import '../../domain/import_declaration_model.dart';
 import '../bloc/import_declaration_cubit.dart';
 
@@ -28,8 +30,33 @@ class _ImportDeclarationDetailScreenState
   @override
   void initState() {
     super.initState();
-    context.read<ImportDeclarationCubit>().loadDetail(widget.id);
+    _loadData();
     context.read<mat_bloc.MaterialCubit>().loadMaterials();
+
+    // [NEW] Kết nối và lắng nghe WebSocket
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
+  }
+
+  @override
+  void dispose() {
+    // [NEW] Hủy lắng nghe
+    WebSocketService().removeListener(_onWebSocketMessage);
+    super.dispose();
+  }
+
+  // [NEW] Xử lý WebSocket
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_IMPORT_DECLARATIONS" ||
+        message == "REFRESH_PURCHASE_ORDERS") {
+      debugPrint("WebSocket: Làm mới chi tiết Tờ khai.");
+      if (mounted) _loadData();
+    }
+  }
+
+  // [NEW] Hàm gọi API
+  void _loadData() {
+    context.read<ImportDeclarationCubit>().loadDetail(widget.id);
   }
 
   @override
@@ -43,6 +70,13 @@ class _ImportDeclarationDetailScreenState
         backgroundColor: const Color(0xFF003366),
         foregroundColor: Colors.white,
         elevation: 0,
+        // [NEW] Tùy chọn nút refresh thủ công
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadData,
+          )
+        ],
       ),
       body: BlocBuilder<ImportDeclarationCubit, ImportDeclState>(
         builder: (context, state) {
@@ -234,7 +268,6 @@ class _ImportDeclarationDetailScreenState
     );
   }
 
-  // --- ITEM CARD ---
   Widget _buildDetailItem(BuildContext context, ImportDeclarationDetail detail,
       AppLocalizations l10n) {
     MaterialModel? material = detail.material;
@@ -326,8 +359,8 @@ class _ImportDeclarationDetailScreenState
                 Row(
                   children: [
                     InkWell(
-                      onTap: () => _showAddDetailDialog(context, l10n,
-                          detail: detail), // [EDIT] Mở dialog với data cũ
+                      onTap: () =>
+                          _showAddDetailDialog(context, l10n, detail: detail),
                       child: const Padding(
                           padding: EdgeInsets.all(4.0),
                           child:
@@ -335,8 +368,7 @@ class _ImportDeclarationDetailScreenState
                     ),
                     const SizedBox(width: 12),
                     InkWell(
-                      onTap: () => _confirmDeleteDetail(
-                          context, detail, l10n), // [DELETE] Gọi hàm xóa
+                      onTap: () => _confirmDeleteDetail(context, detail, l10n),
                       child: const Padding(
                           padding: EdgeInsets.all(4.0),
                           child: Icon(Icons.delete_outline,
@@ -369,7 +401,6 @@ class _ImportDeclarationDetailScreenState
     );
   }
 
-  // --- [UPDATED] DIALOG THÊM / SỬA HÀNG ---
   void _showAddDetailDialog(BuildContext context, AppLocalizations l10n,
       {ImportDeclarationDetail? detail}) {
     final isEdit = detail != null;
@@ -399,7 +430,6 @@ class _ImportDeclarationDetailScreenState
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 1. Chọn Vật tư
                     BlocBuilder<mat_bloc.MaterialCubit, mat_bloc.MaterialState>(
                       builder: (context, state) {
                         List<MaterialModel> materials = [];
@@ -407,7 +437,6 @@ class _ImportDeclarationDetailScreenState
                           materials = state.materials;
                         }
 
-                        // Nếu đang edit mà chưa có object material, thử tìm trong list
                         if (isEdit &&
                             selectedMaterial == null &&
                             materials.isNotEmpty) {
@@ -493,7 +522,7 @@ class _ImportDeclarationDetailScreenState
                 return;
               }
               final newDetail = ImportDeclarationDetail(
-                  detailId: detail?.detailId ?? 0, // Giữ ID nếu edit
+                  detailId: detail?.detailId ?? 0,
                   declarationId: widget.id,
                   materialId: selectedMaterialId!,
                   quantity: double.tryParse(qtyCtrl.text) ?? 0,
@@ -544,7 +573,6 @@ class _ImportDeclarationDetailScreenState
                           hintText: l10n.searchMaterialHint),
                       onChanged: (val) {
                         setState(() {
-                          // ignore: curly_braces_in_flow_control_structures
                           if (val.isEmpty) {
                             filtered = List.from(list);
                           } else {
@@ -589,7 +617,6 @@ class _ImportDeclarationDetailScreenState
     );
   }
 
-  // [FIX] Xóa dòng hàng
   void _confirmDeleteDetail(BuildContext context,
       ImportDeclarationDetail detail, AppLocalizations l10n) {
     showDialog(
@@ -603,7 +630,6 @@ class _ImportDeclarationDetailScreenState
                     child: Text(l10n.cancel)),
                 ElevatedButton(
                   onPressed: () {
-                    // Gọi hàm deleteDetailItem từ Cubit
                     context
                         .read<ImportDeclarationCubit>()
                         .deleteDetailItem(widget.id, detail.detailId);

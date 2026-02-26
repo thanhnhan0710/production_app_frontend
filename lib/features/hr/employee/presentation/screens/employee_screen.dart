@@ -9,7 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/widgets/responsive_layout.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../../core/constants/api_endpoints.dart';
-import '../../../../../core/network/websocket_service.dart'; // [THÊM] WebSocket
+import '../../../../../core/network/websocket_service.dart'; // WebSocket
 import '../../../department/presentation/bloc/department_cubit.dart';
 import '../../domain/employee_model.dart';
 import '../bloc/employee_cubit.dart';
@@ -755,10 +755,9 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
-                        controller: phoneCtrl,
-                        decoration: _inputDeco(l10n.phone),
-                        keyboardType: TextInputType.phone,
-                      ),
+                          controller: phoneCtrl,
+                          decoration: _inputDeco(l10n.phone),
+                          keyboardType: TextInputType.phone),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<int>(
                         value: selectedDeptId,
@@ -808,7 +807,6 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                       note: noteCtrl.text,
                       avatarUrl: emp?.avatarUrl ?? '',
                     );
-
                     context.read<EmployeeCubit>().saveEmployee(
                         employee: newEmp,
                         imageFile: pickedFile,

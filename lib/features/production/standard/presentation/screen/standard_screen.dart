@@ -2,13 +2,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:production_app_frontend/l10n/app_localizations.dart';
 import 'package:production_app_frontend/core/widgets/responsive_layout.dart';
+import 'package:production_app_frontend/core/network/websocket_service.dart';
 
 import '../../domain/standard_model.dart';
 import '../bloc/standard_cubit.dart';
 
-// Import related features
 import 'package:production_app_frontend/features/inventory/product/domain/product_model.dart';
 import 'package:production_app_frontend/features/inventory/product/presentation/bloc/product_cubit.dart';
 import 'package:production_app_frontend/features/inventory/dye_color/domain/dye_color_model.dart';
@@ -36,13 +37,29 @@ class _StandardScreenState extends State<StandardScreen> {
     context.read<StandardCubit>().loadStandards();
     context.read<ProductCubit>().loadProducts();
     context.read<DyeColorCubit>().loadColors();
+
+    // Lắng nghe sự kiện WebSocket
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
     _searchController.dispose();
+    // Hủy đăng ký lắng nghe
+    WebSocketService().removeListener(_onWebSocketMessage);
     super.dispose();
+  }
+
+  // Xử lý thông báo từ WebSocket
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_STANDARDS") {
+      debugPrint("WebSocket: Làm mới danh sách Standard.");
+      if (mounted) {
+        context.read<StandardCubit>().loadStandards();
+      }
+    }
   }
 
   void _onSearchChanged(String query) {
@@ -55,6 +72,48 @@ class _StandardScreenState extends State<StandardScreen> {
         context.read<StandardCubit>().searchStandards(query);
       }
     });
+  }
+
+  // Tiện ích chọn file Import
+  void _onImportExcelPressed() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['xls', 'xlsx'],
+      withData: true,
+    );
+    if (result != null && result.files.isNotEmpty && mounted) {
+      context.read<StandardCubit>().importExcel(result.files.first);
+    }
+  }
+
+  // Dialog hiển thị kết quả Import
+  void _showImportResultDialog(String title, String message, Color color) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+                color == Colors.green
+                    ? Icons.check_circle
+                    : Icons.warning_amber_rounded,
+                color: color),
+            const SizedBox(width: 10),
+            Text(title,
+                style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SizedBox(
+          width: 500,
+          child: SingleChildScrollView(
+              child: Text(message, style: const TextStyle(height: 1.5))),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text("Đóng"))
+        ],
+      ),
+    );
   }
 
   Color _hexToColor(String? hexString) {
@@ -83,6 +142,11 @@ class _StandardScreenState extends State<StandardScreen> {
               SnackBar(
                   content: Text(state.message), backgroundColor: Colors.red),
             );
+          } else if (state is StandardErrorMsg) {
+            _showImportResultDialog(
+                "Kết quả Import (Có lỗi)", state.message, Colors.orange);
+          } else if (state is StandardSuccessMsg) {
+            _showImportResultDialog("Thành công", state.message, Colors.green);
           }
         },
         builder: (context, state) {
@@ -118,7 +182,23 @@ class _StandardScreenState extends State<StandardScreen> {
                                   fontWeight: FontWeight.bold,
                                   color: Colors.grey.shade800)),
                         ),
-                        if (isDesktop)
+                        if (isDesktop) ...[
+                          // NÚT IMPORT EXCEL
+                          OutlinedButton.icon(
+                            onPressed: _onImportExcelPressed,
+                            icon: const Icon(Icons.upload_file, size: 18),
+                            label: const Text('IMPORT EXCEL'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _primaryColor,
+                              side: BorderSide(color: _primaryColor),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // NÚT ADD
                           ElevatedButton.icon(
                             onPressed: () =>
                                 _showEditDialog(context, null, l10n),
@@ -134,6 +214,7 @@ class _StandardScreenState extends State<StandardScreen> {
                                   borderRadius: BorderRadius.circular(8)),
                             ),
                           ),
+                        ]
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -576,9 +657,8 @@ class _StandardScreenState extends State<StandardScreen> {
                   ],
                 ),
                 const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Divider(height: 1),
-                ),
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Divider(height: 1)),
                 const Text("SPECIFICATIONS",
                     style: TextStyle(
                         fontSize: 11,
@@ -686,7 +766,7 @@ class _StandardScreenState extends State<StandardScreen> {
     );
   }
 
-  // --- DIALOG ---
+  // --- DIALOG ADD/EDIT ---
   void _showEditDialog(
       BuildContext context, Standard? item, AppLocalizations l10n) {
     final widthCtrl = TextEditingController(text: item?.widthMm ?? '');
@@ -720,7 +800,6 @@ class _StandardScreenState extends State<StandardScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        // [FIX] Tăng padding để dialog rộng hơn trên mobile
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         titlePadding: const EdgeInsets.all(24),
@@ -731,7 +810,6 @@ class _StandardScreenState extends State<StandardScreen> {
         content: Form(
           key: formKey,
           child: SizedBox(
-            // [FIX] Width linh hoạt
             width: double.maxFinite,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 500),
@@ -744,9 +822,6 @@ class _StandardScreenState extends State<StandardScreen> {
                         style: TextStyle(
                             color: _primaryColor, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
-
-                    // [FIX] Sắp xếp lại Product và Color thành cột dọc (Column) thay vì hàng ngang (Row)
-                    // để tránh lỗi overflow trên màn hình nhỏ
                     DropdownSearch<Product>(
                       items: (filter, props) => prods,
                       itemAsString: (Product p) => p.itemCode,
@@ -755,8 +830,7 @@ class _StandardScreenState extends State<StandardScreen> {
                       onChanged: (Product? data) => selectedProduct = data,
                       validator: (v) => v == null ? "Required" : null,
                       decoratorProps: DropDownDecoratorProps(
-                        decoration: _inputDeco(l10n.product),
-                      ),
+                          decoration: _inputDeco(l10n.product)),
                       popupProps: const PopupProps.menu(
                           showSearchBox: true,
                           searchFieldProps: TextFieldProps(
@@ -766,8 +840,7 @@ class _StandardScreenState extends State<StandardScreen> {
                                   contentPadding: EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 8)))),
                     ),
-                    const SizedBox(height: 12), // Khoảng cách giữa các field
-
+                    const SizedBox(height: 12),
                     BlocBuilder<DyeColorCubit, DyeColorState>(
                       builder: (context, state) {
                         List<DyeColor> colors =
@@ -784,19 +857,15 @@ class _StandardScreenState extends State<StandardScreen> {
                                 value: c.id, child: Text(c.name))),
                           ],
                           onChanged: (val) => selectedColorId = val,
-                          isExpanded:
-                              true, // [FIX] Cho phép text xuống dòng nếu dài
+                          isExpanded: true,
                         );
                       },
                     ),
-
                     const SizedBox(height: 24),
                     Text("Physical Properties",
                         style: TextStyle(
                             color: _primaryColor, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
-
-                    // [FIX] Chia lại bố cục Physical Props: 2 items/dòng
                     Row(children: [
                       Expanded(
                           child: TextFormField(
@@ -809,7 +878,6 @@ class _StandardScreenState extends State<StandardScreen> {
                               decoration: _inputDeco(l10n.thickness))),
                     ]),
                     const SizedBox(height: 12),
-
                     Row(children: [
                       Expanded(
                           child: TextFormField(
@@ -822,7 +890,6 @@ class _StandardScreenState extends State<StandardScreen> {
                               decoration: _inputDeco(l10n.weftDensity))),
                     ]),
                     const SizedBox(height: 12),
-
                     Row(children: [
                       Expanded(
                           child: TextFormField(
@@ -834,7 +901,6 @@ class _StandardScreenState extends State<StandardScreen> {
                               controller: elongCtrl,
                               decoration: _inputDeco(l10n.elongation))),
                     ]),
-
                     const SizedBox(height: 24),
                     Text("Visual & Color",
                         style: TextStyle(
@@ -863,7 +929,6 @@ class _StandardScreenState extends State<StandardScreen> {
                               controller: appearCtrl,
                               decoration: _inputDeco(l10n.appearance))),
                     ]),
-
                     const SizedBox(height: 16),
                     TextFormField(
                         controller: noteCtrl,
@@ -904,10 +969,6 @@ class _StandardScreenState extends State<StandardScreen> {
                     .read<StandardCubit>()
                     .saveStandard(standard: newItem, isEdit: item != null);
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(
-                        item == null ? l10n.successAdded : l10n.successUpdated),
-                    backgroundColor: Colors.green));
               }
             },
             style: ElevatedButton.styleFrom(

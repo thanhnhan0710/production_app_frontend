@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:production_app_frontend/core/widgets/responsive_layout.dart';
@@ -5,6 +6,7 @@ import 'package:production_app_frontend/features/hr/employee/domain/employee_mod
 import 'package:production_app_frontend/features/hr/employee/presentation/bloc/employee_cubit.dart';
 import 'package:production_app_frontend/l10n/app_localizations.dart';
 
+import '../../../../../core/network/websocket_service.dart'; // [MỚI] Import WebSocket
 import '../../domain/user_model.dart';
 import '../bloc/user_cubit.dart';
 
@@ -17,6 +19,8 @@ class UserScreen extends StatefulWidget {
 
 class _UserScreenState extends State<UserScreen> {
   final _searchController = TextEditingController();
+  Timer? _debounce; // [MỚI] Timer cho việc tìm kiếm
+
   final Color _primaryColor = const Color(0xFF003366);
   final Color _bgLight = const Color(0xFFF5F7FA);
 
@@ -24,8 +28,48 @@ class _UserScreenState extends State<UserScreen> {
   void initState() {
     super.initState();
     context.read<UserCubit>().loadUsers();
-    // Load danh sách nhân viên ngay khi vào màn hình để dùng cho Dialog
     context.read<EmployeeCubit>().loadEmployees();
+
+    // [MỚI] Kết nối và lắng nghe WebSocket
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+
+    // [MỚI] Hủy lắng nghe WebSocket
+    WebSocketService().removeListener(_onWebSocketMessage);
+    super.dispose();
+  }
+
+  // [MỚI] Hàm xử lý WebSocket
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_USERS") {
+      debugPrint("WebSocket: Làm mới danh sách Người dùng.");
+      if (mounted) {
+        // Tôn trọng từ khóa tìm kiếm hiện tại nếu có
+        if (_searchController.text.isNotEmpty) {
+          context.read<UserCubit>().searchUsers(_searchController.text);
+        } else {
+          context.read<UserCubit>().loadUsers();
+        }
+      }
+    }
+  }
+
+  // [MỚI] Hàm tìm kiếm có delay (Debounce)
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      if (query.trim().isEmpty) {
+        context.read<UserCubit>().loadUsers();
+      } else {
+        context.read<UserCubit>().searchUsers(query);
+      }
+    });
   }
 
   @override
@@ -35,13 +79,13 @@ class _UserScreenState extends State<UserScreen> {
 
     return Scaffold(
       backgroundColor: _bgLight,
-      // [TÍNH NĂNG COPY] Bọc toàn bộ body trong SelectionArea
       body: SelectionArea(
         child: BlocConsumer<UserCubit, UserState>(
           listener: (context, state) {
             if (state is UserError) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+                SnackBar(
+                    content: Text(state.message), backgroundColor: Colors.red),
               );
             }
           },
@@ -92,15 +136,27 @@ class _UserScreenState extends State<UserScreen> {
                             borderRadius: BorderRadius.circular(8)),
                         child: TextField(
                           controller: _searchController,
+                          onChanged: _onSearchChanged, // Gọi hàm debounce
+                          textInputAction: TextInputAction.search,
                           decoration: InputDecoration(
                             hintText: l10n.searchUser,
                             prefixIcon: const Icon(Icons.search),
                             border: InputBorder.none,
                             contentPadding:
                                 const EdgeInsets.symmetric(vertical: 14),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear,
+                                        color: Colors.grey, size: 18),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      _onSearchChanged('');
+                                      setState(() {});
+                                    },
+                                  )
+                                : null,
                           ),
-                          onSubmitted: (val) =>
-                              context.read<UserCubit>().searchUsers(val),
+                          onSubmitted: (val) => _onSearchChanged(val),
                         ),
                       ),
                     ],
@@ -119,7 +175,19 @@ class _UserScreenState extends State<UserScreen> {
                       }
                       if (state is UserLoaded) {
                         if (state.users.isEmpty) {
-                          return Center(child: Text(l10n.noUserFound));
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.person_off_outlined,
+                                    size: 60, color: Colors.grey.shade300),
+                                const SizedBox(height: 16),
+                                Text(l10n.noUserFound,
+                                    style:
+                                        TextStyle(color: Colors.grey.shade500)),
+                              ],
+                            ),
+                          );
                         }
                         return isDesktop
                             ? _buildDesktopTable(state.users, l10n)
@@ -233,9 +301,8 @@ class _UserScreenState extends State<UserScreen> {
                         ),
                       )),
                       // 2. Phone
-                      DataCell(Text(user.phoneNumber.isEmpty
-                          ? "-"
-                          : user.phoneNumber)),
+                      DataCell(Text(
+                          user.phoneNumber.isEmpty ? "-" : user.phoneNumber)),
 
                       // 3. Employee Linked
                       DataCell(
@@ -340,19 +407,30 @@ class _UserScreenState extends State<UserScreen> {
                       ),
                     ),
                     PopupMenuButton(
+                      icon: Icon(Icons.more_vert, color: Colors.grey.shade400),
                       onSelected: (val) {
                         if (val == 'edit') _showEditDialog(context, user, l10n);
-                        if (val == 'delete')
-                          // ignore: curly_braces_in_flow_control_structures
+                        if (val == 'delete') {
                           _confirmDelete(context, user, l10n);
+                        }
                       },
                       itemBuilder: (_) => [
                         PopupMenuItem(
-                            value: 'edit', child: Text(l10n.editUser)),
+                            value: 'edit',
+                            child: Row(children: [
+                              const Icon(Icons.edit, size: 18),
+                              const SizedBox(width: 8),
+                              Text(l10n.editUser)
+                            ])),
                         PopupMenuItem(
                             value: 'delete',
-                            child: Text(l10n.delete,
-                                style: const TextStyle(color: Colors.red))),
+                            child: Row(children: [
+                              const Icon(Icons.delete,
+                                  size: 18, color: Colors.red),
+                              const SizedBox(width: 8),
+                              Text(l10n.delete,
+                                  style: const TextStyle(color: Colors.red))
+                            ])),
                       ],
                     ),
                   ],
@@ -363,19 +441,15 @@ class _UserScreenState extends State<UserScreen> {
                 _buildInfoRow(Icons.phone_outlined, l10n.phone,
                     user.phoneNumber.isEmpty ? "N/A" : user.phoneNumber),
                 const SizedBox(height: 8),
-                _buildInfoRow(
-                  Icons.badge_outlined,
-                  l10n.employee,
-                  user.employeeName ?? l10n.notLinked,
-                ),
+                _buildInfoRow(Icons.badge_outlined, l10n.employee,
+                    user.employeeName ?? l10n.notLinked),
                 const SizedBox(height: 8),
                 _buildInfoRow(
-                  Icons.access_time,
-                  l10n.lastLogin,
-                  user.lastLogin != null
-                      ? user.lastLogin!.replaceAll('T', ' ').split('.')[0]
-                      : l10n.never,
-                ),
+                    Icons.access_time,
+                    l10n.lastLogin,
+                    user.lastLogin != null
+                        ? user.lastLogin!.replaceAll('T', ' ').split('.')[0]
+                        : l10n.never),
               ],
             ),
           ),
@@ -403,7 +477,7 @@ class _UserScreenState extends State<UserScreen> {
     Color color = Colors.blue;
     if (role == 'admin' || isSuper) color = Colors.purple;
     if (role == 'manager') color = Colors.orange;
-    if (role == 'worker') color = Colors.teal; // [NEW] Màu cho Worker
+    if (role == 'worker') color = Colors.teal;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -486,8 +560,7 @@ class _UserScreenState extends State<UserScreen> {
                       const SizedBox(height: 12),
                       TextFormField(
                           controller: phoneCtrl,
-                          decoration:
-                              InputDecoration(labelText: l10n.phone)),
+                          decoration: InputDecoration(labelText: l10n.phone)),
                       const SizedBox(height: 12),
 
                       // EMPLOYEE DROPDOWN
@@ -516,13 +589,11 @@ class _UserScreenState extends State<UserScreen> {
                                   horizontal: 12, vertical: 16),
                             ),
                             items: [
-                              // Option để bỏ chọn (Null)
                               DropdownMenuItem<int?>(
                                 value: null,
                                 child: Text(l10n.noEmployeeLinkedOption,
                                     style: const TextStyle(color: Colors.grey)),
                               ),
-                              // Danh sách nhân viên
                               ...employees.map((emp) {
                                 return DropdownMenuItem<int?>(
                                   value: emp.id,
@@ -571,12 +642,11 @@ class _UserScreenState extends State<UserScreen> {
 
                       // Role & Settings
                       DropdownButtonFormField<String>(
-                        value: selectedRole.toLowerCase(), // [FIX 1] Đảm bảo giá trị hiển thị ban đầu là chữ thường
+                        value: selectedRole.toLowerCase(),
                         decoration: InputDecoration(labelText: l10n.role),
                         items: ['staff', 'manager', 'admin', 'worker']
                             .map((r) => DropdownMenuItem(
-                                value: r, // [FIX 2] Giá trị gửi đi là 'worker' (chữ thường)
-                                child: Text(r.toUpperCase()))) // Hiển thị là 'WORKER'
+                                value: r, child: Text(r.toUpperCase())))
                             .toList(),
                         onChanged: (val) => setState(() => selectedRole = val!),
                       ),
@@ -622,6 +692,13 @@ class _UserScreenState extends State<UserScreen> {
                           .createUser(newUser, passCtrl.text);
                     }
                     Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(user == null
+                          ? l10n.successAdded
+                          : l10n.successUpdated),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: Colors.green,
+                    ));
                   }
                 },
                 child: Text(l10n.save),

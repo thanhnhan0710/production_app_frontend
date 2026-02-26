@@ -1,7 +1,10 @@
+import 'dart:async'; // [MỚI]
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:production_app_frontend/core/widgets/responsive_layout.dart';
+import 'package:production_app_frontend/core/network/websocket_service.dart'; // [MỚI] Import WebSocket
+
 import 'package:production_app_frontend/features/hr/work_schedule/presentation/bloc/work_schedule_cubit.dart';
 import 'package:production_app_frontend/features/inventory/basket/doamain/basket_model.dart';
 import 'package:production_app_frontend/features/inventory/basket/presentation/bloc/baket_cubit.dart';
@@ -10,7 +13,6 @@ import 'package:production_app_frontend/l10n/app_localizations.dart';
 
 import '../../domain/weaving_model.dart';
 import '../bloc/weaving_cubit.dart';
-// Đã bỏ import Inspection Dialog vì không dùng chức năng thêm mới
 
 // Import Feature khác
 import 'package:production_app_frontend/features/inventory/product/domain/product_model.dart';
@@ -34,9 +36,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 class WeavingScreen extends StatefulWidget {
-  // [MỚI] Thêm tham số isEmbedded để ẩn AppBar nếu cần
   final bool isEmbedded;
-
   const WeavingScreen({super.key, this.isEmbedded = false});
 
   @override
@@ -51,10 +51,35 @@ class _WeavingScreenState extends State<WeavingScreen> {
   DateTime _selectedDate = DateTime.now();
   String _searchKeyword = "";
 
+  Timer? _debounce; // [MỚI] Timer cho debounce tìm kiếm
+
   @override
   void initState() {
     super.initState();
     _loadAllData();
+
+    // [MỚI] Lắng nghe WebSocket
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+
+    // [MỚI] Hủy lắng nghe WebSocket
+    WebSocketService().removeListener(_onWebSocketMessage);
+    super.dispose();
+  }
+
+  // [MỚI] Xử lý sự kiện WebSocket
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_WEAVING_TICKETS") {
+      debugPrint(
+          "WebSocket: Cập nhật lại danh sách Phiếu Dệt (Weaving Tickets).");
+      if (mounted) context.read<WeavingCubit>().loadTickets();
+    }
   }
 
   void _loadAllData() {
@@ -67,6 +92,16 @@ class _WeavingScreenState extends State<WeavingScreen> {
     context.read<EmployeeCubit>().loadEmployees();
     context.read<DyeColorCubit>().loadColors();
     context.read<BOMCubit>().loadBOMHeaders();
+  }
+
+  // [MỚI] Hàm xử lý tìm kiếm với Debounce
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      setState(() {
+        _searchKeyword = query;
+      });
+    });
   }
 
   // Lọc phiếu
@@ -228,7 +263,6 @@ class _WeavingScreenState extends State<WeavingScreen> {
       appBar: widget.isEmbedded
           ? null
           : AppBar(
-              // [CẬP NHẬT] Style đồng bộ: Size 20, Bold, White
               title: const Text("Quản lý Phiếu Dệt",
                   style: TextStyle(
                       color: Colors.white,
@@ -348,7 +382,6 @@ class _WeavingScreenState extends State<WeavingScreen> {
           return const SizedBox();
         },
       ),
-      // BỎ FAB ADD
       floatingActionButton: null,
     );
   }
@@ -408,7 +441,7 @@ class _WeavingScreenState extends State<WeavingScreen> {
                       borderRadius: BorderRadius.circular(8)),
                   child: TextField(
                     controller: _searchController,
-                    onChanged: (val) => setState(() => _searchKeyword = val),
+                    onChanged: _onSearchChanged, // [CẬP NHẬT] Đã gắn debounce
                     decoration: InputDecoration(
                         hintText: "Search Code / Line...",
                         hintStyle: TextStyle(
@@ -466,8 +499,6 @@ class _WeavingScreenState extends State<WeavingScreen> {
         ),
         title: Text(ticket.code,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-
-        // [CẬP NHẬT Ở ĐÂY]: Đổi Row thành Column để thêm dòng Sợi Nền
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -482,7 +513,7 @@ class _WeavingScreenState extends State<WeavingScreen> {
               ],
             ),
             const SizedBox(height: 6),
-            _buildGroundYarnInfo(ticket), // Gắn hiển thị sợi nền vào Desktop
+            _buildGroundYarnInfo(ticket),
           ],
         ),
         trailing: isRunning
@@ -548,8 +579,6 @@ class _WeavingScreenState extends State<WeavingScreen> {
               ),
               const SizedBox(height: 8),
               _ProductInfo(id: ticket.productId),
-
-              // [CẬP NHẬT Ở ĐÂY]: Thêm dòng hiển thị lô sợi nền vào Mobile Card
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 6.0),
                 child: Divider(height: 1, thickness: 0.5),
@@ -586,15 +615,12 @@ class _WeavingScreenState extends State<WeavingScreen> {
                 Expanded(
                   child: Row(
                     children: [
-                      // Nút In
                       IconButton(
                         icon: const Icon(Icons.print, color: Colors.blue),
                         tooltip: "In phiếu chi tiết",
                         onPressed: () => _handlePrint(ticket, inspections),
                       ),
                       const SizedBox(width: 8),
-                      // BỎ Nút Add Task (New Inspection)
-                      // BỎ Nút Edit
                       IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
                           onPressed: () => _confirmDelete(ticket, l10n)),
@@ -975,11 +1001,10 @@ class _WeavingScreenState extends State<WeavingScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // 1. Header with Actions [ĐÃ SỬA LỖI OVERFLOW TẠI ĐÂY]
+                            // 1. Header with Actions
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                // Left: Mã phiếu (Chiếm hết chỗ trống)
                                 Expanded(
                                   child: Text(
                                     "Phiếu:${ticket.code}",
@@ -987,24 +1012,19 @@ class _WeavingScreenState extends State<WeavingScreen> {
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                         color: _primaryColor),
-                                    overflow: TextOverflow
-                                        .ellipsis, // Cắt bớt nếu dài
+                                    overflow: TextOverflow.ellipsis,
                                     maxLines: 1,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-
-                                // Right: Các nút bấm (Gọn gàng)
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    // Print Button
                                     IconButton(
                                         icon: const Icon(Icons.print,
                                             color: Colors.blue),
                                         onPressed: () =>
                                             _handlePrint(ticket, inspections)),
-                                    // Delete Button
                                     IconButton(
                                         icon: const Icon(Icons.delete,
                                             color: Colors.red),
@@ -1057,7 +1077,9 @@ class _WeavingScreenState extends State<WeavingScreen> {
                                   _TicketBatchList(yarns: ticket.yarns)),
                               _rowInfo("Load Date", Text(ticket.yarnLoadDate)),
                               _rowInfo(
-                                  "Basket", Text(ticket.basketCode ?? 'N/A')),
+                                  "Basket",
+                                  Text(
+                                      "${ticket.basketCode ?? 'N/A'} (ID: ${ticket.basketId ?? '-'})")),
                             ]),
 
                             // 5. Time & Personnel (Full)
@@ -1140,7 +1162,7 @@ class _WeavingScreenState extends State<WeavingScreen> {
 }
 
 // ==========================================
-// CÁC WIDGET BADGE & HELPER
+// CÁC WIDGET BADGE & HELPER BÊN DƯỚI GIỮ NGUYÊN
 // ==========================================
 
 class _ProductInfo extends StatelessWidget {
@@ -1158,7 +1180,6 @@ class _ProductInfo extends StatelessWidget {
   }
 }
 
-// Widget hiển thị đầy đủ thông tin Sản phẩm
 class _ProductFullDetails extends StatelessWidget {
   final int id;
   const _ProductFullDetails({required this.id});
@@ -1174,7 +1195,6 @@ class _ProductFullDetails extends StatelessWidget {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Ảnh sản phẩm
               Container(
                 width: 60,
                 height: 60,
@@ -1197,7 +1217,6 @@ class _ProductFullDetails extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Thông tin text
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1232,7 +1251,6 @@ class _ProductFullDetails extends StatelessWidget {
   }
 }
 
-// Widget hiển thị đầy đủ thông số Standard
 class _StandardFullDetails extends StatelessWidget {
   final int standardId;
   const _StandardFullDetails({required this.standardId});
@@ -1268,7 +1286,6 @@ class _StandardFullDetails extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Specs Grid
                     Wrap(
                       spacing: 16,
                       runSpacing: 8,
@@ -1287,8 +1304,6 @@ class _StandardFullDetails extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-
-                    // Color
                     Column(
                       children: [
                         Row(
@@ -1375,7 +1390,6 @@ class _MachineInfo extends StatelessWidget {
       });
 }
 
-// Widget Batch List
 class _TicketBatchList extends StatelessWidget {
   final List<WeavingTicketYarn> yarns;
   const _TicketBatchList({required this.yarns});
@@ -1388,7 +1402,7 @@ class _TicketBatchList extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min, // QUAN TRỌNG: Để tránh lỗi RenderFlex
+      mainAxisSize: MainAxisSize.min,
       children: yarns.map((yarnItem) {
         final internalCode =
             yarnItem.internalBatchCode ?? "ID:${yarnItem.batchId}";
@@ -1433,7 +1447,6 @@ class _TicketBatchList extends StatelessWidget {
   }
 }
 
-// [SERVICE IN ẤN ĐÃ TỐI ƯU CHO 1 TRANG A4]
 class WeavingPrintService {
   static Future<void> printFullTicket({
     required WeavingTicket ticket,
@@ -1451,16 +1464,14 @@ class WeavingPrintService {
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
     final nowStr = dateFormat.format(DateTime.now());
 
-    // --- CẤU HÌNH CỠ CHỮ NHỎ HƠN ĐỂ VỪA A4 ---
     const double fontSizeTitle = 14;
-    const double fontSizeHeader = 9; // Tiêu đề mục (1. Thông tin...)
-    const double fontSizeText = 8; // Nội dung bình thường
-    const double fontSizeSmall = 7; // Chữ nhỏ (Label mờ)
+    const double fontSizeHeader = 9;
+    const double fontSizeText = 8;
+    const double fontSizeSmall = 7;
 
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        // Giảm lề để tận dụng tối đa diện tích giấy (Lề trái giữ 40 để đục lỗ/đóng ghim)
         margin:
             const pw.EdgeInsets.only(left: 40, top: 20, right: 20, bottom: 20),
         build: (pw.Context context) {
@@ -1478,7 +1489,6 @@ class WeavingPrintService {
                         style: pw.TextStyle(font: font, fontSize: 8)),
                   ],
                 ),
-                // QR Code nhỏ lại chút
                 pw.BarcodeWidget(
                   data: ticket.code,
                   barcode: pw.Barcode.qrCode(),
@@ -1560,7 +1570,6 @@ class WeavingPrintService {
                     pw.SizedBox(height: 4),
                     pw.Divider(color: PdfColors.grey300, thickness: 0.5),
                     pw.SizedBox(height: 4),
-                    // Grid thông số (Gộp dòng để tiết kiệm chiều cao)
                     pw.Row(children: [
                       pw.Expanded(
                           child: _buildSpecItem(
@@ -1613,7 +1622,7 @@ class WeavingPrintService {
                               fontBold,
                               fontSizeText,
                               fontSizeSmall)),
-                      pw.Expanded(flex: 2, child: pw.Container()), // Spacer
+                      pw.Expanded(flex: 2, child: pw.Container()),
                     ]),
                   ]))
             else
@@ -1741,7 +1750,7 @@ class WeavingPrintService {
                     ])),
             pw.SizedBox(height: 8),
 
-            // --- 7. LỊCH SỬ QC (ĐÃ ĐIỀU CHỈNH HIỂN THỊ ĐẦY ĐỦ) ---
+            // --- 7. LỊCH SỬ QC ---
             if (inspections.isNotEmpty) ...[
               _buildSectionTitle("6. LỊCH SỬ KIỂM TRA (INSPECTION HISTORY)",
                   fontBold, fontSizeHeader),
@@ -1749,10 +1758,9 @@ class WeavingPrintService {
                   border:
                       pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
                   columnWidths: {
-                    0: const pw.FlexColumnWidth(1.5), // Giảm cột Time
-                    1: const pw.FlexColumnWidth(1.2), // Giảm cột Stage
-                    2: const pw.FlexColumnWidth(
-                        5.3), // Tăng cột Specs để ghi đủ chữ
+                    0: const pw.FlexColumnWidth(1.5),
+                    1: const pw.FlexColumnWidth(1.2),
+                    2: const pw.FlexColumnWidth(5.3),
                   },
                   children: [
                     pw.TableRow(
@@ -1769,8 +1777,6 @@ class WeavingPrintService {
                           ? i.inspectionTime.substring(11, 16)
                           : i.inspectionTime;
 
-                      // Xây dựng chuỗi hiển thị đầy đủ tên trường và đơn vị
-                      // Sử dụng List để join lại cho gọn code
                       final List<String> details = [];
                       if (i.widthMm > 0) details.add("Width: ${i.widthMm}mm");
                       if (i.thicknessMm > 0) {
@@ -1785,8 +1791,7 @@ class WeavingPrintService {
                       if (i.weightGm > 0) details.add("Weight: ${i.weightGm}g");
                       if (i.bowing > 0) details.add("Bowing: ${i.bowing}%");
 
-                      final specsString =
-                          details.join("  |  "); // Ngăn cách bằng dấu gạch đứng
+                      final specsString = details.join("  |  ");
 
                       return pw.TableRow(children: [
                         _buildCell("$time\n${i.employeeName ?? '-'}", font,
@@ -1810,7 +1815,7 @@ class WeavingPrintService {
                     pw.Text("Xác nhận của Trưởng ca",
                         style: pw.TextStyle(
                             font: fontBold, fontSize: fontSizeText)),
-                    pw.SizedBox(height: 25), // Giảm khoảng ký
+                    pw.SizedBox(height: 25),
                     pw.Text("_______________________",
                         style:
                             pw.TextStyle(font: font, fontSize: fontSizeText)),
@@ -1826,8 +1831,6 @@ class WeavingPrintService {
       name: 'FullTicket-${ticket.code}',
     );
   }
-
-  // --- CÁC HÀM HELPER VẼ UI PDF (CẬP NHẬT CỠ CHỮ) ---
 
   static pw.Widget _buildSectionTitle(
       String title, pw.Font fontBold, double fontSize) {
@@ -1859,8 +1862,7 @@ class WeavingPrintService {
       {pw.TextAlign align = pw.TextAlign.left, PdfColor? color}) {
     return pw.Container(
       color: color,
-      padding: const pw.EdgeInsets.symmetric(
-          horizontal: 4, vertical: 3), // Giảm padding cell
+      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       child: pw.Text(text,
           style: pw.TextStyle(font: font, fontSize: fontSize),
           textAlign: align),

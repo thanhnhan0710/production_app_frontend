@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:file_picker/file_picker.dart'; // [MỚI] Thêm file_picker
+import 'package:file_picker/file_picker.dart';
 import 'package:production_app_frontend/l10n/app_localizations.dart';
 import 'package:production_app_frontend/core/widgets/responsive_layout.dart';
 import 'package:production_app_frontend/core/network/websocket_service.dart';
@@ -123,7 +123,6 @@ class _MachineScreenState extends State<MachineScreen> {
                         if (isDesktop) ...[
                           OutlinedButton.icon(
                             onPressed: () {
-                              // [ĐÃ SỬA LỖI]: Gọi MachineCubit thay vì MaterialCubit
                               context.read<MachineCubit>().exportExcel();
                             },
                             icon: const Icon(Icons.download, size: 18),
@@ -137,6 +136,7 @@ class _MachineScreenState extends State<MachineScreen> {
                                   borderRadius: BorderRadius.circular(8)),
                             ),
                           ),
+                          const SizedBox(width: 12),
                           OutlinedButton.icon(
                             onPressed: () async {
                               final result =
@@ -328,11 +328,9 @@ class _MachineScreenState extends State<MachineScreen> {
                       DataColumn(
                           label: Text(l10n.area.toUpperCase(),
                               style: _headerStyle)),
+                      DataColumn(label: Text("SỐ SERI", style: _headerStyle)),
                       DataColumn(
-                          label: Text("SỐ SERI", style: _headerStyle)), // [MỚI]
-                      DataColumn(
-                          label: Text("TỐC ĐỘ (V/P)",
-                              style: _headerStyle)), // [MỚI]
+                          label: Text("TỐC ĐỘ (V/P)", style: _headerStyle)),
                       DataColumn(
                           label: Text(l10n.totalLines.toUpperCase(),
                               style: _headerStyle)),
@@ -362,12 +360,11 @@ class _MachineScreenState extends State<MachineScreen> {
                                     fontWeight: FontWeight.bold)),
                           )),
                           DataCell(Text(item.serialNumber ?? '-',
-                              style: TextStyle(
-                                  color: Colors.grey.shade700))), // [MỚI]
+                              style: TextStyle(color: Colors.grey.shade700))),
                           DataCell(Text(
                               item.speed != null ? "${item.speed}" : '-',
                               style: const TextStyle(
-                                  fontWeight: FontWeight.bold))), // [MỚI]
+                                  fontWeight: FontWeight.bold))),
                           DataCell(Text("${item.totalLines}",
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold))),
@@ -450,7 +447,6 @@ class _MachineScreenState extends State<MachineScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                // [MỚI] Hiển thị Seri và Speed trên mobile
                 Text(
                     "Seri: ${item.serialNumber ?? '-'} | Tốc độ: ${item.speed ?? '-'} v/p",
                     style:
@@ -498,7 +494,6 @@ class _MachineScreenState extends State<MachineScreen> {
     final purposeCtrl = TextEditingController(text: item?.purpose ?? '');
     final linesCtrl =
         TextEditingController(text: item?.totalLines.toString() ?? '0');
-    // [MỚI] Controllers cho 2 trường mới
     final serialCtrl = TextEditingController(text: item?.serialNumber ?? '');
     final speedCtrl =
         TextEditingController(text: item?.speed?.toString() ?? '');
@@ -525,8 +520,6 @@ class _MachineScreenState extends State<MachineScreen> {
       builder: (ctx) {
         return StatefulBuilder(builder: (context, setStateDialog) {
           return AlertDialog(
-            insetPadding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             titlePadding: const EdgeInsets.all(24),
@@ -534,93 +527,89 @@ class _MachineScreenState extends State<MachineScreen> {
             title: Text(item == null ? l10n.addMachine : l10n.editMachine,
                 style: TextStyle(
                     color: _primaryColor, fontWeight: FontWeight.bold)),
+            // [ĐÃ SỬA LỖI Ở ĐÂY]: Giới hạn chiều rộng lại bằng 400
             content: SizedBox(
-              width: double.maxFinite,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 500),
-                child: Form(
-                  key: formKey,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                                child: TextFormField(
-                                    controller: nameCtrl,
-                                    decoration: _inputDeco(l10n.machineName),
-                                    validator: (v) =>
-                                        v!.isEmpty ? "Required" : null)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                value: selectedArea,
-                                decoration: _inputDeco("Area (Khu vực)"),
-                                isExpanded: true,
-                                items: _areaSuggestions
-                                    .map((area) => DropdownMenuItem(
-                                          value: area,
-                                          child: Text(area),
-                                        ))
-                                    .toList(),
-                                onChanged: (val) {
-                                  setStateDialog(() {
-                                    selectedArea = val;
-                                  });
-                                },
-                                validator: (v) => v == null ? "Required" : null,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        // [MỚI] Row chứa Số Seri và Tốc Độ
-                        Row(
-                          children: [
-                            Expanded(
-                                child: TextFormField(
-                                    controller: serialCtrl,
-                                    decoration: _inputDeco("Số seri"))),
-                            const SizedBox(width: 12),
-                            Expanded(
-                                child: TextFormField(
-                                    controller: speedCtrl,
-                                    decoration:
-                                        _inputDeco("Tốc độ (vòng/phút)"),
-                                    keyboardType: TextInputType.number)),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                            controller: purposeCtrl,
-                            decoration: _inputDeco(l10n.purpose)),
-                        const SizedBox(height: 10),
-                        Row(children: [
+              width: 400,
+              child: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
                           Expanded(
                               child: TextFormField(
-                                  controller: linesCtrl,
-                                  decoration: _inputDeco(l10n.totalLines),
-                                  keyboardType: TextInputType.number)),
+                                  controller: nameCtrl,
+                                  decoration: _inputDeco(l10n.machineName),
+                                  validator: (v) =>
+                                      v!.isEmpty ? "Required" : null)),
                           const SizedBox(width: 12),
                           Expanded(
-                              child: DropdownButtonFormField<String>(
-                            value: selectedStatus,
-                            decoration: _inputDeco(l10n.status),
-                            isExpanded: true,
-                            items: _statusOptions
-                                .map((s) =>
-                                    DropdownMenuItem(value: s, child: Text(s)))
-                                .toList(),
-                            onChanged: (val) {
-                              setStateDialog(() {
-                                selectedStatus = val!;
-                              });
-                            },
-                          )),
-                        ]),
-                      ],
-                    ),
+                            child: DropdownButtonFormField<String>(
+                              value: selectedArea,
+                              decoration: _inputDeco("Khu vực"),
+                              isExpanded: true,
+                              items: _areaSuggestions
+                                  .map((area) => DropdownMenuItem(
+                                        value: area,
+                                        child: Text(area),
+                                      ))
+                                  .toList(),
+                              onChanged: (val) {
+                                setStateDialog(() {
+                                  selectedArea = val;
+                                });
+                              },
+                              validator: (v) => v == null ? "Required" : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                              child: TextFormField(
+                                  controller: serialCtrl,
+                                  decoration: _inputDeco("Số seri"))),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: TextFormField(
+                                  controller: speedCtrl,
+                                  decoration: _inputDeco("Tốc độ (vòng/phút)"),
+                                  keyboardType: TextInputType.number)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                          controller: purposeCtrl,
+                          decoration: _inputDeco(l10n.purpose)),
+                      const SizedBox(height: 16),
+                      Row(children: [
+                        Expanded(
+                            child: TextFormField(
+                                controller: linesCtrl,
+                                decoration: _inputDeco(l10n.totalLines),
+                                keyboardType: TextInputType.number)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                            child: DropdownButtonFormField<String>(
+                          value: selectedStatus,
+                          decoration: _inputDeco(l10n.status),
+                          isExpanded: true,
+                          items: _statusOptions
+                              .map((s) =>
+                                  DropdownMenuItem(value: s, child: Text(s)))
+                              .toList(),
+                          onChanged: (val) {
+                            setStateDialog(() {
+                              selectedStatus = val!;
+                            });
+                          },
+                        )),
+                      ]),
+                    ],
                   ),
                 ),
               ),
@@ -641,10 +630,9 @@ class _MachineScreenState extends State<MachineScreen> {
                       totalLines: int.tryParse(linesCtrl.text) ?? 0,
                       status: selectedStatus,
                       area: selectedArea,
-                      serialNumber: serialCtrl.text.isNotEmpty
-                          ? serialCtrl.text
-                          : null, // [MỚI]
-                      speed: int.tryParse(speedCtrl.text), // [MỚI]
+                      serialNumber:
+                          serialCtrl.text.isNotEmpty ? serialCtrl.text : null,
+                      speed: int.tryParse(speedCtrl.text),
                     );
                     context
                         .read<MachineCubit>()

@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 
+import '../../../../../core/network/websocket_service.dart'; // [MỚI] Import WebSocket
+
 // [IMPORT] Các module liên quan
 import 'package:production_app_frontend/features/inventory/import_declaration/domain/import_declaration_model.dart';
 import 'package:production_app_frontend/features/inventory/import_declaration/presentation/bloc/import_declaration_cubit.dart';
@@ -82,6 +84,34 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
         } catch (_) {}
       }
     });
+
+    // [MỚI] Đăng ký lắng nghe WebSocket
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
+  }
+
+  @override
+  void dispose() {
+    // [MỚI] Hủy lắng nghe
+    WebSocketService().removeListener(_onWebSocketMessage);
+    super.dispose();
+  }
+
+  // [MỚI] Hàm xử lý WebSocket
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_MATERIAL_RECEIPTS") {
+      // Chỉ cảnh báo nếu đang ở chế độ SỬA để tránh ghi đè dữ liệu người khác
+      if (mounted && widget.receiptId != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text("Dữ liệu phiếu nhập kho trên hệ thống đã bị thay đổi."),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _fetchAndSetNextNumber() async {
@@ -186,8 +216,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
         listener: (context, state) {
           if (state is MaterialReceiptOperationSuccess) {
             // Logic success xử lý ở _saveManual hoặc auto-save nên ở đây chỉ hiển thị thông báo nếu cần
-            // Tuy nhiên với cấu trúc hiện tại, listener này global cho màn hình
-            // Để tránh xung đột với auto-save thầm lặng, ta có thể check _isSaving hoặc để nguyên
           } else if (state is MaterialReceiptDetailLoaded) {
             final r = state.receipt;
             _receiptNumberCtrl.text = r.receiptNumber;
@@ -246,7 +274,7 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
               actions: [
                 if (!isLoading)
                   TextButton.icon(
-                    onPressed: _saveManual, // Đổi tên hàm
+                    onPressed: _saveManual,
                     icon: const Icon(Icons.save, color: Color(0xFF003366)),
                     label: Text(l10n.saveReceipt,
                         style: const TextStyle(
@@ -646,7 +674,29 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
     );
   }
 
-  // ... (Giữ nguyên các hàm build UI: _buildSectionCard, _buildDetailsSection, _mobileInfoCol, _inputDeco)
+  // --- LOGIC UI TÁCH LẺ ---
+  void _saveManual() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _hasUnsavedChanges = false;
+      });
+
+      try {
+        await _saveDataInternal();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text("Saved successfully"),
+                backgroundColor: Colors.green),
+          );
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        // Xử lý lỗi nếu cần
+      }
+    }
+  }
+
   Widget _buildSectionCard({required String title, required Widget child}) {
     return Card(
       elevation: 0,
@@ -672,7 +722,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
   }
 
   Widget _buildDetailsSection(bool isDesktop, AppLocalizations l10n) {
-    // Logic lấy supplierShortName... (Giữ nguyên)
     String supplierShortName = '--';
     final supState = context.read<SupplierCubit>().state;
     final poState = context.read<PurchaseOrderCubit>().state;
@@ -699,7 +748,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
         return 0;
       });
 
-    // ... Phần return Widget UI giữ nguyên như code gốc, chỉ update nút xóa nếu cần
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -1110,33 +1158,6 @@ class _MaterialReceiptFormScreenState extends State<MaterialReceiptFormScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       isDense: true,
     );
-  }
-
-  // --- LOGIC ---
-
-  // Hàm lưu thủ công (Nút Save)
-  void _saveManual() async {
-    if (_formKey.currentState!.validate()) {
-      // Khi user bấm save thủ công, ta reset cờ unsaved
-      setState(() {
-        _hasUnsavedChanges = false;
-      });
-
-      try {
-        await _saveDataInternal();
-        // Hiển thị thông báo thành công (Đã có BlocListener xử lý, hoặc thêm SnackBar tại đây)
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text("Saved successfully"),
-                backgroundColor: Colors.green),
-          );
-          Navigator.of(context).pop();
-        }
-      } catch (e) {
-        // Xử lý lỗi nếu cần
-      }
-    }
   }
 
   Future<void> _openAddDetailDialog() async {

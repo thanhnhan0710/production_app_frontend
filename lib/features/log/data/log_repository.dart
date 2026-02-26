@@ -40,15 +40,15 @@ class LogRepository {
     }
   }
 
-  Future<void> revertLog(int logId) async {
+  Future<String> revertLog(int logId) async {
     try {
-      await _dio.post('/api/v1/logs/$logId/revert/');
+      final response = await _dio.post('/api/v1/logs/$logId/revert');
+      // Trả về câu thông báo thành công từ backend
+      return response.data['message'] ?? 'Hoàn tác thành công';
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['detail'] ?? "Lỗi không xác định");
     } catch (e) {
-      // Xử lý lỗi đẹp hơn để hiển thị UI
-      if (e is DioException) {
-        throw Exception(e.response?.data['detail'] ?? "Lỗi kết nối");
-      }
-      throw Exception("Không thể hoàn tác: $e");
+      throw Exception("Đã xảy ra lỗi khi hoàn tác: $e");
     }
   }
 }

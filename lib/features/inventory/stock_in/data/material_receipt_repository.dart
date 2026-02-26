@@ -55,7 +55,7 @@ class MaterialReceiptRepository {
   Future<String> getNextReceiptNumber() async {
     try {
       // Gọi API Backend (Backend sẽ chạy logic Python ở trên)
-      final response = await _dio.get('$_endpoint/next-number/');
+      final response = await _dio.get('$_endpoint/next-number');
       return response.data['receipt_number'] ?? '';
     } catch (e) {
       // Fallback nếu mất kết nối: Tạo mã tạm thời đúng format YYYY/MM-OFF...

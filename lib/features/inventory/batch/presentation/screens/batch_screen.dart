@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:production_app_frontend/core/network/websocket_service.dart';
 
 // --- IMPORTS ---
 import '../../../../../core/widgets/responsive_layout.dart';
@@ -25,6 +28,7 @@ class BatchScreen extends StatefulWidget {
 
 class _BatchScreenState extends State<BatchScreen> {
   final _searchController = TextEditingController();
+  Timer? _debounce;
   final Color _primaryColor = const Color(0xFF003366);
   final Color _accentColor = const Color(0xFF0055AA);
   final Color _bgLight = const Color(0xFFF5F7FA);
@@ -39,6 +43,28 @@ class _BatchScreenState extends State<BatchScreen> {
     super.initState();
     context.read<BatchCubit>().loadBatches();
     _loadMaterials();
+
+    // [MỚI] Đăng ký lắng nghe WebSocket
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+
+    // [MỚI] Hủy đăng ký lắng nghe
+    WebSocketService().removeListener(_onWebSocketMessage);
+    super.dispose();
+  }
+
+  // [MỚI] Xử lý tín hiệu WebSocket
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_BATCHES") {
+      debugPrint("WebSocket: Làm mới danh sách Lô Hàng (Batches).");
+      if (mounted) context.read<BatchCubit>().loadBatches();
+    }
   }
 
   // Hàm load vật tư
@@ -46,7 +72,7 @@ class _BatchScreenState extends State<BatchScreen> {
     try {
       final repo = MaterialRepository();
       final materials = await repo.getMaterials();
-      
+
       if (mounted) {
         setState(() {
           _materials = materials;
@@ -101,7 +127,8 @@ class _BatchScreenState extends State<BatchScreen> {
               // --- HEADER SECTION ---
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 child: Column(
                   children: [
                     Row(
@@ -112,20 +139,25 @@ class _BatchScreenState extends State<BatchScreen> {
                             color: Colors.orange.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.inventory_2_outlined, color: Colors.orange, size: 24),
+                          child: const Icon(Icons.inventory_2_outlined,
+                              color: Colors.orange, size: 24),
                         ),
                         const SizedBox(width: 16),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              loc.batchManagement, 
-                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey.shade800),
+                              loc.batchManagement,
+                              style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey.shade800),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               loc.batchSubtitle,
-                              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                              style: TextStyle(
+                                  fontSize: 13, color: Colors.grey.shade500),
                             ),
                           ],
                         ),
@@ -138,9 +170,11 @@ class _BatchScreenState extends State<BatchScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _primaryColor,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 16),
                               elevation: 2,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
                             ),
                           ),
                       ],
@@ -162,18 +196,25 @@ class _BatchScreenState extends State<BatchScreen> {
                               textInputAction: TextInputAction.search,
                               decoration: InputDecoration(
                                 hintText: loc.searchBatchHint,
-                                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                                prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
+                                hintStyle: TextStyle(
+                                    color: Colors.grey.shade400, fontSize: 14),
+                                prefixIcon: Icon(Icons.search,
+                                    color: Colors.grey.shade500, size: 20),
                                 border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                                contentPadding:
+                                    const EdgeInsets.symmetric(vertical: 14),
                                 suffixIcon: IconButton(
-                                  icon: const Icon(Icons.arrow_forward, color: Colors.blue),
+                                  icon: const Icon(Icons.arrow_forward,
+                                      color: Colors.blue),
                                   onPressed: () {
-                                    context.read<BatchCubit>().loadBatches(search: _searchController.text);
+                                    context.read<BatchCubit>().loadBatches(
+                                        search: _searchController.text);
                                   },
                                 ),
                               ),
-                              onSubmitted: (value) => context.read<BatchCubit>().loadBatches(search: value),
+                              onSubmitted: (value) => context
+                                  .read<BatchCubit>()
+                                  .loadBatches(search: value),
                             ),
                           ),
                         ),
@@ -185,7 +226,8 @@ class _BatchScreenState extends State<BatchScreen> {
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
-                          child: const Icon(Icons.filter_list, color: Colors.grey, size: 20),
+                          child: const Icon(Icons.filter_list,
+                              color: Colors.grey, size: 20),
                         ),
                       ],
                     ),
@@ -199,18 +241,25 @@ class _BatchScreenState extends State<BatchScreen> {
                 child: Builder(
                   builder: (context) {
                     if (state is BatchLoading) {
-                      return Center(child: CircularProgressIndicator(color: _primaryColor));
+                      return Center(
+                          child:
+                              CircularProgressIndicator(color: _primaryColor));
                     } else if (state is BatchError) {
-                      return Center(child: Text(loc.errorLabel(state.message), style: const TextStyle(color: Colors.red)));
+                      return Center(
+                          child: Text(loc.errorLabel(state.message),
+                              style: const TextStyle(color: Colors.red)));
                     } else if (state is BatchLoaded) {
                       if (state.batches.isEmpty) {
                         return Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.inbox_outlined, size: 60, color: Colors.grey.shade300),
+                              Icon(Icons.inbox_outlined,
+                                  size: 60, color: Colors.grey.shade300),
                               const SizedBox(height: 16),
-                              Text(loc.noBatchesFound, style: TextStyle(color: Colors.grey.shade500)),
+                              Text(loc.noBatchesFound,
+                                  style:
+                                      TextStyle(color: Colors.grey.shade500)),
                             ],
                           ),
                         );
@@ -246,7 +295,9 @@ class _BatchScreenState extends State<BatchScreen> {
         width: double.infinity,
         child: Card(
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey.shade200)),
           clipBehavior: Clip.antiAlias,
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -255,30 +306,45 @@ class _BatchScreenState extends State<BatchScreen> {
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minWidth: constraints.maxWidth),
                   child: DataTable(
-                    headingRowColor: WidgetStateProperty.all(const Color(0xFFF9FAFB)),
+                    headingRowColor:
+                        WidgetStateProperty.all(const Color(0xFFF9FAFB)),
                     horizontalMargin: 24,
                     columnSpacing: 30,
                     dataRowMinHeight: 60,
                     dataRowMaxHeight: 60,
                     showCheckboxColumn: false,
                     columns: [
-                      DataColumn(label: Text(loc.internalCode, style: _headerStyle)),
-                      DataColumn(label: Text(loc.supplierBatch, style: _headerStyle)),
-                      DataColumn(label: Text(loc.materialLabel.toUpperCase(), style: _headerStyle)),
+                      DataColumn(
+                          label: Text(loc.internalCode, style: _headerStyle)),
+                      DataColumn(
+                          label: Text(loc.supplierBatch, style: _headerStyle)),
+                      DataColumn(
+                          label: Text(loc.materialLabel.toUpperCase(),
+                              style: _headerStyle)),
                       // [MỚI] Cột Location
-                      DataColumn(label: Text("LOCATION", style: _headerStyle)), 
-                      DataColumn(label: Text(loc.originCountry, style: _headerStyle)),
-                      DataColumn(label: Text(loc.qcStatus, style: _headerStyle)),
-                      DataColumn(label: Text(loc.qcNote, style: _headerStyle)), 
-                      DataColumn(label: Text(loc.status.toUpperCase(), style: _headerStyle)),
-                      DataColumn(label: Text(loc.traceability, style: _headerStyle)), 
-                      DataColumn(label: Text(loc.actions.toUpperCase(), style: _headerStyle)),
+                      DataColumn(label: Text("LOCATION", style: _headerStyle)),
+                      DataColumn(
+                          label: Text(loc.originCountry, style: _headerStyle)),
+                      DataColumn(
+                          label: Text(loc.qcStatus, style: _headerStyle)),
+                      DataColumn(label: Text(loc.qcNote, style: _headerStyle)),
+                      DataColumn(
+                          label: Text(loc.status.toUpperCase(),
+                              style: _headerStyle)),
+                      DataColumn(
+                          label: Text(loc.traceability, style: _headerStyle)),
+                      DataColumn(
+                          label: Text(loc.actions.toUpperCase(),
+                              style: _headerStyle)),
                     ],
                     rows: batches.map((batch) {
                       return DataRow(
-                        onSelectChanged: (_) => _navigateToDetail(context, batch),
+                        onSelectChanged: (_) =>
+                            _navigateToDetail(context, batch),
                         cells: [
-                          DataCell(Text(batch.internalBatchCode, style: const TextStyle(fontWeight: FontWeight.bold))),
+                          DataCell(Text(batch.internalBatchCode,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold))),
                           DataCell(Text(batch.supplierBatchNo)),
                           DataCell(Text(
                             _getMaterialName(batch.materialId, context),
@@ -289,9 +355,12 @@ class _BatchScreenState extends State<BatchScreen> {
                           DataCell(Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.place, size: 16, color: Colors.grey.shade500),
+                              Icon(Icons.place,
+                                  size: 16, color: Colors.grey.shade500),
                               const SizedBox(width: 4),
-                              Text(batch.location ?? "--", style: const TextStyle(fontWeight: FontWeight.w500)),
+                              Text(batch.location ?? "--",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w500)),
                             ],
                           )),
                           DataCell(Text(batch.originCountry ?? "--")),
@@ -301,54 +370,63 @@ class _BatchScreenState extends State<BatchScreen> {
                               message: batch.qcNote ?? "",
                               child: Text(
                                 batch.qcNote ?? "--",
-                                style: const TextStyle(color: Colors.black87, fontStyle: FontStyle.italic),
+                                style: const TextStyle(
+                                    color: Colors.black87,
+                                    fontStyle: FontStyle.italic),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ),
-                          DataCell(
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: batch.isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                batch.isActive ? loc.active : loc.inactive,
-                                style: TextStyle(
-                                  color: batch.isActive ? Colors.green : Colors.red,
+                          DataCell(Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: batch.isActive
+                                  ? Colors.green.withOpacity(0.1)
+                                  : Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              batch.isActive ? loc.active : loc.inactive,
+                              style: TextStyle(
+                                  color: batch.isActive
+                                      ? Colors.green
+                                      : Colors.red,
                                   fontSize: 11,
-                                  fontWeight: FontWeight.bold
-                                ),
-                              ),
-                            )
-                          ),
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          )),
                           DataCell(
                             batch.receiptNumber != null
-                            ? Row(
-                                children: [
-                                  const Icon(Icons.receipt_long, size: 16, color: Colors.blueGrey),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    batch.receiptNumber!, 
-                                    style: const TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)
-                                  ),
-                                ],
-                              )
-                            : Text(
-                                batch.receiptDetailId != null ? "#${batch.receiptDetailId}" : "--", 
-                                style: const TextStyle(color: Colors.grey)
-                              ),
+                                ? Row(
+                                    children: [
+                                      const Icon(Icons.receipt_long,
+                                          size: 16, color: Colors.blueGrey),
+                                      const SizedBox(width: 6),
+                                      Text(batch.receiptNumber!,
+                                          style: const TextStyle(
+                                              color: Colors.blueGrey,
+                                              fontWeight: FontWeight.bold)),
+                                    ],
+                                  )
+                                : Text(
+                                    batch.receiptDetailId != null
+                                        ? "#${batch.receiptDetailId}"
+                                        : "--",
+                                    style: const TextStyle(color: Colors.grey)),
                           ),
                           DataCell(Row(
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.edit_note, color: Colors.grey),
-                                onPressed: () => _showEditDialog(context, batch),
+                                icon: const Icon(Icons.edit_note,
+                                    color: Colors.grey),
+                                onPressed: () =>
+                                    _showEditDialog(context, batch),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                icon: const Icon(Icons.delete_outline,
+                                    color: Colors.redAccent),
                                 onPressed: () => _confirmDelete(context, batch),
                               ),
                             ],
@@ -366,7 +444,11 @@ class _BatchScreenState extends State<BatchScreen> {
     );
   }
 
-  TextStyle get _headerStyle => TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5);
+  TextStyle get _headerStyle => TextStyle(
+      color: Colors.grey.shade600,
+      fontWeight: FontWeight.bold,
+      fontSize: 12,
+      letterSpacing: 0.5);
 
   // --- MOBILE LIST ---
   Widget _buildMobileList(BuildContext context, List<Batch> batches) {
@@ -383,8 +465,15 @@ class _BatchScreenState extends State<BatchScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
-              border: !batch.isActive ? Border.all(color: Colors.red.withOpacity(0.3)) : null,
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4))
+              ],
+              border: !batch.isActive
+                  ? Border.all(color: Colors.red.withOpacity(0.3))
+                  : null,
             ),
             child: Material(
               color: Colors.transparent,
@@ -404,25 +493,37 @@ class _BatchScreenState extends State<BatchScreen> {
                               color: Colors.blueGrey.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(Icons.qr_code_2, color: Colors.blueGrey),
+                            child: const Icon(Icons.qr_code_2,
+                                color: Colors.blueGrey),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(batch.internalBatchCode, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)),
+                                Text(batch.internalBatchCode,
+                                    style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87)),
                                 const SizedBox(height: 4),
-                                
+
                                 // [MỚI] Hiển thị Location trên Mobile
-                                if (batch.location != null && batch.location!.isNotEmpty)
+                                if (batch.location != null &&
+                                    batch.location!.isNotEmpty)
                                   Padding(
                                     padding: const EdgeInsets.only(bottom: 4),
                                     child: Row(
                                       children: [
-                                        Icon(Icons.place, size: 14, color: Colors.orange.shade700),
+                                        Icon(Icons.place,
+                                            size: 14,
+                                            color: Colors.orange.shade700),
                                         const SizedBox(width: 4),
-                                        Text("Loc: ${batch.location}", style: TextStyle(fontSize: 12, color: Colors.orange.shade800, fontWeight: FontWeight.w600)),
+                                        Text("Loc: ${batch.location}",
+                                            style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.orange.shade800,
+                                                fontWeight: FontWeight.w600)),
                                       ],
                                     ),
                                   ),
@@ -430,17 +531,27 @@ class _BatchScreenState extends State<BatchScreen> {
                                 if (batch.originCountry != null)
                                   Padding(
                                     padding: const EdgeInsets.only(bottom: 4),
-                                    child: Text("${loc.origin}: ${batch.originCountry}", style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
+                                    child: Text(
+                                        "${loc.origin}: ${batch.originCountry}",
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                            fontStyle: FontStyle.italic)),
                                   ),
-                                
+
                                 Row(
                                   children: [
-                                    Icon(Icons.inventory_2, size: 14, color: _primaryColor),
+                                    Icon(Icons.inventory_2,
+                                        size: 14, color: _primaryColor),
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
-                                        _getMaterialName(batch.materialId, context),
-                                        style: TextStyle(color: _primaryColor, fontWeight: FontWeight.w600, fontSize: 13),
+                                        _getMaterialName(
+                                            batch.materialId, context),
+                                        style: TextStyle(
+                                            color: _primaryColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13),
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
@@ -449,8 +560,15 @@ class _BatchScreenState extends State<BatchScreen> {
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    Text("${loc.supplier}: ", style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-                                    Text(batch.supplierBatchNo, style: TextStyle(fontSize: 12, color: Colors.grey.shade800, fontWeight: FontWeight.w500)),
+                                    Text("${loc.supplier}: ",
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade500)),
+                                    Text(batch.supplierBatchNo,
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade800,
+                                            fontWeight: FontWeight.w500)),
                                   ],
                                 ),
                               ],
@@ -459,28 +577,61 @@ class _BatchScreenState extends State<BatchScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              _StatusBadge(status: batch.qcStatus, isChip: true),
+                              _StatusBadge(
+                                  status: batch.qcStatus, isChip: true),
                               const SizedBox(height: 4),
                               if (!batch.isActive)
-                                 Container(
-                                   margin: const EdgeInsets.only(top: 4),
-                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                   decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(4)),
-                                   child: Text(loc.inactive, style: const TextStyle(color: Colors.white, fontSize: 10)),
-                                 ),
+                                Container(
+                                  margin: const EdgeInsets.only(top: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      borderRadius: BorderRadius.circular(4)),
+                                  child: Text(loc.inactive,
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 10)),
+                                ),
                               const SizedBox(height: 4),
                               PopupMenuButton(
                                 padding: EdgeInsets.zero,
-                                icon: Icon(Icons.more_horiz, color: Colors.grey.shade400),
+                                icon: Icon(Icons.more_horiz,
+                                    color: Colors.grey.shade400),
                                 onSelected: (val) {
-                                  if (val == 'view') _navigateToDetail(context, batch);
-                                  if (val == 'edit') _showEditDialog(context, batch);
-                                  if (val == 'delete') _confirmDelete(context, batch);
+                                  if (val == 'view') {
+                                    _navigateToDetail(context, batch);
+                                  }
+                                  if (val == 'edit') {
+                                    _showEditDialog(context, batch);
+                                  }
+                                  if (val == 'delete') {
+                                    _confirmDelete(context, batch);
+                                  }
                                 },
                                 itemBuilder: (ctx) => [
-                                  const PopupMenuItem(value: 'view', child: Row(children: [Icon(Icons.visibility, size: 18, color: Colors.blue), SizedBox(width: 8), Text("View Details")])),
-                                  PopupMenuItem(value: 'edit', child: Row(children: [const Icon(Icons.edit, size: 18), const SizedBox(width: 8), Text(loc.edit)])),
-                                  PopupMenuItem(value: 'delete', child: Row(children: [const Icon(Icons.delete, size: 18, color: Colors.red), const SizedBox(width: 8), Text(loc.delete)])),
+                                  const PopupMenuItem(
+                                      value: 'view',
+                                      child: Row(children: [
+                                        Icon(Icons.visibility,
+                                            size: 18, color: Colors.blue),
+                                        SizedBox(width: 8),
+                                        Text("View Details")
+                                      ])),
+                                  PopupMenuItem(
+                                      value: 'edit',
+                                      child: Row(children: [
+                                        const Icon(Icons.edit, size: 18),
+                                        const SizedBox(width: 8),
+                                        Text(loc.edit)
+                                      ])),
+                                  PopupMenuItem(
+                                      value: 'delete',
+                                      child: Row(children: [
+                                        const Icon(Icons.delete,
+                                            size: 18, color: Colors.red),
+                                        const SizedBox(width: 8),
+                                        Text(loc.delete)
+                                      ])),
                                 ],
                               ),
                             ],
@@ -488,34 +639,41 @@ class _BatchScreenState extends State<BatchScreen> {
                         ],
                       ),
                     ),
-                    
                     if (batch.qcNote != null && batch.qcNote!.isNotEmpty)
                       Container(
                         width: double.infinity,
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 4),
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: Colors.amber.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                          border:
+                              Border.all(color: Colors.amber.withOpacity(0.3)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.rate_review, size: 16, color: Colors.amber),
+                            const Icon(Icons.rate_review,
+                                size: 16, color: Colors.amber),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 "${loc.qcNote}: ${batch.qcNote}",
-                                style: TextStyle(fontSize: 13, color: Colors.grey.shade800, fontStyle: FontStyle.italic),
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade800,
+                                    fontStyle: FontStyle.italic),
                               ),
                             ),
                           ],
                         ),
                       ),
-
-                    Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Divider(height: 1, color: Colors.grey.shade100)),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Divider(height: 1, color: Colors.grey.shade100)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -523,14 +681,22 @@ class _BatchScreenState extends State<BatchScreen> {
                             Row(children: [
                               Icon(Icons.link, size: 14, color: _accentColor),
                               const SizedBox(width: 4),
-                              Text("${loc.linkedReceipt}: ${batch.receiptNumber}", style: TextStyle(fontSize: 12, color: _accentColor, fontWeight: FontWeight.bold)),
+                              Text(
+                                  "${loc.linkedReceipt}: ${batch.receiptNumber}",
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: _accentColor,
+                                      fontWeight: FontWeight.bold)),
                             ])
                           else if (batch.receiptDetailId != null)
-                            Text("${loc.linkedReceipt} #${batch.receiptDetailId}", style: const TextStyle(fontSize: 12, color: Colors.grey))
+                            Text(
+                                "${loc.linkedReceipt} #${batch.receiptDetailId}",
+                                style: const TextStyle(
+                                    fontSize: 12, color: Colors.grey))
                           else
                             const SizedBox(),
-
-                          _buildInfoRow(Icons.event_busy, "${loc.expDate}: ${batch.expiryDate ?? '--'}"),
+                          _buildInfoRow(Icons.event_busy,
+                              "${loc.expDate}: ${batch.expiryDate ?? '--'}"),
                         ],
                       ),
                     )
@@ -557,15 +723,17 @@ class _BatchScreenState extends State<BatchScreen> {
   // --- DIALOG THÊM / SỬA ---
   void _showEditDialog(BuildContext context, Batch? batch) {
     final loc = AppLocalizations.of(context)!;
-    final supplierBatchCtrl = TextEditingController(text: batch?.supplierBatchNo ?? '');
+    final supplierBatchCtrl =
+        TextEditingController(text: batch?.supplierBatchNo ?? '');
     final noteCtrl = TextEditingController(text: batch?.note ?? '');
     final qcNoteCtrl = TextEditingController(text: batch?.qcNote ?? '');
     final originCtrl = TextEditingController(text: batch?.originCountry ?? '');
-    
+
     // [MỚI] Controller cho Location
     final locationCtrl = TextEditingController(text: batch?.location ?? '');
-    
-    final receiptIdCtrl = TextEditingController(text: batch?.receiptDetailId?.toString() ?? '');
+
+    final receiptIdCtrl =
+        TextEditingController(text: batch?.receiptDetailId?.toString() ?? '');
 
     bool isActive = batch?.isActive ?? true;
     int? selectedMaterialId = batch?.materialId;
@@ -580,7 +748,6 @@ class _BatchScreenState extends State<BatchScreen> {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setStateDialog) {
-          
           Future<void> pickDate(bool isMfg) async {
             DateTime? picked = await showDatePicker(
               context: context,
@@ -601,10 +768,13 @@ class _BatchScreenState extends State<BatchScreen> {
           }
 
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             titlePadding: const EdgeInsets.all(24),
             contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-            title: Text(batch == null ? loc.addBatch : loc.edit, style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
+            title: Text(batch == null ? loc.addBatch : loc.edit,
+                style: TextStyle(
+                    color: _primaryColor, fontWeight: FontWeight.bold)),
             content: Form(
               key: formKey,
               child: SizedBox(
@@ -619,18 +789,21 @@ class _BatchScreenState extends State<BatchScreen> {
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.blue.withOpacity(0.1))
-                          ),
+                              color: Colors.blue.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: Colors.blue.withOpacity(0.1))),
                           child: Row(
                             children: [
-                              const Icon(Icons.link, size: 20, color: Colors.blue),
+                              const Icon(Icons.link,
+                                  size: 20, color: Colors.blue),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   "${loc.linkedReceipt}: ${batch!.receiptNumber}",
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue),
                                 ),
                               ),
                             ],
@@ -638,23 +811,30 @@ class _BatchScreenState extends State<BatchScreen> {
                         ),
 
                       TextFormField(
-                         controller: receiptIdCtrl,
-                         keyboardType: TextInputType.number,
-                         decoration: InputDecoration(
-                           labelText: loc.linkedReceiptId,
-                           helperText: loc.linkedReceiptIdHelper,
-                           prefixIcon: const Icon(Icons.confirmation_number_outlined),
-                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                           filled: true, fillColor: Colors.grey.withOpacity(0.05),
-                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                         ),
+                        controller: receiptIdCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: loc.linkedReceiptId,
+                          helperText: loc.linkedReceiptIdHelper,
+                          prefixIcon:
+                              const Icon(Icons.confirmation_number_outlined),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          filled: true,
+                          fillColor: Colors.grey.withOpacity(0.05),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                        ),
                       ),
                       const SizedBox(height: 16),
 
                       if (_isLoadingMaterials)
-                        Padding(padding: const EdgeInsets.all(10), child: Text(loc.processing))
+                        Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Text(loc.processing))
                       else if (_materialErrorMsg != null)
-                        Text(loc.errorLoadMaterials(_materialErrorMsg!), style: const TextStyle(color: Colors.red))
+                        Text(loc.errorLoadMaterials(_materialErrorMsg!),
+                            style: const TextStyle(color: Colors.red))
                       else
                         DropdownButtonFormField<int>(
                           value: selectedMaterialId,
@@ -669,7 +849,8 @@ class _BatchScreenState extends State<BatchScreen> {
                               ),
                             );
                           }).toList(),
-                          onChanged: (val) => setStateDialog(() => selectedMaterialId = val),
+                          onChanged: (val) =>
+                              setStateDialog(() => selectedMaterialId = val),
                           validator: (v) => v == null ? loc.required : null,
                         ),
 
@@ -681,7 +862,8 @@ class _BatchScreenState extends State<BatchScreen> {
                             child: TextFormField(
                               controller: supplierBatchCtrl,
                               decoration: _inputDeco(loc.supplierBatch),
-                              validator: (v) => v!.isEmpty ? loc.required : null,
+                              validator: (v) =>
+                                  v!.isEmpty ? loc.required : null,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -693,14 +875,15 @@ class _BatchScreenState extends State<BatchScreen> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 16),
 
                       // [MỚI] Form nhập Location
                       TextFormField(
                         controller: locationCtrl,
                         decoration: _inputDeco("Location / Bin Code").copyWith(
-                          prefixIcon: const Icon(Icons.place, color: Colors.grey),
+                          prefixIcon:
+                              const Icon(Icons.place, color: Colors.grey),
                         ),
                         maxLength: 10, // Giới hạn 10 ký tự như backend
                       ),
@@ -713,7 +896,11 @@ class _BatchScreenState extends State<BatchScreen> {
                               onTap: () => pickDate(true),
                               child: InputDecorator(
                                 decoration: _inputDeco(loc.mfgDate),
-                                child: Text(mfgDate ?? loc.selectPlaceholder, style: TextStyle(color: mfgDate == null ? Colors.grey : Colors.black87)),
+                                child: Text(mfgDate ?? loc.selectPlaceholder,
+                                    style: TextStyle(
+                                        color: mfgDate == null
+                                            ? Colors.grey
+                                            : Colors.black87)),
                               ),
                             ),
                           ),
@@ -723,33 +910,43 @@ class _BatchScreenState extends State<BatchScreen> {
                               onTap: () => pickDate(false),
                               child: InputDecorator(
                                 decoration: _inputDeco(loc.expDate),
-                                child: Text(expDate ?? loc.selectPlaceholder, style: TextStyle(color: expDate == null ? Colors.grey : Colors.black87)),
+                                child: Text(expDate ?? loc.selectPlaceholder,
+                                    style: TextStyle(
+                                        color: expDate == null
+                                            ? Colors.grey
+                                            : Colors.black87)),
                               ),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 24),
-                      
+
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.blueGrey.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blueGrey.withOpacity(0.2)),
+                          border: Border.all(
+                              color: Colors.blueGrey.withOpacity(0.2)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(loc.qualityControl, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                            Text(loc.qualityControl,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blueGrey)),
                             const SizedBox(height: 12),
                             DropdownButtonFormField<String>(
                               value: selectedQcStatus,
                               decoration: _inputDeco(loc.qcStatus),
                               items: ["Pending", "Pass", "Fail", "Expired"]
-                                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                                  .map((s) => DropdownMenuItem(
+                                      value: s, child: Text(s)))
                                   .toList(),
-                              onChanged: (val) => setStateDialog(() => selectedQcStatus = val!),
+                              onChanged: (val) =>
+                                  setStateDialog(() => selectedQcStatus = val!),
                             ),
                             const SizedBox(height: 12),
                             TextFormField(
@@ -760,23 +957,29 @@ class _BatchScreenState extends State<BatchScreen> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      TextFormField(controller: noteCtrl, decoration: _inputDeco(loc.generalNote), maxLines: 1),
-                      
+                      TextFormField(
+                          controller: noteCtrl,
+                          decoration: _inputDeco(loc.generalNote),
+                          maxLines: 1),
+
                       const SizedBox(height: 16),
                       Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                          color: Colors.white
-                        ),
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.white),
                         child: SwitchListTile(
-                          title: Text(loc.isActiveSwitch, style: const TextStyle(fontSize: 14)),
-                          subtitle: Text(loc.isActiveBatchHint, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                          title: Text(loc.isActiveSwitch,
+                              style: const TextStyle(fontSize: 14)),
+                          subtitle: Text(loc.isActiveBatchHint,
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey)),
                           value: isActive,
                           activeColor: Colors.green,
-                          onChanged: (val) => setStateDialog(() => isActive = val),
+                          onChanged: (val) =>
+                              setStateDialog(() => isActive = val),
                         ),
                       ),
                     ],
@@ -786,10 +989,14 @@ class _BatchScreenState extends State<BatchScreen> {
             ),
             actionsPadding: const EdgeInsets.all(24),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel, style: const TextStyle(color: Colors.grey))),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(loc.cancel,
+                      style: const TextStyle(color: Colors.grey))),
               ElevatedButton(
                 onPressed: () {
-                  if (formKey.currentState!.validate() && selectedMaterialId != null) {
+                  if (formKey.currentState!.validate() &&
+                      selectedMaterialId != null) {
                     final newBatch = Batch(
                       batchId: batch?.batchId ?? 0,
                       internalBatchCode: batch?.internalBatchCode ?? '',
@@ -801,18 +1008,28 @@ class _BatchScreenState extends State<BatchScreen> {
                       qcNote: qcNoteCtrl.text,
                       note: noteCtrl.text,
                       receiptDetailId: int.tryParse(receiptIdCtrl.text),
-                      originCountry: originCtrl.text, 
+                      originCountry: originCtrl.text,
                       // [MỚI] Thêm location khi lưu
                       location: locationCtrl.text,
                       isActive: isActive,
                     );
-                    
-                    context.read<BatchCubit>().saveBatch(batch: newBatch, isEdit: batch != null);
+
+                    context
+                        .read<BatchCubit>()
+                        .saveBatch(batch: newBatch, isEdit: batch != null);
                     Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(batch == null ? loc.successAdded : loc.successUpdated), backgroundColor: Colors.green));
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(batch == null
+                            ? loc.successAdded
+                            : loc.successUpdated),
+                        backgroundColor: Colors.green));
                   }
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: _primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8))),
                 child: Text(loc.save),
               ),
             ],
@@ -825,8 +1042,12 @@ class _BatchScreenState extends State<BatchScreen> {
   InputDecoration _inputDeco(String label) {
     return InputDecoration(
       labelText: label,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+      border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300)),
+      enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300)),
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -839,16 +1060,22 @@ class _BatchScreenState extends State<BatchScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(children: [const Icon(Icons.warning_amber_rounded, color: Colors.red), const SizedBox(width: 8), Text(loc.delete)]),
+        title: Row(children: [
+          const Icon(Icons.warning_amber_rounded, color: Colors.red),
+          const SizedBox(width: 8),
+          Text(loc.delete)
+        ]),
         content: Text(loc.confirmDeleteBatchMsg(batch.internalBatchCode)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
           ElevatedButton(
             onPressed: () {
               context.read<BatchCubit>().deleteBatch(batch.batchId);
               Navigator.pop(ctx);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, foregroundColor: Colors.white),
             child: Text(loc.delete),
           ),
         ],
@@ -868,24 +1095,40 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     Color color;
     switch (status) {
-      case "Pass": color = Colors.green; break;
-      case "Fail": color = Colors.red; break;
-      case "Expired": color = Colors.grey; break;
-      default: color = Colors.orange; // Pending
+      case "Pass":
+        color = Colors.green;
+        break;
+      case "Fail":
+        color = Colors.red;
+        break;
+      case "Expired":
+        color = Colors.grey;
+        break;
+      default:
+        color = Colors.orange; // Pending
     }
 
     if (!isChip) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-        child: Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+        decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(4)),
+        child: Text(status,
+            style: TextStyle(
+                color: color, fontSize: 12, fontWeight: FontWeight.bold)),
       );
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withOpacity(0.2))),
-      child: Text(status, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
+      decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withOpacity(0.2))),
+      child: Text(status,
+          style: TextStyle(
+              fontSize: 11, color: color, fontWeight: FontWeight.bold)),
     );
   }
 }

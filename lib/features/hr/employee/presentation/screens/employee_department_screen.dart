@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/widgets/responsive_layout.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../../core/constants/api_endpoints.dart';
+import '../../../../../core/network/websocket_service.dart'; // [THÊM] WebSocket
 import '../../../department/domain/department_model.dart';
 import '../../../department/presentation/bloc/department_cubit.dart';
 import '../../domain/employee_model.dart';
@@ -30,28 +31,47 @@ class _EmployeeDepartmentScreenState extends State<EmployeeDepartmentScreen> {
   final Color _primaryColor = const Color(0xFF003366);
   final Color _bgLight = const Color(0xFFF5F7FA);
 
-  // [MỚI] Timer cho tìm kiếm
   Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
-    // Load nhân viên theo ID phòng ban
+    // 1. Load nhân viên theo ID phòng ban
     context
         .read<EmployeeCubit>()
         .loadEmployeesByDepartment(widget.departmentId);
-    // Load danh sách phòng ban để hiển thị tên và dùng trong dropdown
+    // 2. Load danh sách phòng ban để hiển thị tên và dùng trong dropdown
     context.read<DepartmentCubit>().loadDepartments();
+
+    // 3. [MỚI] Kết nối và lắng nghe WebSocket
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
     _searchController.dispose();
+
+    // [MỚI] Hủy lắng nghe WebSocket
+    WebSocketService().removeListener(_onWebSocketMessage);
     super.dispose();
   }
 
-  // [MỚI] Xử lý tìm kiếm
+  // --- [MỚI] WEBSOCKET HANDLER ---
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_EMPLOYEES") {
+      debugPrint("WebSocket: Làm mới danh sách Nhân viên trong Phòng ban.");
+      if (mounted) {
+        // Cập nhật lại chỉ danh sách nhân viên của phòng ban này
+        context
+            .read<EmployeeCubit>()
+            .loadEmployeesByDepartment(widget.departmentId);
+      }
+    }
+  }
+
+  // --- SEARCH HANDLER ---
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
@@ -62,7 +82,7 @@ class _EmployeeDepartmentScreenState extends State<EmployeeDepartmentScreen> {
             .read<EmployeeCubit>()
             .loadEmployeesByDepartment(widget.departmentId);
       } else {
-        // Nếu có chữ -> Tìm kiếm toàn cục (hoặc theo API search hỗ trợ filter)
+        // Nếu có chữ -> Tìm kiếm toàn cục
         context.read<EmployeeCubit>().searchEmployees(query);
       }
     });
@@ -136,7 +156,7 @@ class _EmployeeDepartmentScreenState extends State<EmployeeDepartmentScreen> {
       ),
       body: Column(
         children: [
-          // --- SEARCH BAR (Giống EmployeeScreen) ---
+          // --- SEARCH BAR ---
           Container(
             color: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -572,7 +592,6 @@ class _EmployeeDepartmentScreenState extends State<EmployeeDepartmentScreen> {
                           validator: (v) => v!.isEmpty ? "Required" : null),
                       const SizedBox(height: 16),
 
-                      // [FIX] Tách Email và Phone
                       TextFormField(
                         controller: emailCtrl,
                         decoration: _inputDeco("${l10n.email} *"),
@@ -642,10 +661,6 @@ class _EmployeeDepartmentScreenState extends State<EmployeeDepartmentScreen> {
                         imageFile: pickedFile,
                         isEdit: emp != null);
                     Navigator.pop(ctx);
-
-                    // Refresh lại list sau khi save để cập nhật
-                    // Lưu ý: saveEmployee thường emit loaded, nhưng nếu cần thiết có thể gọi lại load
-                    // context.read<EmployeeCubit>().loadEmployeesByDepartment(widget.departmentId);
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -663,21 +678,35 @@ class _EmployeeDepartmentScreenState extends State<EmployeeDepartmentScreen> {
   InputDecoration _inputDeco(String label) {
     return InputDecoration(
       labelText: label,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300)),
+      enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300)),
+      filled: true,
+      fillColor: Colors.grey.shade50,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      isDense: true,
     );
   }
 
+  // --- DELETE DIALOG ---
   void _confirmDelete(
       BuildContext context, Employee emp, AppLocalizations l10n) {
     final employeeCubit = context.read<EmployeeCubit>();
+
     showDialog(
       context: context,
       builder: (ctx) => BlocProvider.value(
         value: employeeCubit,
         child: AlertDialog(
-          title: Text(l10n.deleteEmployee),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.red),
+            const SizedBox(width: 8),
+            Text(l10n.deleteEmployee)
+          ]),
           content: Text(l10n.confirmDeleteEmployee(emp.fullName)),
           actions: [
             TextButton(
@@ -686,7 +715,6 @@ class _EmployeeDepartmentScreenState extends State<EmployeeDepartmentScreen> {
               onPressed: () {
                 context.read<EmployeeCubit>().deleteEmployee(emp.id);
                 Navigator.pop(ctx);
-                // Sau khi xóa thành công, Cubit sẽ emit state mới, UI tự update
               },
               style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red, foregroundColor: Colors.white),

@@ -11,6 +11,9 @@ import '../../../unit/domain/unit_model.dart';
 import '../../../unit/presentation/bloc/unit_cubit.dart';
 import '../../../supplier/domain/supplier_model.dart';
 
+// Import WebSocket Service [NEW]
+import '../../../../../core/network/websocket_service.dart';
+
 // L10n
 import '../../../../../l10n/app_localizations.dart';
 
@@ -31,9 +34,33 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<PurchaseOrderCubit>().loadPurchaseOrderDetail(widget.poId);
+    _loadData(); // Đưa vào hàm riêng để tiện gọi lại
     context.read<mat_bloc.MaterialCubit>().loadMaterials();
     context.read<UnitCubit>().loadUnits();
+
+    // [NEW] Kết nối và lắng nghe WebSocket
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
+  }
+
+  @override
+  void dispose() {
+    // [NEW] Xóa listener khi đóng màn hình
+    WebSocketService().removeListener(_onWebSocketMessage);
+    super.dispose();
+  }
+
+  // [NEW] Hàm xử lý sự kiện WebSocket
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_PURCHASE_ORDERS") {
+      debugPrint("WebSocket (Detail): Cập nhật chi tiết PO.");
+      if (mounted) _loadData();
+    }
+  }
+
+  // [NEW] Hàm gọi API load chi tiết PO
+  void _loadData() {
+    context.read<PurchaseOrderCubit>().loadPurchaseOrderDetail(widget.poId);
   }
 
   @override
@@ -47,6 +74,13 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
         backgroundColor: const Color(0xFF003366),
         foregroundColor: Colors.white,
         elevation: 0,
+        // [NEW] Thêm nút refresh thủ công (optional)
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadData,
+          )
+        ],
       ),
       body: BlocBuilder<PurchaseOrderCubit, PurchaseOrderState>(
         builder: (context, state) {
@@ -153,7 +187,9 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
     );
   }
 
-  // --- HEADER INFO ---
+  // --- CÁC HÀM UI HELPERS GIỮ NGUYÊN (Không thay đổi) ---
+  // ... _buildHeaderInfo, _buildInfoColumn, _buildDetailItem, _buildEmptyState, _buildStatusBadge, _showAddItemDialog, _showMaterialSearch ...
+
   Widget _buildHeaderInfo(PurchaseOrderHeader po, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -252,7 +288,6 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
     );
   }
 
-  // --- ITEM CARD (Đã cập nhật hiển thị Rolls và Giá) ---
   Widget _buildDetailItem(PurchaseOrderDetail item, PurchaseOrderHeader po) {
     final mat = item.material;
     double convertedLineTotal = item.lineTotal * po.exchangeRate;
@@ -267,7 +302,6 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
       if (specs.isNotEmpty) subInfos.add(specs);
     }
 
-    // Xác định label cho đơn giá (Per Roll hay Per Unit)
     String priceUnitLabel =
         item.isPricingByRoll ? "/ Roll" : "/ ${item.uom?.name ?? 'Unit'}";
 
@@ -354,9 +388,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                         color: Colors.grey.shade600,
                         fontStyle: FontStyle.italic),
                   ),
-
                 const SizedBox(height: 4),
-                // [UPDATED] Hiển thị Số lượng và Số cuộn
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -375,9 +407,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                       ),
                   ],
                 ),
-
                 const SizedBox(height: 2),
-                // [UPDATED] Hiển thị đơn giá kèm đơn vị tính giá
                 Text(
                   "@ ${_currencyFormat.format(item.unitPrice)} $priceUnitLabel",
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
@@ -414,55 +444,47 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
   }
 
   Widget _buildStatusBadge(POStatus status) {
-    Color bg, text;
+    Color color;
     switch (status) {
       case POStatus.Draft:
-        bg = Colors.grey.shade200;
-        text = Colors.grey.shade700;
+        color = Colors.grey;
         break;
       case POStatus.Sent:
-        bg = Colors.blue.shade100;
-        text = Colors.blue.shade800;
+        color = Colors.blue;
         break;
       case POStatus.Confirmed:
-        bg = Colors.indigo.shade100;
-        text = Colors.indigo.shade800;
+        color = Colors.indigo;
         break;
       case POStatus.Partial:
-        bg = Colors.orange.shade100;
-        text = Colors.orange.shade800;
+        color = Colors.orange;
         break;
       case POStatus.Completed:
-        bg = Colors.green.shade100;
-        text = Colors.green.shade800;
+        color = Colors.green;
         break;
       case POStatus.Cancelled:
-        bg = Colors.red.shade100;
-        text = Colors.red.shade800;
+        color = Colors.red;
         break;
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration:
-          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: color.withOpacity(0.2))),
       child: Text(status.name.toUpperCase(),
           style: TextStyle(
-              color: text, fontSize: 12, fontWeight: FontWeight.bold)),
+              color: color, fontSize: 10, fontWeight: FontWeight.bold)),
     );
   }
 
-  // --- DIALOG THÊM CHI TIẾT (Đã cập nhật: Số cuộn + Tính giá theo Cuộn) ---
   void _showAddItemDialog(
       BuildContext context, PurchaseOrderHeader po, AppLocalizations l10n) {
     int? selectedMaterialId;
     int? selectedUomId;
     final qtyCtrl = TextEditingController(text: '');
     final priceCtrl = TextEditingController(text: '');
-    final rollsCtrl = TextEditingController(text: '0'); // [NEW] Control số cuộn
-
-    // [NEW] Biến switch tính giá
+    final rollsCtrl = TextEditingController(text: '0');
     bool isPricePerRoll = false;
-
     MaterialModel? selectedMaterial;
 
     showDialog(
@@ -471,13 +493,10 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            // Đổi tên thành setStateDialog cho rõ
-
             double qty = double.tryParse(qtyCtrl.text) ?? 0;
             double price = double.tryParse(priceCtrl.text) ?? 0;
             double rolls = double.tryParse(rollsCtrl.text) ?? 0;
 
-            // [NEW] Logic tính tổng tiền
             double total = isPricePerRoll ? (rolls * price) : (qty * price);
             double totalVND = total * po.exchangeRate;
 
@@ -503,7 +522,6 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // INFO TỶ GIÁ
                       if (po.currency != 'VND')
                         Container(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -525,15 +543,12 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                             ],
                           ),
                         ),
-
-                      // MATERIAL SELECTOR
                       Text(l10n.materialInfo,
                           style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: Colors.grey)),
                       const SizedBox(height: 8),
-
                       BlocBuilder<mat_bloc.MaterialCubit,
                           mat_bloc.MaterialState>(
                         builder: (context, state) {
@@ -617,15 +632,12 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                         },
                       ),
                       const SizedBox(height: 24),
-
-                      // DETAILS INPUT
                       Text(l10n.transactionDetails,
                           style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: Colors.grey)),
                       const SizedBox(height: 8),
-
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -633,7 +645,6 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                             flex: 3,
                             child: Column(
                               children: [
-                                // Số lượng KG
                                 TextFormField(
                                   controller: qtyCtrl,
                                   keyboardType: TextInputType.number,
@@ -648,7 +659,6 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                                   onChanged: (_) => setStateDialog(() {}),
                                 ),
                                 const SizedBox(height: 12),
-                                // [NEW] Số cuộn
                                 TextFormField(
                                   controller: rollsCtrl,
                                   keyboardType: TextInputType.number,
@@ -713,7 +723,6 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                                   onChanged: (_) => setStateDialog(() {}),
                                 ),
                                 const SizedBox(height: 8),
-                                // [NEW] Switch tính giá theo cuộn
                                 SwitchListTile(
                                   contentPadding: EdgeInsets.zero,
                                   title: Text("Tính theo Cuộn?",
@@ -730,10 +739,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 16),
-
-                      // SUMMARY
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -793,13 +799,12 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                         poId: widget.poId,
                         materialId: selectedMaterialId!,
                         quantity: qty,
-                        quantityRolls: rolls.toInt(), // [NEW] Lưu số cuộn
+                        quantityRolls: rolls.toInt(),
                         unitPrice: price,
-                        lineTotal: total, // Tổng tiền đã tính đúng logic
+                        lineTotal: total,
                         uomId: selectedUomId,
                         material: selectedMaterial,
-                        isPricingByRoll:
-                            isPricePerRoll, // [NEW] Lưu cờ tính giá
+                        isPricingByRoll: isPricePerRoll,
                       );
                       context
                           .read<PurchaseOrderCubit>()

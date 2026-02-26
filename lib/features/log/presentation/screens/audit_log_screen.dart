@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+
 import 'package:production_app_frontend/features/log/domain/log_model.dart';
 import 'package:production_app_frontend/features/log/presentation/bloc/log_cubit.dart';
+import 'package:production_app_frontend/core/network/websocket_service.dart'; // [MỚI] Import WebSocket
 
 class AuditLogScreen extends StatefulWidget {
   // Các tham số filter tùy chọn (Dùng khi nhúng vào màn hình chi tiết đối tượng)
-  final String? filterTargetType; 
+  final String? filterTargetType;
   final int? filterTargetId;
 
   const AuditLogScreen({super.key, this.filterTargetType, this.filterTargetId});
@@ -23,17 +25,36 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   void initState() {
     super.initState();
     _loadData();
+
+    // [MỚI] Lắng nghe WebSocket
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
+  }
+
+  @override
+  void dispose() {
+    // [MỚI] Hủy lắng nghe WebSocket
+    WebSocketService().removeListener(_onWebSocketMessage);
+    super.dispose();
+  }
+
+  // [MỚI] Xử lý sự kiện WebSocket
+  void _onWebSocketMessage(String message) {
+    if (message == "REFRESH_LOGS") {
+      debugPrint("WebSocket: Cập nhật lại danh sách Logs.");
+      if (mounted) _loadData();
+    }
   }
 
   // Hàm gọi Cubit để tải dữ liệu kèm bộ lọc
   void _loadData() {
     context.read<LogCubit>().loadLogs(
-      targetType: widget.filterTargetType,
-      targetId: widget.filterTargetId,
-      // Truyền tham số ngày tháng xuống Cubit (Cần đảm bảo Cubit đã hỗ trợ)
-      fromDate: _selectedDateRange?.start,
-      toDate: _selectedDateRange?.end,
-    );
+          targetType: widget.filterTargetType,
+          targetId: widget.filterTargetId,
+          // Truyền tham số ngày tháng xuống Cubit (Cần đảm bảo Cubit đã hỗ trợ)
+          fromDate: _selectedDateRange?.start,
+          toDate: _selectedDateRange?.end,
+        );
   }
 
   // Hàm hiển thị DatePicker
@@ -49,7 +70,8 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
           data: ThemeData.light().copyWith(
             primaryColor: const Color(0xFF003366),
             colorScheme: const ColorScheme.light(primary: Color(0xFF003366)),
-            buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary),
+            buttonTheme:
+                const ButtonThemeData(textTheme: ButtonTextTheme.primary),
           ),
           child: child!,
         );
@@ -77,7 +99,8 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text("Nhật ký hoạt động", style: TextStyle(color: Colors.white)),
+        title: const Text("Nhật ký hoạt động",
+            style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF003366),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
@@ -104,9 +127,10 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                         ? "Toàn bộ thời gian"
                         : "${DateFormat('dd/MM/yyyy').format(_selectedDateRange!.start)} - ${DateFormat('dd/MM/yyyy').format(_selectedDateRange!.end)}",
                     style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: _selectedDateRange == null ? Colors.grey.shade600 : Colors.black87
-                    ),
+                        fontWeight: FontWeight.w500,
+                        color: _selectedDateRange == null
+                            ? Colors.grey.shade600
+                            : Colors.black87),
                   ),
                 ),
                 // Nút xóa bộ lọc
@@ -134,36 +158,49 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
 
           // --- 2. DANH SÁCH LOG ---
           Expanded(
-            child: BlocBuilder<LogCubit, LogState>(
+            child: BlocConsumer<LogCubit, LogState>(
+              listener: (context, state) {
+                // Hiển thị thông báo sau khi hoàn tác
+                if (state is LogRevertSuccess) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(state.message),
+                      backgroundColor: Colors.green));
+                }
+              },
               builder: (context, state) {
                 if (state is LogLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                
+
                 if (state is LogError) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                        const Icon(Icons.error_outline,
+                            color: Colors.red, size: 48),
                         const SizedBox(height: 8),
-                        Text("Lỗi: ${state.message}", textAlign: TextAlign.center),
+                        Text("Lỗi: ${state.message}",
+                            textAlign: TextAlign.center),
                         const SizedBox(height: 16),
-                        ElevatedButton(onPressed: _loadData, child: const Text("Thử lại"))
+                        ElevatedButton(
+                            onPressed: _loadData, child: const Text("Thử lại"))
                       ],
                     ),
                   );
                 }
-                
+
                 if (state is LogLoaded) {
                   if (state.logs.isEmpty) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.history_toggle_off, size: 64, color: Colors.grey.shade300),
+                          Icon(Icons.history_toggle_off,
+                              size: 64, color: Colors.grey.shade300),
                           const SizedBox(height: 16),
-                          Text("Không tìm thấy nhật ký nào", style: TextStyle(color: Colors.grey.shade600)),
+                          Text("Không tìm thấy nhật ký nào",
+                              style: TextStyle(color: Colors.grey.shade600)),
                         ],
                       ),
                     );
@@ -172,7 +209,8 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                   return ListView.separated(
                     padding: const EdgeInsets.only(bottom: 20),
                     itemCount: state.logs.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1, indent: 70),
+                    separatorBuilder: (_, __) =>
+                        const Divider(height: 1, indent: 70),
                     itemBuilder: (context, index) {
                       final log = state.logs[index];
                       return _buildLogItem(log);
@@ -206,9 +244,9 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
           style: const TextStyle(color: Colors.black87, fontSize: 14),
           children: [
             TextSpan(
-              text: "${log.userEmail ?? 'Unknown'} ", 
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF003366))
-            ),
+                text: "${log.userEmail ?? 'Unknown'} ",
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: Color(0xFF003366))),
             TextSpan(text: "đã ${log.description ?? log.action}"),
           ],
         ),
@@ -227,21 +265,22 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
 
   IconData _getActionIcon(String action) {
     switch (action) {
-      case 'CREATE': return Icons.add;
-      case 'UPDATE': return Icons.edit;
-      case 'DELETE': return Icons.delete;
-      default: return Icons.info;
+      case 'CREATE':
+        return Icons.add;
+      case 'UPDATE':
+        return Icons.edit;
+      case 'DELETE':
+        return Icons.delete;
+      default:
+        return Icons.info;
     }
   }
 
   // --- DIALOG CHI TIẾT & HOÀN TÁC ---
   void _showDetailDialog(LogModel log) {
-    // Điều kiện hiển thị nút Hoàn tác:
-    // 1. Hành động là UPDATE hoặc DELETE
-    // 2. Có dữ liệu 'old' trong changes để khôi phục
-    bool canRevert = (log.action == "UPDATE" || log.action == "DELETE") && 
-                     log.changes != null && 
-                     log.changes!['old'] != null;
+    bool canRevert = (log.action == "UPDATE" || log.action == "DELETE") &&
+        log.changes != null &&
+        log.changes!['old'] != null;
 
     showDialog(
       context: context,
@@ -250,81 +289,89 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
           children: [
             Icon(_getActionIcon(log.action), color: Colors.blueGrey),
             const SizedBox(width: 8),
-            Expanded(child: Text("Chi tiết ${log.action}", style: const TextStyle(fontSize: 18))),
+            Expanded(
+                child: Text("Chi tiết ${log.action}",
+                    style: const TextStyle(fontSize: 18))),
           ],
         ),
         content: SizedBox(
-          width: 500, // Độ rộng cố định để hiển thị đẹp trên Web/Tablet
+          width: 500,
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildInfoRow("Thời gian:", DateFormat('dd/MM/yyyy HH:mm:ss').format(log.timestamp)),
+                _buildInfoRow("Thời gian:",
+                    DateFormat('dd/MM/yyyy HH:mm:ss').format(log.timestamp)),
                 _buildInfoRow("Người thực hiện:", log.userEmail ?? "N/A"),
-                _buildInfoRow("Đối tượng:", "${log.targetType} #${log.targetId}"),
+                _buildInfoRow(
+                    "Đối tượng:", "${log.targetType} #${log.targetId}"),
                 _buildInfoRow("IP:", log.ipAddress ?? "N/A"),
                 const Divider(height: 24),
-                const Text("Chi tiết thay đổi:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                const Text("Chi tiết thay đổi:",
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 const SizedBox(height: 8),
-                
-                // Hiển thị bảng so sánh Old vs New
                 if (log.changes != null && log.changes!.isNotEmpty)
                   _buildChangesTable(log.changes!)
                 else
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
-                    child: const Text(
-                      "Không có dữ liệu thay đổi chi tiết", 
-                      style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)
-                    ),
+                    decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8)),
+                    child: const Text("Không có dữ liệu thay đổi chi tiết",
+                        style: TextStyle(
+                            fontStyle: FontStyle.italic, color: Colors.grey)),
                   ),
               ],
             ),
           ),
         ),
         actions: [
-          // Nút Đóng
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Đóng")),
-          
-          // Nút Hoàn tác / Khôi phục (Chỉ hiện khi thỏa điều kiện)
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text("Đóng")),
           if (canRevert)
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                // DELETE dùng màu Xanh (Khôi phục), UPDATE dùng màu Cam (Hoàn tác)
-                backgroundColor: log.action == "DELETE" ? Colors.green.shade600 : Colors.orange.shade700, 
-                foregroundColor: Colors.white
-              ),
-              icon: Icon(log.action == "DELETE" ? Icons.restore_from_trash : Icons.history, size: 18),
-              
-              // Đổi nhãn nút dựa theo hành động
+                  backgroundColor: log.action == "DELETE"
+                      ? Colors.green.shade600
+                      : Colors.orange.shade700,
+                  foregroundColor: Colors.white),
+              icon: Icon(
+                  log.action == "DELETE"
+                      ? Icons.restore_from_trash
+                      : Icons.history,
+                  size: 18),
               label: Text(log.action == "DELETE" ? "Khôi phục" : "Hoàn tác"),
-              
               onPressed: () async {
-                // Xác nhận lần nữa trước khi gọi API
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (confirmCtx) => AlertDialog(
-                    title: Text(log.action == "DELETE" ? "Khôi phục dữ liệu" : "Xác nhận hoàn tác"),
-                    content: Text(log.action == "DELETE" 
-                        ? "Bạn có muốn khôi phục lại dữ liệu đã xóa này không?\nLưu ý: ID cũ sẽ được giữ nguyên." 
+                    title: Text(log.action == "DELETE"
+                        ? "Khôi phục dữ liệu"
+                        : "Xác nhận hoàn tác"),
+                    content: Text(log.action == "DELETE"
+                        ? "Bạn có muốn khôi phục lại dữ liệu đã xóa này không?\nLưu ý: ID cũ sẽ được giữ nguyên."
                         : "Hệ thống sẽ quay lại giá trị cũ.\nHành động này sẽ tạo ra một bản ghi nhật ký mới."),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(confirmCtx, false), child: const Text("Hủy")),
-                      TextButton(onPressed: () => Navigator.pop(confirmCtx, true), child: const Text("Đồng ý")),
+                      TextButton(
+                          onPressed: () => Navigator.pop(confirmCtx, false),
+                          child: const Text("Hủy")),
+                      TextButton(
+                          onPressed: () => Navigator.pop(confirmCtx, true),
+                          child: const Text("Đồng ý")),
                     ],
                   ),
                 );
 
                 if (confirm == true) {
-                  Navigator.pop(ctx); // Đóng dialog chi tiết
-                  
-                  // Gọi Cubit thực hiện hoàn tác
+                  Navigator.pop(ctx);
+
                   // ignore: use_build_context_synchronously
                   context.read<LogCubit>().revertLogItem(log.id);
-                  
+
                   // ignore: use_build_context_synchronously
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Đang xử lý yêu cầu...")),
@@ -337,26 +384,27 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     );
   }
 
-  // Widget hiển thị 1 dòng thông tin key-value
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 120, child: Text(label, style: const TextStyle(color: Colors.grey))),
-          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500))),
+          SizedBox(
+              width: 120,
+              child: Text(label, style: const TextStyle(color: Colors.grey))),
+          Expanded(
+              child: Text(value,
+                  style: const TextStyle(fontWeight: FontWeight.w500))),
         ],
       ),
     );
   }
 
-  // Widget hiển thị bảng so sánh Old vs New
   Widget _buildChangesTable(Map<String, dynamic> changes) {
     final oldData = changes['old'] as Map<String, dynamic>? ?? {};
     final newData = changes['new'] as Map<String, dynamic>? ?? {};
-    
-    // Lấy tất cả các key xuất hiện trong old hoặc new
+
     final keys = {...oldData.keys, ...newData.keys}.toList();
 
     if (keys.isEmpty) return const SizedBox();
@@ -368,19 +416,28 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
       ),
       child: Column(
         children: [
-          // Header Bảng
           Container(
             color: Colors.grey.shade100,
             padding: const EdgeInsets.all(8),
             child: const Row(
               children: [
-                Expanded(flex: 1, child: Text("Trường", style: TextStyle(fontWeight: FontWeight.bold))),
-                Expanded(flex: 1, child: Text("Cũ", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red))),
-                Expanded(flex: 1, child: Text("Mới", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green))),
+                Expanded(
+                    flex: 1,
+                    child: Text("Trường",
+                        style: TextStyle(fontWeight: FontWeight.bold))),
+                Expanded(
+                    flex: 1,
+                    child: Text("Cũ",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.red))),
+                Expanded(
+                    flex: 1,
+                    child: Text("Mới",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.green))),
               ],
             ),
           ),
-          // Danh sách các dòng thay đổi
           ...keys.map((key) {
             final oldVal = oldData[key]?.toString() ?? '-';
             final newVal = newData[key]?.toString() ?? '-';
@@ -392,13 +449,22 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(flex: 1, child: Text(key, style: const TextStyle(fontWeight: FontWeight.w500))),
-                  Expanded(flex: 1, child: Text(oldVal, style: const TextStyle(color: Colors.red))),
-                  Expanded(flex: 1, child: Text(newVal, style: const TextStyle(color: Colors.green))),
+                  Expanded(
+                      flex: 1,
+                      child: Text(key,
+                          style: const TextStyle(fontWeight: FontWeight.w500))),
+                  Expanded(
+                      flex: 1,
+                      child: Text(oldVal,
+                          style: const TextStyle(color: Colors.red))),
+                  Expanded(
+                      flex: 1,
+                      child: Text(newVal,
+                          style: const TextStyle(color: Colors.green))),
                 ],
               ),
             );
-          }), // Đã bỏ .toList() để tránh warning
+          }),
         ],
       ),
     );

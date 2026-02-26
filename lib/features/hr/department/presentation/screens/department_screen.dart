@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../../core/widgets/responsive_layout.dart';
 import '../../../../../l10n/app_localizations.dart';
-import '../../../../../core/network/websocket_service.dart'; // [THÊM] WebSocket
+import '../../../../../core/network/websocket_service.dart'; // Import WebSocket
+
 import '../../domain/department_model.dart';
 import '../bloc/department_cubit.dart';
 
@@ -268,8 +270,8 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
           ? FloatingActionButton(
               backgroundColor: _accentColor,
               elevation: 4,
-              child: const Icon(Icons.add, color: Colors.white),
               onPressed: () => _showEditDialog(context, null, l10n),
+              child: const Icon(Icons.add, color: Colors.white),
             )
           : null,
     );
@@ -297,7 +299,7 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                   constraints: BoxConstraints(minWidth: constraints.maxWidth),
                   child: DataTable(
                     headingRowColor:
-                        MaterialStateProperty.all(const Color(0xFFF9FAFB)),
+                        WidgetStateProperty.all(const Color(0xFFF9FAFB)),
                     headingRowHeight: 56,
                     dataRowMinHeight: 64,
                     dataRowMaxHeight: 64,
@@ -320,7 +322,7 @@ class _DepartmentScreenState extends State<DepartmentScreen> {
                     rows: departments.asMap().entries.map((entry) {
                       final index = entry.key;
                       final dept = entry.value;
-                      final color = MaterialStateProperty.all(
+                      final color = WidgetStateProperty.all(
                         index % 2 == 0
                             ? Colors.white
                             : const Color(0xFFF9FAFB).withOpacity(0.5),
